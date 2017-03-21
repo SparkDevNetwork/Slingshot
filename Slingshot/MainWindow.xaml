@@ -1,0 +1,16 @@
+﻿<Window x:Class="Slingshot.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Slingshot"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left" Margin="23,106,0,0" VerticalAlignment="Top" Width="75" Click="btnGo_Click"/>
+        <Label x:Name="lblSlingshotFile" Content="FileName" HorizontalAlignment="Left" Margin="19,47,0,0" VerticalAlignment="Top"/>
+        <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="23,22,0,0" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
+        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="23,73,0,0" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export.slingshot" VerticalAlignment="Top" Width="477"/>
+
+    </Grid>
+</Window>
