@@ -51,7 +51,8 @@
       <HintPath>..\Slingshot.CCB\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Rock.Client">
+    <Reference Include="Rock.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Rock\Rock.Client\bin\Debug\Rock.Client.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -81,25 +82,25 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\AddressImport.cs">
-      <Link>RockBulkUpdate\AddressImport.cs</Link>
+      <Link>Rock\BulkUpdate\AddressImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\AttributeValueImport.cs">
-      <Link>RockBulkUpdate\AttributeValueImport.cs</Link>
+      <Link>Rock\BulkUpdate\AttributeValueImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonImport.cs">
-      <Link>RockBulkUpdate\PersonImport.cs</Link>
+      <Link>Rock\BulkUpdate\PersonImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\PhoneNumberImport.cs">
-      <Link>RockBulkUpdate\PhoneNumberImport.cs</Link>
+      <Link>Rock\BulkUpdate\PhoneNumberImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\BooleanExtensions.cs">
-      <Link>RockExtensions\BooleanExtensions.cs</Link>
+      <Link>Rock\Extensions\BooleanExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\JsonExtensions.cs">
       <Link>Rock\Extensions\JsonExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\StringExtensions.cs">
-      <Link>RockExtensions\StringExtensions.cs</Link>
+      <Link>Rock\Extensions\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
