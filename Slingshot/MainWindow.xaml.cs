@@ -32,6 +32,9 @@ namespace Slingshot
         public Dictionary<Guid, Rock.Client.DefinedValue> PersonMaritalStatusValues { get; private set; }
         public Dictionary<Guid, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; private set; }
         public Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; private set; }
+        public Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; private set; }
+        public List<Slingshot.Core.Model.PersonAttribute> SlingshotPersonAttributes { get; private set; }
+        public List<Slingshot.Core.Model.Person> SlingshotPersonList { get; private set; }
         public List<Rock.Client.Campus> Campuses { get; private set; }
 
         /// <summary>
@@ -53,7 +56,9 @@ namespace Slingshot
             LoadLookups();
 
             // Load Slingshot Models from .slingshot
-            var slingshotPersonList = LoadSlingshotPersonList();
+            LoadSlingshotLists();
+
+            var slingshotPersonList = this.SlingshotPersonList;
 
             var restClient = this.GetRockRestClient();
 
@@ -62,6 +67,7 @@ namespace Slingshot
             AddConnectionStatuses( restClient, slingshotPersonList );
             AddPersonTitles( restClient, slingshotPersonList );
             AddPersonSuffixes( restClient, slingshotPersonList );
+            AddPersonAttributes( restClient, this.SlingshotPersonAttributes );
 
             // load lookups again in case we added some new ones
             LoadLookups();
@@ -201,7 +207,7 @@ namespace Slingshot
                 personImport.GivingIndividually = slingshotPerson.GiveIndividually ?? false;
 
                 personImport.AttributeValues = new List<Rock.BulkUpdate.AttributeValueImport>();
-                foreach( var personAttributeValue in slingshotPerson.Attributes )
+                foreach ( var personAttributeValue in slingshotPerson.Attributes )
                 {
                     // TODO
                     //var attributeValueImport = new Rock.BulkUpdate.AttributeValueImport(personAttributeValue.);
@@ -348,6 +354,32 @@ namespace Slingshot
             }
         }
 
+        private void AddPersonAttributes( RestClient restClient, List<Slingshot.Core.Model.PersonAttribute> slingshotPersonAttributes )
+        {
+            foreach ( var slingshotPersonAttribute in slingshotPersonAttributes )
+            {
+                var rockPersonAttribute = this.PersonAttributeKeyLookup.Select( a => a.Value ).FirstOrDefault( a => a.Key.Equals( slingshotPersonAttribute.Key, StringComparison.OrdinalIgnoreCase ) );
+                if ( rockPersonAttribute == null )
+                {
+                    var attributeToAdd = new Rock.Client.Attribute();
+
+                    // TODO:
+
+                    /*
+                    RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
+                    restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    restAttributePostRequest.AddBody( attributeToAdd );
+
+                    var restAttributePostResponse = restClient.Post( restAttributePostRequest );
+                    */
+                }
+                else
+                {
+                    // TODO:
+                }
+            }
+        }
+
         /// <summary>
         /// Adds the connection statuses.
         /// </summary>
@@ -403,7 +435,7 @@ namespace Slingshot
         /// Loads the slingshot person list.
         /// </summary>
         /// <returns></returns>
-        private List<Slingshot.Core.Model.Person> LoadSlingshotPersonList()
+        private void LoadSlingshotLists()
         {
             var slingshotFileName = tbSlingshotFileName.Text;
             var slingshotDirectoryName = Path.Combine( Path.GetDirectoryName( slingshotFileName ), "slingshots", Path.GetFileNameWithoutExtension( slingshotFileName ) );
@@ -458,7 +490,14 @@ namespace Slingshot
                 slingshotPerson.PhoneNumbers = slingshotPersonPhoneListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonPhoneListLookup[slingshotPerson.Id].ToList() : new List<Slingshot.Core.Model.PersonPhone>();
             }
 
-            return slingshotPersonList;
+            this.SlingshotPersonList = slingshotPersonList;
+
+            using ( var personAttributeFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttribute().GetFileName() ) ) )
+            {
+                CsvReader personAttributeCsv = new CsvReader( personAttributeFileStream );
+                personAttributeCsv.Configuration.HasHeaderRecord = true;
+                this.SlingshotPersonAttributes = personAttributeCsv.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
+            }
         }
 
         /// <summary>
@@ -478,7 +517,6 @@ namespace Slingshot
             this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
 
             RestRequest requestFamilyGroupType = new RestRequest( Method.GET );
-            requestFamilyGroupType.RequestFormat = RestSharp.DataFormat.Json;
             requestFamilyGroupType.Resource = $"api/GroupTypes?$filter=Guid eq guid'{Rock.Client.SystemGuid.GroupType.GROUPTYPE_FAMILY}'&$expand=Roles";
 
             var familyGroupTypeResponse = restClient.Execute( requestFamilyGroupType );
@@ -486,11 +524,19 @@ namespace Slingshot
             this.FamilyRoles = JsonConvert.DeserializeObject<List<Rock.Client.GroupType>>( familyGroupTypeResponse.Content ).FirstOrDefault().Roles.ToDictionary( k => k.Guid, v => v );
 
             RestRequest requestCampuses = new RestRequest( Method.GET );
-            requestCampuses.RequestFormat = RestSharp.DataFormat.Json;
-            requestCampuses.Resource = $"api/Campuses";
+            requestCampuses.Resource = "api/Campuses";
             var campusResponse = restClient.Execute( requestCampuses );
 
             this.Campuses = JsonConvert.DeserializeObject<List<Rock.Client.Campus>>( campusResponse.Content );
+
+            //PersonAttributeKeyIdLookup
+
+            RestRequest requestPersonAttributes = new RestRequest( Method.GET );
+            int entityTypeIdPerson = 15;
+            requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdPerson}&$expand=FieldType";
+            var personAttributesResponse = restClient.Execute( requestPersonAttributes );
+            var personAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( personAttributesResponse.Content );
+            this.PersonAttributeKeyLookup = personAttributes.ToDictionary( k => k.Key, v => v );
         }
 
         /// <summary>
