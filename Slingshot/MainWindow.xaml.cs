@@ -33,9 +33,18 @@ namespace Slingshot
         public Dictionary<Guid, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; private set; }
         public Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; private set; }
         public Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; private set; }
+        public Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; private set; }
+        public List<Rock.Client.Category> AttributeCategoryList { get; private set; }
         public List<Slingshot.Core.Model.PersonAttribute> SlingshotPersonAttributes { get; private set; }
         public List<Slingshot.Core.Model.Person> SlingshotPersonList { get; private set; }
         public List<Rock.Client.Campus> Campuses { get; private set; }
+
+        public struct RockConstants
+        {
+            public const int EntityTypeIdPerson = 15;
+            public const int EntityTypeIdAttribute = 49;
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -67,6 +76,7 @@ namespace Slingshot
             AddConnectionStatuses( restClient, slingshotPersonList );
             AddPersonTitles( restClient, slingshotPersonList );
             AddPersonSuffixes( restClient, slingshotPersonList );
+            AddPersonAttributeCategories( restClient, this.SlingshotPersonAttributes );
             AddPersonAttributes( restClient, this.SlingshotPersonAttributes );
 
             // load lookups again in case we added some new ones
@@ -354,24 +364,72 @@ namespace Slingshot
             }
         }
 
+        /// <summary>
+        /// Adds the person attribute categories.
+        /// </summary>
+        /// <param name="restClient">The rest client.</param>
+        /// <param name="slingshotPersonAttributes">The slingshot person attributes.</param>
+        private void AddPersonAttributeCategories( RestClient restClient, List<Slingshot.Core.Model.PersonAttribute> slingshotPersonAttributes )
+        {
+            foreach ( var slingshotAttributeCategoryName in slingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() )
+            {
+                if ( !this.AttributeCategoryList.Any( a => a.Name.Equals( slingshotAttributeCategoryName, StringComparison.OrdinalIgnoreCase ) ) )
+                {
+                    Rock.Client.Category attributeCategory = new Rock.Client.Category();
+                    attributeCategory.Name = slingshotAttributeCategoryName;
+                    attributeCategory.EntityTypeId = RockConstants.EntityTypeIdAttribute;
+                    attributeCategory.Guid = Guid.NewGuid();
+
+                    RestRequest restPostRequest = new RestRequest( "api/Categories", Method.POST );
+                    restPostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    restPostRequest.AddBody( attributeCategory );
+
+                    var restPostResponse = restClient.Post<int>( restPostRequest );
+                    attributeCategory.Id = restPostResponse.Data;
+                    this.AttributeCategoryList.Add( attributeCategory );
+                }
+            }
+        } 
+
+        /// <summary>
+        /// Adds the person attributes.
+        /// </summary>
+        /// <param name="restClient">The rest client.</param>
+        /// <param name="slingshotPersonAttributes">The slingshot person attributes.</param>
         private void AddPersonAttributes( RestClient restClient, List<Slingshot.Core.Model.PersonAttribute> slingshotPersonAttributes )
         {
+            // Add any Person Attributes to Rock that aren't in Rock yet
+            // NOTE: For now, just match by Attribute.Key. Don't try to do a customizable match
             foreach ( var slingshotPersonAttribute in slingshotPersonAttributes )
             {
-                var rockPersonAttribute = this.PersonAttributeKeyLookup.Select( a => a.Value ).FirstOrDefault( a => a.Key.Equals( slingshotPersonAttribute.Key, StringComparison.OrdinalIgnoreCase ) );
+                Rock.Client.Attribute rockPersonAttribute = this.PersonAttributeKeyLookup.Select( a => a.Value ).FirstOrDefault( a => a.Key.Equals( slingshotPersonAttribute.Key, StringComparison.OrdinalIgnoreCase ) );
                 if ( rockPersonAttribute == null )
                 {
-                    var attributeToAdd = new Rock.Client.Attribute();
+                    rockPersonAttribute = new Rock.Client.Attribute();
+                    rockPersonAttribute.Key = slingshotPersonAttribute.Key;
+                    rockPersonAttribute.Name = slingshotPersonAttribute.Name;
+                    rockPersonAttribute.Guid = Guid.NewGuid();
+                    rockPersonAttribute.EntityTypeId = RockConstants.EntityTypeIdPerson;
+                    rockPersonAttribute.FieldTypeId = this.FieldTypeLookup[slingshotPersonAttribute.FieldType].Id;
 
-                    // TODO:
+                    if ( !string.IsNullOrWhiteSpace( slingshotPersonAttribute.Category ) )
+                    {
+                        var attributeCategory = this.AttributeCategoryList.FirstOrDefault( a => a.Name.Equals( slingshotPersonAttribute.Category, StringComparison.OrdinalIgnoreCase ) );
+                        if ( attributeCategory != null )
+                        {
+                            rockPersonAttribute.Categories = new List<Rock.Client.Category>();
+                            rockPersonAttribute.Categories.Add( attributeCategory );
+                        }
+                    }
 
-                    /*
+
                     RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
                     restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
-                    restAttributePostRequest.AddBody( attributeToAdd );
+                    restAttributePostRequest.AddBody( rockPersonAttribute );
 
-                    var restAttributePostResponse = restClient.Post( restAttributePostRequest );
-                    */
+                    var restAttributePostResponse = restClient.Post<int>( restAttributePostRequest );
+
+
                 }
                 else
                 {
@@ -516,27 +574,37 @@ namespace Slingshot
             this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() );
             this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
 
+            // Family GroupTypeRoles
             RestRequest requestFamilyGroupType = new RestRequest( Method.GET );
             requestFamilyGroupType.Resource = $"api/GroupTypes?$filter=Guid eq guid'{Rock.Client.SystemGuid.GroupType.GROUPTYPE_FAMILY}'&$expand=Roles";
-
             var familyGroupTypeResponse = restClient.Execute( requestFamilyGroupType );
-
             this.FamilyRoles = JsonConvert.DeserializeObject<List<Rock.Client.GroupType>>( familyGroupTypeResponse.Content ).FirstOrDefault().Roles.ToDictionary( k => k.Guid, v => v );
 
+            // Campuses
             RestRequest requestCampuses = new RestRequest( Method.GET );
             requestCampuses.Resource = "api/Campuses";
             var campusResponse = restClient.Execute( requestCampuses );
-
             this.Campuses = JsonConvert.DeserializeObject<List<Rock.Client.Campus>>( campusResponse.Content );
 
-            //PersonAttributeKeyIdLookup
-
+            // Person Attributes
             RestRequest requestPersonAttributes = new RestRequest( Method.GET );
-            int entityTypeIdPerson = 15;
-            requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdPerson}&$expand=FieldType";
+            requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {RockConstants.EntityTypeIdPerson}&$expand=FieldType";
             var personAttributesResponse = restClient.Execute( requestPersonAttributes );
             var personAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( personAttributesResponse.Content );
             this.PersonAttributeKeyLookup = personAttributes.ToDictionary( k => k.Key, v => v );
+
+            // Attribute Categories
+            RestRequest requestAttributeCategories = new RestRequest( Method.GET );
+            requestAttributeCategories.Resource = $"api/Categories?$filter=EntityTypeId eq {RockConstants.EntityTypeIdAttribute}";
+            var requestAttributeCategoriesResponse = restClient.Execute( requestAttributeCategories );
+            this.AttributeCategoryList = JsonConvert.DeserializeObject<List<Rock.Client.Category>>( requestAttributeCategoriesResponse.Content );
+
+            // FieldTypes
+            RestRequest requestFieldTypes = new RestRequest( Method.GET );
+            requestFieldTypes.Resource = "api/FieldTypes";
+            var requestFieldTypesResponse = restClient.Execute( requestFieldTypes );
+            var fieldTypes = JsonConvert.DeserializeObject<List<Rock.Client.FieldType>>( requestFieldTypesResponse.Content );
+            this.FieldTypeLookup = fieldTypes.ToDictionary( k => k.Class, v => v );
         }
 
         /// <summary>
