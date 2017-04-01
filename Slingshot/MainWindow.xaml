@@ -5,12 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left" Margin="23,106,0,0" VerticalAlignment="Top" Width="75" Click="btnGo_Click"/>
-        <Label x:Name="lblSlingshotFile" Content="FileName" HorizontalAlignment="Left" Margin="19,47,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="23,22,0,0" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
-        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="23,73,0,0" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export.slingshot" VerticalAlignment="Top" Width="477"/>
+        Title="MainWindow" Height="421.552" Width="525">
+    <StackPanel VerticalAlignment="Top" Margin="8"  >
+        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export.slingshot" VerticalAlignment="Top" Width="477"/>
+        <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="4" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
+        <Label x:Name="lblSlingshotFile" Content="FileName" HorizontalAlignment="Left"  VerticalAlignment="Top" Margin="4"/>
+        <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="75" Click="btnGo_Click" Margin="4,4,0,4"/>
+ 
+        <TextBlock x:Name="tbResults" HorizontalAlignment="Left" TextWrapping="Wrap" xml:space="preserve"  VerticalAlignment="Top" Margin="4" FontFamily="Consolas" FontSize="10" />
 
-    </Grid>
+
+    </StackPanel>
 </Window>
