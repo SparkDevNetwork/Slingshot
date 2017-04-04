@@ -98,6 +98,33 @@ namespace Slingshot.CCB
                 }
             }
 
+            // export group types
+            if ( ExportGroupTypes.Count > 0 )
+            {
+                exportWorker.ReportProgress( 54, $"Exporting Groups..." );
+
+                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince );
+
+                if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    exportWorker.ReportProgress( 54, $"Error exporting groups: {CcbApi.ErrorMessage}" );
+                }
+            }
+
+            // export attendance 
+            if ( exportSettings.ExportAttendance )
+            {
+                exportWorker.ReportProgress( 75, $"Exporting Attendance..." );
+
+                CcbApi.ExportAttendance( exportSettings.ModifiedSince );
+
+
+                if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    exportWorker.ReportProgress( 75, $"Error exporting attendance: {CcbApi.ErrorMessage}" );
+                }
+            }
+
             // finalize the package
             ImportPackage.FinalizePackage( "ccb-export.slingshot" );
 
@@ -107,6 +134,11 @@ namespace Slingshot.CCB
 
         #endregion
 
+        /// <summary>
+        /// Handles the Tick event of the _apiUpdateTimer control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         private void _apiUpdateTimer_Tick( object sender, EventArgs e )
         {
             // update the api stats
@@ -115,6 +147,11 @@ namespace Slingshot.CCB
             _apiUpdateTimer.Stop();
         }
 
+        /// <summary>
+        /// Handles the Loaded event of the Window control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void Window_Loaded( object sender, RoutedEventArgs e )
         {
             lblApiUsage.Text = $"API Usage: {CcbApi.Counter} / {CcbApi.DailyLimit}";
@@ -132,6 +169,11 @@ namespace Slingshot.CCB
             txtImportCutOff.Text = DateTime.Now.ToShortDateString(); // remove before flight (sets today's date as the modified since)
         }
 
+        /// <summary>
+        /// Handles the Click event of the btnDownloadPackage control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
             // launch our background export
@@ -139,7 +181,8 @@ namespace Slingshot.CCB
             {
                 ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
-                ExportIndividuals = cbIndividuals.IsChecked.Value
+                ExportIndividuals = cbIndividuals.IsChecked.Value,
+                ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
@@ -176,6 +219,8 @@ namespace Slingshot.CCB
         public bool ExportIndividuals { get; set; } = true;
 
         public bool ExportContributions { get; set; } = true;
+
+        public bool ExportAttendance { get; set; } = true;
 
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
     }

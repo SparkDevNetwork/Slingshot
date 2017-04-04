@@ -48,6 +48,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Models\Attendance.cs" />
+    <Compile Include="Models\Schedule.cs" />
+    <Compile Include="Models\Location.cs" />
+    <Compile Include="Models\GroupMember.cs" />
+    <Compile Include="Models\Group.cs" />
     <Compile Include="Models\GroupType.cs" />
     <Compile Include="Models\FinancialTransactionDetail.cs" />
     <Compile Include="Models\FinancialTransaction.cs" />

@@ -41,7 +41,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 person.Email = inputPerson.Element( "email" )?.Value;
 
                 if ( inputPerson.Element( "receive_email_from_church" )?.Value == "false" ) {
-                    person.EmailPreference = 1; // no mass emails
+                    person.EmailPreference = EmailPreference.NoMassEmails; // no mass emails
                 }
 
                 // phones
@@ -175,7 +175,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 // dates
                 person.Birthdate = inputPerson.Element( "birthday" )?.Value.AsDateTime();
-                person.Anniversay = inputPerson.Element( "anniversary" )?.Value.AsDateTime();
+                person.AnniversaryDate = inputPerson.Element( "anniversary" )?.Value.AsDateTime();
                 person.CreatedDateTime = inputPerson.Element( "created" )?.Value.AsDateTime();
                 person.ModifiedDateTime = inputPerson.Element( "modified" )?.Value.AsDateTime();
 

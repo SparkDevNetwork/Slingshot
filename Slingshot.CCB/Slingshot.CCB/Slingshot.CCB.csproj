@@ -68,6 +68,8 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Utilities\CcbApi.cs" />
+    <Compile Include="Utilities\Translators\CcbAttendance.cs" />
+    <Compile Include="Utilities\Translators\CcbGroup.cs" />
     <Compile Include="Utilities\Translators\CcbFinancialBatch.cs" />
     <Compile Include="Utilities\Translators\CcbFinancialTransactionDetail.cs" />
     <Compile Include="Utilities\Translators\CcbFinancialTransaction.cs" />

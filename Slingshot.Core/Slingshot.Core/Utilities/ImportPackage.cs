@@ -96,6 +96,14 @@ namespace Slingshot.Core.Utilities
                         textWriters.Add( financialTransactionDetail.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
 
                     }
+
+                    // if model is for group create related writers
+                    if ( importModel is Group )
+                    {
+                        // group member
+                        var groupMember = new GroupMember();
+                        textWriters.Add( groupMember.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{groupMember.GetFileName()}" ) );
+                    }
                 }
 
                 var txtWriter = textWriters[typeName];
@@ -144,6 +152,16 @@ namespace Slingshot.Core.Utilities
                         var newFinancialTransactionDetailCsvWriter = new CsvWriter( textWriters[financialTransactionDetail.GetType().Name] );
                         csvWriters.Add( financialTransactionDetail.GetType().Name, newFinancialTransactionDetailCsvWriter );
                         newFinancialTransactionDetailCsvWriter.WriteHeader<FinancialTransactionDetail>();
+                    }
+
+                    // if model is for group create related writers
+                    if ( importModel is Group )
+                    {
+                        // group member
+                        var groupMember = new GroupMember();
+                        var newGroupMemberCsvWriter = new CsvWriter( textWriters[groupMember.GetType().Name] );
+                        csvWriters.Add( groupMember.GetType().Name, newGroupMemberCsvWriter );
+                        newGroupMemberCsvWriter.WriteHeader<GroupMember>();
                     }
                 }
 
@@ -211,6 +229,22 @@ namespace Slingshot.Core.Utilities
                             {
                                 csvFinancialTransactionDetailWriter.WriteRecord<FinancialTransactionDetail>( transactionDetail );
                             }
+                        }
+                    }
+                }
+
+                // if group model write out any related models
+                if ( importModel is Group )
+                {
+                    // group members
+                    var groupMember = new GroupMember();
+                    var csvGroupMemberWriter = csvWriters[groupMember.GetType().Name];
+
+                    if ( csvGroupMemberWriter != null )
+                    {
+                        foreach ( var groupMemberItem in ( ( Group ) importModel ).GroupMembers )
+                        {
+                            csvGroupMemberWriter.WriteRecord<GroupMember>( groupMemberItem );
                         }
                     }
                 }

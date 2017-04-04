@@ -58,6 +58,7 @@
                 <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="Individuals" Margin="0,10,0,10" />
                 <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Contributions" Margin="90,10,0,10" />
                 <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="195,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
+                <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Attendance" Margin="265,10,0,10" />
 
                 <Label Content="Group Types To Export" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
                 <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="5" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3">

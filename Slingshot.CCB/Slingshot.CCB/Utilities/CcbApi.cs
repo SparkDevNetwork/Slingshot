@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -107,8 +108,10 @@ namespace Slingshot.CCB.Utilities
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
         private const string API_FINANCIAL_BATCHES = "/api.php?srv=batch_profiles_in_date_range&date_start={startDate}&date_end={endDate}";
         private const string API_GROUP_TYPES = "/api.php?srv=group_type_list";
-        private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true";
-
+        private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={perPage}";
+        private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
+        private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_ATTENDANCE = "/api.php?srv=attendance_profiles&start_date={startDate}&end_date={endDate}";
         #endregion
 
         /// <summary>
@@ -179,13 +182,117 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         /// <param name="selectedGroupTypes">The selected group types.</param>
         /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="peoplePerPage">The people per page.</param>
-        public static void ExportGroups( List<int> selectedGroupTypes, DateTime modifiedSince, int peoplePerPage = 500 )
-        {
+        /// <param name="perPage">The people per page.</param>
+        public static void ExportGroups( List<int> selectedGroupTypes, DateTime modifiedSince, int perPage = 500 )
+        {            
             // write out the group types 
             WriteGroupTypes( selectedGroupTypes );
 
+            // write departments
+            ExportDeparments();
+
             // get groups
+            try
+            {
+                int currentPage = 1;
+                int loopCounter = 0;
+                bool moreExist = true;
+                while ( moreExist )
+                {
+                    var request = new RestRequest( API_GROUPS, Method.GET );
+                    request.AddUrlSegment( "modifiedSince", modifiedSince.ToString( "yyyy-MM-dd" ) );
+                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                    request.AddUrlSegment( "perPage", perPage.ToString() );
+
+                    var response = _client.Execute( request );
+
+                    XDocument xdoc = XDocument.Parse( response.Content );
+
+                    var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
+
+                    if ( groups != null )
+                    {
+                        var returnCount = groups.Attribute( "count" )?.Value.AsIntegerOrNull();
+
+                        if ( returnCount.HasValue )
+                        {
+                            foreach ( var groupNode in groups.Elements() )
+                            {
+                                // write out the group if its type was selected for export
+                                var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
+                                if ( selectedGroupTypes.Contains( groupTypeId ) )
+                                {
+                                    var importGroups = CcbGroup.Translate( groupNode );
+
+                                    if ( importGroups != null )
+                                    {
+                                        foreach ( var group in importGroups )
+                                        {
+                                            ImportPackage.WriteToPackage( group );
+                                        }
+                                    }
+                                }
+                            }
+
+                            if ( returnCount != perPage )
+                            {
+                                moreExist = false;
+                            }
+                            else
+                            {
+                                currentPage++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        moreExist = false;
+                    }
+
+                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    if ( loopCounter > loopThreshold )
+                    {
+                        break;
+                    }
+                    loopCounter++;
+                }
+
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+
+        }
+
+        /// <summary>
+        /// Exports the deparments.
+        /// </summary>
+        private static void ExportDeparments()
+        {
+            try
+            {
+                var request = new RestRequest( API_DEPARTMENTS, Method.GET );
+                var response = _client.Execute( request );
+
+                XDocument xdocCustomFields = XDocument.Parse( response.Content );
+
+                var sourceDepartments = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Elements( "items" );
+
+                foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
+                {
+                    var group = new Group();
+                    group.Id = sourceDepartment.Element( "id" ).Value.AsInteger();
+                    group.Name = sourceDepartment.Element( "name" )?.Value;
+                    group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
+
+                    ImportPackage.WriteToPackage( group );
+                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
         }
 
         /// <summary>
@@ -513,6 +620,218 @@ namespace Slingshot.CCB.Utilities
             }
         }
 
+
+        /// <summary>
+        /// Exports the attendance.
+        /// </summary>
+        public static void ExportAttendance( DateTime modifiedSince )
+        {
+            // first we need to get the 'events' so we can get the group, location and schedule information
+            // since the events have a different modification date than attendance we need to load all of the
+            // events so we have the details we need for the attendance 
+            var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1), 500 );
+
+            // add location ids to the location fields (CCB doesn't have location ids) instead of randomly creating ids (that would not be consistant across exports)
+            // we'll use a hash of the street name
+            foreach ( var specificAddress in eventDetails.Select(e => new { e.LocationStreetAddress, e.LocationName } ).Distinct() )
+            {
+                int locationId = 1;
+
+                if ( specificAddress.LocationName.IsNotNullOrWhitespace() || specificAddress.LocationStreetAddress.IsNotNullOrWhitespace() )
+                {
+                    MD5 md5Hasher = MD5.Create();
+                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( specificAddress.LocationName + specificAddress.LocationStreetAddress ) );
+                    locationId = Math.Abs( BitConverter.ToInt32( hashed, 0 )); // used abs to ensure positive number
+                }
+
+                foreach ( var location in eventDetails.Where(e => e.LocationStreetAddress == specificAddress.LocationStreetAddress && e.LocationName == specificAddress.LocationName ) )
+                {
+                    location.LocationId = locationId;
+                }
+            }
+
+            // add schedule ids (CCB didn't have these either) instead of randomly creating ids (that would not be consistant across exports)
+            // we'll use a hash of the schedule name
+            foreach ( var specificSchedule in eventDetails.Select( e => e.ScheduleName ).Distinct() )
+            {
+                int scheduleId = 1;
+
+                if ( specificSchedule.IsNotNullOrWhitespace() )
+                {
+                    MD5 md5Hasher = MD5.Create();
+                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( specificSchedule ) );
+                    scheduleId = Math.Abs(BitConverter.ToInt32( hashed, 0 )); // used abs to ensure positive number
+                }
+
+                foreach ( var location in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
+                {
+                    location.ScheduleId = scheduleId;
+                }
+            }
+
+            // export locations, same thing with location ids we'll hash the street address
+            foreach(var location in eventDetails.Select(e => new { e.LocationName, e.LocationStreetAddress, e.LocationCity, e.LocationState, e.LocationZip, e.LocationId} ).Distinct() )
+            {
+                ImportPackage.WriteToPackage( new Location()
+                {
+                    Id = location.LocationId,
+                    Name = location.LocationName,
+                    Street1 = location.LocationStreetAddress,
+                    City = location.LocationCity,
+                    State = location.LocationState,
+                    PostalCode = location.LocationZip
+                } );
+            }
+
+            // export schedules
+            foreach( var schedule in eventDetails.Select( s => new { s.ScheduleId, s.ScheduleName } ).Distinct() )
+            {
+                ImportPackage.WriteToPackage( new Schedule()
+                {
+                    Id = schedule.ScheduleId,
+                    Name = schedule.ScheduleName
+                } );
+            }
+
+            // ok now that we have our events we can actually get the attendance data
+            GetAttendance( modifiedSince, eventDetails );
+        }
+
+
+        private static void GetAttendance(DateTime modifiedSince, List<EventDetail> eventDetails )
+        {
+            // we'll make an api call for each month until the modifiedSince date 
+            var today = DateTime.Now;
+            var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
+
+            try
+            {
+                for ( int i = 0; i < numberOfMonths; i++ )
+                {
+                    DateTime referenceDate = today.AddMonths( ( ( numberOfMonths - i ) - 1 ) * -1 );
+                    DateTime startDate = new DateTime( referenceDate.Year, referenceDate.Month, 1 );
+                    DateTime endDate = new DateTime( referenceDate.Year, referenceDate.Month, DateTime.DaysInMonth( referenceDate.Year, referenceDate.Month ) );
+
+                    // if it's the first instance set start date to the modifiedSince date
+                    if ( i == 0 )
+                    {
+                        startDate = modifiedSince;
+                    }
+
+                    // if it's the last time through set the end dat to today's date
+                    if ( i == numberOfMonths - 1 )
+                    {
+                        endDate = today;
+                    }
+
+                    var request = new RestRequest( API_ATTENDANCE, Method.GET );
+                    request.AddUrlSegment( "startDate", startDate.ToString( "yyyy-MM-dd" ) );
+                    request.AddUrlSegment( "endDate", endDate.ToString( "yyyy-MM-dd" ) );
+
+                    var response = _client.Execute( request );
+
+                    XDocument xdoc = XDocument.Parse( response.Content );
+
+                    var sourceEvents = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" ).Elements( "event" );
+
+                    foreach ( var sourceEvent in sourceEvents )
+                    {
+                        var attendances = CcbAttendance.Translate( sourceEvent, eventDetails );
+                                             
+                        if ( attendances != null )
+                        {
+                            foreach ( var attendance in attendances )
+                            {
+                                ImportPackage.WriteToPackage( attendance );
+                            }
+                        }
+                    }
+                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Gets the attendance events.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <param name="itemsPerPage">The items per page.</param>
+        /// <returns></returns>
+        private static List<EventDetail> GetAttendanceEvents(DateTime modifiedSince, int itemsPerPage )
+        {
+            List<EventDetail> eventDetails = new List<EventDetail>();
+
+            int currentPage = 1;
+            int loopCounter = 0;
+            bool moreItemsExist = true;
+            
+            try
+            {
+                while ( moreItemsExist )
+                {
+                    var request = new RestRequest( API_EVENTS, Method.GET );
+                    request.AddUrlSegment( "modifiedSince", modifiedSince.ToString( "yyyy-MM-dd" ) );
+                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                    request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
+
+                    var response = _client.Execute( request );
+
+                    if ( response.StatusCode == System.Net.HttpStatusCode.OK )
+                    {
+                        XDocument xdoc = XDocument.Parse( response.Content );
+
+                        var returnCount = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" )?.Attribute( "count" )?.Value.AsIntegerOrNull();
+
+                        var events = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element("events")?.Elements("event");
+
+                        foreach( var eventItem in events )
+                        {
+                            var eventDetail = new EventDetail();
+                            eventDetails.Add( eventDetail );
+
+                            eventDetail.EventId = eventItem.Attribute( "id" ).Value.AsInteger();
+                            eventDetail.GroupId = eventItem.Element( "group" ).Attribute( "id" ).Value.AsInteger();
+                            eventDetail.ScheduleName = eventItem.Element( "recurrence_description" ).Value;
+                            
+                            if (eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements){
+                                eventDetail.LocationName = eventItem.Element( "location" ).Element( "name" ).Value;
+                                eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value;
+                                eventDetail.LocationCity = eventItem.Element( "location" ).Element( "city" ).Value;
+                                eventDetail.LocationState = eventItem.Element( "location" ).Element( "state" ).Value;
+                                eventDetail.LocationZip = eventItem.Element( "location" ).Element( "zip" ).Value;
+                            }
+                        }
+
+                        if ( returnCount != itemsPerPage )
+                        {
+                            moreItemsExist = false;
+                        }
+                        else
+                        {
+                            currentPage++;
+                        }
+                    }
+
+                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    if ( loopCounter > loopThreshold )
+                    {
+                        break;
+                    }
+                    loopCounter++;
+                }
+}
+            catch (Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+
+            
+            return eventDetails;
+        }
+
         /// <summary>
         /// Writes the group types.
         /// </summary>
@@ -522,13 +841,13 @@ namespace Slingshot.CCB.Utilities
             // hardcode the department and director group types as these are baked into the box
             ImportPackage.WriteToPackage( new GroupType()
             {
-                Id = 0,
+                Id = 999999,
                 Name = "Department"
             } );
 
             ImportPackage.WriteToPackage( new GroupType()
             {
-                Id = 0,
+                Id = 999998,
                 Name = "Director"
             } );
 
@@ -543,5 +862,91 @@ namespace Slingshot.CCB.Utilities
                 } );
             }
         }
+    }
+
+    /// <summary>
+    /// Temporary class for assembling attendance information
+    /// </summary>
+    public class EventDetail
+    {
+        /// <summary>
+        /// Gets or sets the event identifier.
+        /// </summary>
+        /// <value>
+        /// The event identifier.
+        /// </value>
+        public int EventId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the schedule identifier.
+        /// </summary>
+        /// <value>
+        /// The schedule identifier.
+        /// </value>
+        public int ScheduleId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the schedule.
+        /// </summary>
+        /// <value>
+        /// The name of the schedule.
+        /// </value>
+        public string ScheduleName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group identifier.
+        /// </summary>
+        /// <value>
+        /// The group identifier.
+        /// </value>
+        public int GroupId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the location identifier.
+        /// </summary>
+        /// <value>
+        /// The location identifier.
+        /// </value>
+        public int LocationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the location.
+        /// </summary>
+        /// <value>
+        /// The name of the location.
+        /// </value>
+        public string LocationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the location street address.
+        /// </summary>
+        /// <value>
+        /// The location street address.
+        /// </value>
+        public string LocationStreetAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the location city.
+        /// </summary>
+        /// <value>
+        /// The location city.
+        /// </value>
+        public string LocationCity { get; set; }
+
+        /// <summary>
+        /// Gets or sets the state of the location.
+        /// </summary>
+        /// <value>
+        /// The state of the location.
+        /// </value>
+        public string LocationState { get; set; }
+
+        /// <summary>
+        /// Gets or sets the location zip.
+        /// </summary>
+        /// <value>
+        /// The location zip.
+        /// </value>
+        public string LocationZip { get; set; }
     }
 }

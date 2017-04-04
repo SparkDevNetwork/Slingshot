@@ -123,6 +123,7 @@ namespace Slingshot.Core.Model
 
         /// <summary>
         /// Gets or sets the birthdate.
+        /// Magic Year of 9999
         /// </summary>
         /// <value>
         /// The birthdate.
@@ -130,12 +131,17 @@ namespace Slingshot.Core.Model
         public DateTime? Birthdate { get; set; }
 
         /// <summary>
+        /// Set the BirthDate.Year to this if only Month and Day are specified
+        /// </summary>
+        public readonly int BirthdateNoYearMagicYear = 9999;
+
+        /// <summary>
         /// Gets or sets the anniversay.
         /// </summary>
         /// <value>
         /// The anniversay.
         /// </value>
-        public DateTime? Anniversay { get; set; }
+        public DateTime? AnniversaryDate { get; set; }
 
         /// <summary>
         /// Gets or sets the record status.
@@ -167,7 +173,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The email preference.
         /// </value>
-        public int EmailPreference { get; set; }
+        public EmailPreference EmailPreference { get; set; }
 
         /// <summary>
         /// Gets or sets the created date time.
@@ -249,13 +255,28 @@ namespace Slingshot.Core.Model
         /// </value>
         public bool? GiveIndividually { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is deceased.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is deceased; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsDeceased { get; set; }
+
         public string GetFileName()
         {
             return "person.csv";
         }
     }
 
-    public enum FamilyRole
+    public enum EmailPreference
+    {
+        EmailAllowed,
+        NoMassEmails,
+        DoNotEmail
+    }
+
+public enum FamilyRole
     {
         Adult,
         Child
