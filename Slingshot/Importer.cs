@@ -8,7 +8,7 @@ using CsvHelper;
 using Newtonsoft.Json;
 using RestSharp;
 using Rock;
- 
+
 namespace Slingshot
 {
     /// <summary>
@@ -32,7 +32,7 @@ namespace Slingshot
         public Dictionary<string, Rock.Client.DefinedValue> PersonTitleValues { get; private set; }
         public Dictionary<string, Rock.Client.DefinedValue> PersonSuffixValues { get; private set; }
         public Dictionary<Guid, Rock.Client.DefinedValue> PersonMaritalStatusValues { get; private set; }
-        public Dictionary<Guid, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; private set; }
+        public Dictionary<string, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; private set; }
         public Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; private set; }
         public Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; private set; }
         public Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; private set; }
@@ -85,6 +85,7 @@ namespace Slingshot
             AddConnectionStatuses( restClient, slingshotPersonList );
             AddPersonTitles( restClient, slingshotPersonList );
             AddPersonSuffixes( restClient, slingshotPersonList );
+            AddPhoneTypes( restClient, slingshotPersonList );
             AddPersonAttributeCategories( restClient, this.SlingshotPersonAttributes );
             AddPersonAttributes( restClient, this.SlingshotPersonAttributes );
 
@@ -227,6 +228,66 @@ namespace Slingshot
                 personImport.Note = slingshotPerson.Note;
                 personImport.GivingIndividually = slingshotPerson.GiveIndividually ?? false;
 
+                // Phone Numbers
+                personImport.PhoneNumbers = new List<Rock.BulkUpdate.PhoneNumberImport>();
+                foreach ( var slingshotPersonPhone in slingshotPerson.PhoneNumbers )
+                {
+                    var phoneNumberImport = new Rock.BulkUpdate.PhoneNumberImport();
+                    phoneNumberImport.NumberTypeValueId = this.PhoneNumberTypeValues[slingshotPersonPhone.PhoneType].Id;
+                    phoneNumberImport.Number = slingshotPersonPhone.PhoneNumber;
+                    phoneNumberImport.IsMessagingEnabled = slingshotPersonPhone.IsMessagingEnabled ?? false;
+                    phoneNumberImport.IsUnlisted = slingshotPersonPhone.IsUnlisted ?? false;
+                    personImport.PhoneNumbers.Add( phoneNumberImport );
+                }
+
+                // Addresses
+                personImport.Addresses = new List<Rock.BulkUpdate.AddressImport>();
+                foreach ( var slingshotPersonAddress in slingshotPerson.Addresses )
+                {
+                    if ( !string.IsNullOrEmpty( slingshotPersonAddress.Street1 ) )
+                    {
+                        int? groupLocationTypeValueId = null;
+                        switch ( slingshotPersonAddress.AddressType )
+                        {
+                            case Core.Model.AddressType.Home:
+                                groupLocationTypeValueId = this.GroupLocationTypeValues[Rock.Client.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_HOME.AsGuid()].Id;
+                                break;
+                            case Core.Model.AddressType.Previous:
+                                groupLocationTypeValueId = this.GroupLocationTypeValues[Rock.Client.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_PREVIOUS.AsGuid()].Id;
+                                break;
+                            case Core.Model.AddressType.Work:
+                                groupLocationTypeValueId = this.GroupLocationTypeValues[Rock.Client.SystemGuid.DefinedValue.GROUP_LOCATION_TYPE_WORK.AsGuid()].Id;
+                                break;
+                        }
+
+                        if ( groupLocationTypeValueId.HasValue )
+                        {
+                            var addressImport = new Rock.BulkUpdate.AddressImport()
+                            {
+                                GroupLocationTypeValueId = groupLocationTypeValueId.Value,
+                                IsMailingLocation = slingshotPersonAddress.AddressType == Core.Model.AddressType.Home,
+                                IsMappedLocation = slingshotPersonAddress.AddressType == Core.Model.AddressType.Home,
+                                Street1 = slingshotPersonAddress.Street1,
+                                Street2 = slingshotPersonAddress.Street2,
+                                City = slingshotPersonAddress.City,
+                                State = slingshotPersonAddress.State,
+                                Country = slingshotPersonAddress.Country,
+                                PostalCode = slingshotPersonAddress.PostalCode
+                            };
+
+                            // TODO, ask if Latitude,Longitude need to be imported, and/or just like Rock geocode it
+
+                            personImport.Addresses.Add( addressImport );
+                        }
+                        else
+                        {
+                            throw new Exception( $"Unexpected Address Type: {slingshotPersonAddress.AddressType}" );
+                        }
+                    }
+                }
+
+
+                // Attribute Values
                 personImport.AttributeValues = new List<Rock.BulkUpdate.AttributeValueImport>();
                 foreach ( var slingshotPersonAttributeValue in slingshotPerson.Attributes )
                 {
@@ -258,6 +319,11 @@ namespace Slingshot
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
                 bwWorker.ReportProgress( progress++, this.Results );
+            }
+            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
+            {
+                // either the endpoint doesn't exist, or the payload was too big 
+                bwWorker.ReportProgress( progress++, $"Error posting to api/PersonImport. Verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
             }
             else
             {
@@ -394,6 +460,16 @@ namespace Slingshot
         }
 
         /// <summary>
+        /// Adds the phone types.
+        /// </summary>
+        /// <param name="restClient">The rest client.</param>
+        /// <param name="slingshotPersonList">The slingshot person list.</param>
+        private void AddPhoneTypes( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        {
+            AddDefinedValues( restClient, slingshotPersonList.SelectMany( a => a.PhoneNumbers ).Select( a => a.PhoneType ).Distinct().ToList(), this.PhoneNumberTypeValues );
+        }
+
+        /// <summary>
         /// Adds the defined values.
         /// </summary>
         /// <param name="restClient">The rest client.</param>
@@ -496,7 +572,7 @@ namespace Slingshot
             this.PersonTitleValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_TITLE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
             this.PersonSuffixValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_SUFFIX.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
             this.PersonMaritalStatusValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_MARITAL_STATUS.AsGuid() );
-            this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() );
+            this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
             this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
 
             // Family GroupTypeRoles
