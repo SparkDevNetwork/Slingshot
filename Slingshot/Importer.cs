@@ -25,31 +25,46 @@ namespace Slingshot
             SlingshotFileName = slingshotFileName;
         }
 
-        public Dictionary<Guid, Rock.Client.GroupTypeRole> FamilyRoles { get; private set; }
-        public Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordTypeValues { get; private set; }
-        public Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordStatusValues { get; private set; }
-        public Dictionary<string, Rock.Client.DefinedValue> PersonConnectionStatusValues { get; private set; }
-        public Dictionary<string, Rock.Client.DefinedValue> PersonTitleValues { get; private set; }
-        public Dictionary<string, Rock.Client.DefinedValue> PersonSuffixValues { get; private set; }
-        public Dictionary<Guid, Rock.Client.DefinedValue> PersonMaritalStatusValues { get; private set; }
-        public Dictionary<string, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; private set; }
-        public Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; private set; }
-        public Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; private set; }
-        public Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; private set; }
-        public List<Rock.Client.Category> AttributeCategoryList { get; private set; }
-        public List<Slingshot.Core.Model.PersonAttribute> SlingshotPersonAttributes { get; private set; }
-        public List<Slingshot.Core.Model.Person> SlingshotPersonList { get; private set; }
-        public List<Rock.Client.Campus> Campuses { get; private set; }
+        /* Person Related */
+        private Dictionary<Guid, Rock.Client.GroupTypeRole> FamilyRoles { get; set; }
+        private Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordTypeValues { get; set; }
+        private Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordStatusValues { get; set; }
+        private Dictionary<string, Rock.Client.DefinedValue> PersonConnectionStatusValues { get; set; }
+        private Dictionary<string, Rock.Client.DefinedValue> PersonTitleValues { get; set; }
+        private Dictionary<string, Rock.Client.DefinedValue> PersonSuffixValues { get; set; }
+        private Dictionary<Guid, Rock.Client.DefinedValue> PersonMaritalStatusValues { get; set; }
+        private Dictionary<string, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; set; }
+        private Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; set; }
+        private Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; set; }
+        private List<Slingshot.Core.Model.PersonAttribute> SlingshotPersonAttributes { get; set; }
+        private List<Slingshot.Core.Model.Person> SlingshotPersonList { get; set; }
 
+        /* Core  */
+        private List<Rock.Client.Campus> Campuses { get; set; }
+        private Dictionary<Guid, Rock.Client.EntityType> EntityTypeLookup { get; set; }
+        private Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; set; }
+        private List<Rock.Client.Category> AttributeCategoryList { get; set; }
+
+        /* Attendance */
+        private List<Slingshot.Core.Model.Attendance> SlingshotAttendanceList { get; set; }
+        private List<Slingshot.Core.Model.Group> SlingshotGroupList { get; set; }
+        private List<Slingshot.Core.Model.Location> SlingshotLocationList { get; set; }
+        private List<Slingshot.Core.Model.Schedule> SlingshotScheduleList { get; set; }
+        //public List<Slingshot.Core.Model.Device> SlingshotDeviceList { get; set; }
+
+
+        /* */
         private string SlingshotFileName { get; set; }
-        public string Results { get; private set; }
 
-        public struct RockConstants
-        {
-            public const int EntityTypeIdPerson = 15;
-            public const int EntityTypeIdAttribute = 49;
-        }
+        /// <summary>
+        /// Gets or sets the results.
+        /// </summary>
+        /// <value>
+        /// The results.
+        /// </value>
+        public string Results { get; set; }
 
+        private RestClient RockRestClient { get; set; }
 
         /// <summary>
         /// Handles the DoWork event of the BackgroundWorker control.
@@ -66,36 +81,80 @@ namespace Slingshot
             BackgroundWorker bwWorker = sender as BackgroundWorker;
 
             int progress = 0;
-            bwWorker.ReportProgress( progress++, "Loading Rock Lookups..." );
-            // Load Rock Lookups
-            LoadLookups();
-
+            
             // Load Slingshot Models from .slingshot
             bwWorker.ReportProgress( progress++, "Loading Slingshot Models..." );
             LoadSlingshotLists();
 
-            var slingshotPersonList = this.SlingshotPersonList;
+            // Load Rock Lookups
+            bwWorker.ReportProgress( progress++, "Loading Rock Lookups..." );
+            LoadLookups();
 
-            var restClient = this.GetRockRestClient();
+            this.RockRestClient = this.GetRockRestClient();
 
             bwWorker.ReportProgress( 0, "Updating Rock Lookups..." );
 
             // Populate Rock with stuff that comes from the Slingshot file
-            AddCampuses( restClient, slingshotPersonList );
-            AddConnectionStatuses( restClient, slingshotPersonList );
-            AddPersonTitles( restClient, slingshotPersonList );
-            AddPersonSuffixes( restClient, slingshotPersonList );
-            AddPhoneTypes( restClient, slingshotPersonList );
-            AddPersonAttributeCategories( restClient, this.SlingshotPersonAttributes );
-            AddPersonAttributes( restClient, this.SlingshotPersonAttributes );
+            AddCampuses();
+            AddConnectionStatuses();
+            AddPersonTitles();
+            AddPersonSuffixes();
+            AddPhoneTypes();
+            AddPersonAttributeCategories();
+            AddPersonAttributes();
 
             // load lookups again in case we added some new ones
             bwWorker.ReportProgress( progress++, "Reloading Rock Lookups..." );
             LoadLookups();
 
             bwWorker.ReportProgress( progress++, "Preparing PersonImport..." );
+            List<Rock.BulkUpdate.PersonImport> personImportList = GetPersonImportList();
+
+            RestRequest restPersonImportRequest = new RestRequest( "api/PersonImport", Method.POST );
+            restPersonImportRequest.RequestFormat = RestSharp.DataFormat.Json;
+
+            var personImportListJSON = personImportList.ToJson();
+            int postSizeMB = personImportListJSON.Length / 1024 / 1024;
+
+            restPersonImportRequest.AddBody( personImportList );
+            const int fiveMinutesMS = ( 1000 * 60 ) * 5;
+            restPersonImportRequest.Timeout = fiveMinutesMS;
+
+            bwWorker.ReportProgress( progress++, "Sending Person Import to Rock..." );
+
+            // NOTE!: WebConfig needs to be configured to allow posts larger than 10MB
+
+            var importResponse = this.RockRestClient.Post( restPersonImportRequest );
+
+            Results = importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                bwWorker.ReportProgress( progress++, this.Results );
+            }
+            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
+            {
+                // either the endpoint doesn't exist, or the payload was too big 
+                bwWorker.ReportProgress( progress++, $"Error posting to api/PersonImport. Verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
+            }
+            else
+            {
+                bwWorker.ReportProgress( progress++, importResponse.StatusDescription );
+            }
+        }
+
+        /// <summary>
+        /// Gets the person import list.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception">personImport.PersonForeignId must be greater than 0
+        /// or
+        /// personImport.FamilyForeignId must be greater than 0 or null
+        /// or</exception>
+        private List<Rock.BulkUpdate.PersonImport> GetPersonImportList()
+        {
             List<Rock.BulkUpdate.PersonImport> personImportList = new List<Rock.BulkUpdate.PersonImport>();
-            foreach ( var slingshotPerson in slingshotPersonList )
+            foreach ( var slingshotPerson in this.SlingshotPersonList )
             {
                 var personImport = new Rock.BulkUpdate.PersonImport();
                 personImport.PersonForeignId = slingshotPerson.Id;
@@ -299,47 +358,16 @@ namespace Slingshot
                 personImportList.Add( personImport );
             }
 
-            RestRequest restPersonImportRequest = new RestRequest( "api/PersonImport", Method.POST );
-            restPersonImportRequest.RequestFormat = RestSharp.DataFormat.Json;
-
-            var personImportListJSON = personImportList.ToJson();
-            int postSizeMB = personImportListJSON.Length / 1024 / 1024;
-
-            restPersonImportRequest.AddBody( personImportList );
-            const int fiveMinutesMS = ( 1000 * 60 ) * 5;
-            restPersonImportRequest.Timeout = fiveMinutesMS;
-
-            bwWorker.ReportProgress( progress++, "Sending Import to Rock..." );
-
-            // NOTE!: WebConfig needs to be configured to allow posts larger than 10MB
-            var importResponse = restClient.Post( restPersonImportRequest );
-
-            Results = importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
-
-            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
-            {
-                bwWorker.ReportProgress( progress++, this.Results );
-            }
-            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
-            {
-                // either the endpoint doesn't exist, or the payload was too big 
-                bwWorker.ReportProgress( progress++, $"Error posting to api/PersonImport. Verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
-            }
-            else
-            {
-                bwWorker.ReportProgress( progress++, importResponse.StatusDescription );
-            }
+            return personImportList;
         }
 
         /// <summary>
         /// Add any campuses that aren't in Rock yet
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonList">The slingshot person list.</param>
-        private void AddCampuses( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        private void AddCampuses()
         {
             Dictionary<int, Slingshot.Core.Model.Campus> importCampuses = new Dictionary<int, Slingshot.Core.Model.Campus>();
-            foreach ( var campus in slingshotPersonList.Select( a => a.Campus ) )
+            foreach ( var campus in this.SlingshotPersonList.Select( a => a.Campus ) )
             {
                 if ( !importCampuses.ContainsKey( campus.CampusId ) )
                 {
@@ -355,31 +383,30 @@ namespace Slingshot
                 restCampusPostRequest.RequestFormat = RestSharp.DataFormat.Json;
                 restCampusPostRequest.AddBody( campusToAdd );
 
-                var postCampusResponse = restClient.Post( restCampusPostRequest );
+                var postCampusResponse = this.RockRestClient.Post( restCampusPostRequest );
             }
         }
 
         /// <summary>
         /// Adds the person attribute categories.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonAttributes">The slingshot person attributes.</param>
-        private void AddPersonAttributeCategories( RestClient restClient, List<Slingshot.Core.Model.PersonAttribute> slingshotPersonAttributes )
+        private void AddPersonAttributeCategories()
         {
-            foreach ( var slingshotAttributeCategoryName in slingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() )
+            int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
+            foreach ( var slingshotAttributeCategoryName in this.SlingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() )
             {
                 if ( !this.AttributeCategoryList.Any( a => a.Name.Equals( slingshotAttributeCategoryName, StringComparison.OrdinalIgnoreCase ) ) )
                 {
                     Rock.Client.Category attributeCategory = new Rock.Client.Category();
                     attributeCategory.Name = slingshotAttributeCategoryName;
-                    attributeCategory.EntityTypeId = RockConstants.EntityTypeIdAttribute;
+                    attributeCategory.EntityTypeId = entityTypeIdAttribute;
                     attributeCategory.Guid = Guid.NewGuid();
 
                     RestRequest restPostRequest = new RestRequest( "api/Categories", Method.POST );
                     restPostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restPostRequest.AddBody( attributeCategory );
 
-                    var restPostResponse = restClient.Post<int>( restPostRequest );
+                    var restPostResponse = this.RockRestClient.Post<int>( restPostRequest );
                     attributeCategory.Id = restPostResponse.Data;
                     this.AttributeCategoryList.Add( attributeCategory );
                 }
@@ -389,13 +416,13 @@ namespace Slingshot
         /// <summary>
         /// Adds the person attributes.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonAttributes">The slingshot person attributes.</param>
-        private void AddPersonAttributes( RestClient restClient, List<Slingshot.Core.Model.PersonAttribute> slingshotPersonAttributes )
+        private void AddPersonAttributes()
         {
+            int entityTypeIdPerson = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.PERSON.AsGuid()].Id;
+
             // Add any Person Attributes to Rock that aren't in Rock yet
             // NOTE: For now, just match by Attribute.Key. Don't try to do a customizable match
-            foreach ( var slingshotPersonAttribute in slingshotPersonAttributes )
+            foreach ( var slingshotPersonAttribute in this.SlingshotPersonAttributes )
             {
                 // TODO, possible bug in slingshot export, this is a temp workaround
                 slingshotPersonAttribute.Key = slingshotPersonAttribute.Key.Replace( "udf_ind_", "udf_" );
@@ -407,7 +434,7 @@ namespace Slingshot
                     rockPersonAttribute.Key = slingshotPersonAttribute.Key;
                     rockPersonAttribute.Name = slingshotPersonAttribute.Name;
                     rockPersonAttribute.Guid = Guid.NewGuid();
-                    rockPersonAttribute.EntityTypeId = RockConstants.EntityTypeIdPerson;
+                    rockPersonAttribute.EntityTypeId = entityTypeIdPerson;
                     rockPersonAttribute.FieldTypeId = this.FieldTypeLookup[slingshotPersonAttribute.FieldType].Id;
 
                     if ( !string.IsNullOrWhiteSpace( slingshotPersonAttribute.Category ) )
@@ -424,7 +451,7 @@ namespace Slingshot
                     restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restAttributePostRequest.AddBody( rockPersonAttribute );
 
-                    var restAttributePostResponse = restClient.Post<int>( restAttributePostRequest );
+                    var restAttributePostResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
                 }
             }
         }
@@ -432,50 +459,41 @@ namespace Slingshot
         /// <summary>
         /// Adds the connection statuses.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonList">The slingshot person list.</param>
-        private void AddConnectionStatuses( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        private void AddConnectionStatuses()
         {
-            AddDefinedValues( restClient, slingshotPersonList.Select( a => a.ConnectionStatus ).Distinct().ToList(), this.PersonConnectionStatusValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.ConnectionStatus ).Distinct().ToList(), this.PersonConnectionStatusValues );
         }
 
         /// <summary>
         /// Adds the person titles.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonList">The slingshot person list.</param>
-        private void AddPersonTitles( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        private void AddPersonTitles()
         {
-            AddDefinedValues( restClient, slingshotPersonList.Select( a => a.Salutation ).Distinct().ToList(), this.PersonTitleValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Salutation ).Distinct().ToList(), this.PersonTitleValues );
         }
 
         /// <summary>
         /// Adds the person suffixes.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonList">The slingshot person list.</param>
-        private void AddPersonSuffixes( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        private void AddPersonSuffixes()
         {
-            AddDefinedValues( restClient, slingshotPersonList.Select( a => a.Suffix ).Distinct().ToList(), this.PersonSuffixValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Suffix ).Distinct().ToList(), this.PersonSuffixValues );
         }
 
         /// <summary>
         /// Adds the phone types.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
-        /// <param name="slingshotPersonList">The slingshot person list.</param>
-        private void AddPhoneTypes( RestClient restClient, List<Core.Model.Person> slingshotPersonList )
+        private void AddPhoneTypes()
         {
-            AddDefinedValues( restClient, slingshotPersonList.SelectMany( a => a.PhoneNumbers ).Select( a => a.PhoneType ).Distinct().ToList(), this.PhoneNumberTypeValues );
+            AddDefinedValues( this.SlingshotPersonList.SelectMany( a => a.PhoneNumbers ).Select( a => a.PhoneType ).Distinct().ToList(), this.PhoneNumberTypeValues );
         }
 
         /// <summary>
         /// Adds the defined values.
         /// </summary>
-        /// <param name="restClient">The rest client.</param>
         /// <param name="importDefinedValues">The import defined values.</param>
         /// <param name="currentValues">The current values.</param>
-        private static void AddDefinedValues( RestClient restClient, List<string> importDefinedValues, Dictionary<string, Rock.Client.DefinedValue> currentValues )
+        private void AddDefinedValues(List<string> importDefinedValues, Dictionary<string, Rock.Client.DefinedValue> currentValues )
         {
             var definedTypeId = currentValues.Select( a => a.Value.DefinedTypeId ).First();
             foreach ( var importDefinedValue in importDefinedValues.Where( value => !currentValues.Keys.Any( k => k.Equals( value, StringComparison.OrdinalIgnoreCase ) ) ) )
@@ -486,7 +504,7 @@ namespace Slingshot
                 restDefinedValuePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                 restDefinedValuePostRequest.AddBody( definedValueToAdd );
 
-                var postDefinedValueResponse = restClient.Post( restDefinedValuePostRequest );
+                var postDefinedValueResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
             }
         }
 
@@ -513,33 +531,33 @@ namespace Slingshot
             Dictionary<int, List<Slingshot.Core.Model.PersonAttributeValue>> slingshotPersonAttributeValueListLookup;
             Dictionary<int, List<Slingshot.Core.Model.PersonPhone>> slingshotPersonPhoneListLookup;
 
-            using ( var personFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Person().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Person().GetFileName() ) ) )
             {
-                CsvReader personCsv = new CsvReader( personFileStream );
-                personCsv.Configuration.HasHeaderRecord = true;
-                personCsv.Configuration.WillThrowOnMissingField = false;
-                slingshotPersonList = personCsv.GetRecords<Slingshot.Core.Model.Person>().ToList();
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                csvReader.Configuration.WillThrowOnMissingField = false;
+                slingshotPersonList = csvReader.GetRecords<Slingshot.Core.Model.Person>().ToList();
             }
 
-            using ( var personAddressFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAddress().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAddress().GetFileName() ) ) )
             {
-                CsvReader personAddressCsv = new CsvReader( personAddressFileStream );
-                personAddressCsv.Configuration.HasHeaderRecord = true;
-                slingshotPersonAddressListLookup = personAddressCsv.GetRecords<Slingshot.Core.Model.PersonAddress>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonAddressListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAddress>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
             }
 
-            using ( var personAttributeValueFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttributeValue().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttributeValue().GetFileName() ) ) )
             {
-                CsvReader personAttributeValueCsv = new CsvReader( personAttributeValueFileStream );
-                personAttributeValueCsv.Configuration.HasHeaderRecord = true;
-                slingshotPersonAttributeValueListLookup = personAttributeValueCsv.GetRecords<Slingshot.Core.Model.PersonAttributeValue>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonAttributeValueListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAttributeValue>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
             }
 
-            using ( var personPhoneFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonPhone().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonPhone().GetFileName() ) ) )
             {
-                CsvReader personPhoneCsv = new CsvReader( personPhoneFileStream );
-                personPhoneCsv.Configuration.HasHeaderRecord = true;
-                slingshotPersonPhoneListLookup = personPhoneCsv.GetRecords<Slingshot.Core.Model.PersonPhone>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonPhoneListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonPhone>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
             }
 
             foreach ( var slingshotPerson in slingshotPersonList )
@@ -551,11 +569,40 @@ namespace Slingshot
 
             this.SlingshotPersonList = slingshotPersonList;
 
-            using ( var personAttributeFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttribute().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttribute().GetFileName() ) ) )
             {
-                CsvReader personAttributeCsv = new CsvReader( personAttributeFileStream );
-                personAttributeCsv.Configuration.HasHeaderRecord = true;
-                this.SlingshotPersonAttributes = personAttributeCsv.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotPersonAttributes = csvReader.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
+            }
+
+            /* Attendance */
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotAttendanceList = csvReader.GetRecords<Slingshot.Core.Model.Attendance>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotGroupList = csvReader.GetRecords<Slingshot.Core.Model.Group>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Location().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotLocationList = csvReader.GetRecords<Slingshot.Core.Model.Location>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Schedule().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotScheduleList = csvReader.GetRecords<Slingshot.Core.Model.Schedule>().ToList();
             }
         }
 
@@ -575,6 +622,16 @@ namespace Slingshot
             this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
             this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
 
+            // EntityTypes
+            RestRequest requestEntityTypes = new RestRequest( Method.GET );
+            requestEntityTypes.Resource = "api/EntityTypes";
+            var requestEntityTypesResponse = restClient.Execute( requestEntityTypes );
+            var entityTypes = JsonConvert.DeserializeObject<List<Rock.Client.EntityType>>( requestEntityTypesResponse.Content );
+            this.EntityTypeLookup = entityTypes.ToDictionary( k => k.Guid, v => v );
+
+            int entityTypeIdPerson = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.PERSON.AsGuid()].Id;
+            int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
+
             // Family GroupTypeRoles
             RestRequest requestFamilyGroupType = new RestRequest( Method.GET );
             requestFamilyGroupType.Resource = $"api/GroupTypes?$filter=Guid eq guid'{Rock.Client.SystemGuid.GroupType.GROUPTYPE_FAMILY}'&$expand=Roles";
@@ -589,14 +646,14 @@ namespace Slingshot
 
             // Person Attributes
             RestRequest requestPersonAttributes = new RestRequest( Method.GET );
-            requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {RockConstants.EntityTypeIdPerson}&$expand=FieldType";
+            requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdPerson}&$expand=FieldType";
             var personAttributesResponse = restClient.Execute( requestPersonAttributes );
             var personAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( personAttributesResponse.Content );
             this.PersonAttributeKeyLookup = personAttributes.ToDictionary( k => k.Key, v => v );
 
             // Attribute Categories
             RestRequest requestAttributeCategories = new RestRequest( Method.GET );
-            requestAttributeCategories.Resource = $"api/Categories?$filter=EntityTypeId eq {RockConstants.EntityTypeIdAttribute}";
+            requestAttributeCategories.Resource = $"api/Categories?$filter=EntityTypeId eq {entityTypeIdAttribute}";
             var requestAttributeCategoriesResponse = restClient.Execute( requestAttributeCategories );
             this.AttributeCategoryList = JsonConvert.DeserializeObject<List<Rock.Client.Category>>( requestAttributeCategoriesResponse.Content );
 
