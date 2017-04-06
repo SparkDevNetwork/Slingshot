@@ -50,8 +50,6 @@ namespace Slingshot
         private List<Slingshot.Core.Model.Group> SlingshotGroupList { get; set; }
         private List<Slingshot.Core.Model.Location> SlingshotLocationList { get; set; }
         private List<Slingshot.Core.Model.Schedule> SlingshotScheduleList { get; set; }
-        //public List<Slingshot.Core.Model.Device> SlingshotDeviceList { get; set; }
-
 
         /* */
         private string SlingshotFileName { get; set; }
@@ -64,6 +62,12 @@ namespace Slingshot
         /// </value>
         public string Results { get; set; }
 
+        /// <summary>
+        /// Gets or sets the rock rest client.
+        /// </summary>
+        /// <value>
+        /// The rock rest client.
+        /// </value>
         private RestClient RockRestClient { get; set; }
 
         /// <summary>
@@ -71,11 +75,6 @@ namespace Slingshot
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="DoWorkEventArgs"/> instance containing the event data.</param>
-        /// <exception cref="Exception">
-        /// personImport.PersonForeignId must be greater than 0
-        /// or
-        /// personImport.FamilyForeignId must be greater than 0 or null
-        /// </exception>
         public void BackgroundWorker_DoWork( object sender, DoWorkEventArgs e )
         {
             BackgroundWorker bwWorker = sender as BackgroundWorker;
@@ -122,8 +121,6 @@ namespace Slingshot
 
             bwWorker.ReportProgress( progress++, "Sending Person Import to Rock..." );
 
-            // NOTE!: WebConfig needs to be configured to allow posts larger than 10MB
-
             var importResponse = this.RockRestClient.Post( restPersonImportRequest );
 
             Results = importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
@@ -135,7 +132,7 @@ namespace Slingshot
             else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
             {
                 // either the endpoint doesn't exist, or the payload was too big 
-                bwWorker.ReportProgress( progress++, $"Error posting to api/PersonImport. Verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
+                bwWorker.ReportProgress( progress++, $"Error posting to api/PersonImport. Make sure that Rock has been updated to support PersonImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
             }
             else
             {
@@ -331,10 +328,10 @@ namespace Slingshot
                                 City = slingshotPersonAddress.City,
                                 State = slingshotPersonAddress.State,
                                 Country = slingshotPersonAddress.Country,
-                                PostalCode = slingshotPersonAddress.PostalCode
+                                PostalCode = slingshotPersonAddress.PostalCode,
+                                Latitude = slingshotPersonAddress.Latitude.AsDoubleOrNull(),
+                                Longitude = slingshotPersonAddress.Longitude.AsDoubleOrNull()
                             };
-
-                            // TODO, ask if Latitude,Longitude need to be imported, and/or just like Rock geocode it
 
                             personImport.Addresses.Add( addressImport );
                         }
@@ -344,7 +341,6 @@ namespace Slingshot
                         }
                     }
                 }
-
 
                 // Attribute Values
                 personImport.AttributeValues = new List<Rock.BulkUpdate.AttributeValueImport>();
