@@ -10,9 +10,9 @@ namespace Slingshot
     /// <seealso cref="System.Windows.Window" />
     /// <seealso cref="System.Windows.Markup.IComponentConnector" />
     public partial class MainWindow : Window
-    { 
+    {
         private Importer _importer = null;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
@@ -64,7 +64,7 @@ namespace Slingshot
         /// <param name="e">The <see cref="ProgressChangedEventArgs"/> instance containing the event data.</param>
         private void BackgroundWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
-            tbResults.Text = e.UserState.ToString();
+            tbResults.Text = e.UserState?.ToString();
         }
 
         /// <summary>
@@ -74,6 +74,11 @@ namespace Slingshot
         /// <param name="e">The <see cref="RunWorkerCompletedEventArgs"/> instance containing the event data.</param>
         private void BackgroundWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
+            if ( e.Error != null )
+            {
+                tbResults.Text += e.Error.ToString() + "\n\n" + e.Error.StackTrace;
+            }
+
             btnGo.IsEnabled = true;
         }
     }

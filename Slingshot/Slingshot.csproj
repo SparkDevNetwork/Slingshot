@@ -33,6 +33,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\Slingshot.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CsvHelper, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
@@ -81,11 +82,23 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\AddressImport.cs">
-      <Link>Rock\BulkUpdate\AddressImport.cs</Link>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\AttendanceImport.cs">
+      <Link>Rock\BulkUpdate\AttendanceImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\AttributeValueImport.cs">
       <Link>Rock\BulkUpdate\AttributeValueImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupImport.cs">
+      <Link>Rock\BulkUpdate\GroupImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupMemberImport.cs">
+      <Link>Rock\BulkUpdate\GroupMemberImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\LocationImport.cs">
+      <Link>Rock\BulkUpdate\LocationImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonAddressImport.cs">
+      <Link>Rock\BulkUpdate\PersonAddressImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonImport.cs">
       <Link>Rock\BulkUpdate\PersonImport.cs</Link>
