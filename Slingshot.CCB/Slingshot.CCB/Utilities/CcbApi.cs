@@ -282,9 +282,10 @@ namespace Slingshot.CCB.Utilities
                 foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
                 {
                     var group = new Group();
-                    group.Id = sourceDepartment.Element( "id" ).Value.AsInteger();
+                    group.Id = ("999999" + sourceDepartment.Element( "id" ).Value).AsInteger();
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
+                    group.GroupTypeId = 999999;
 
                     ImportPackage.WriteToPackage( group );
                 }
@@ -304,6 +305,15 @@ namespace Slingshot.CCB.Utilities
         {
             // write out the person attributes 
             WritePersonAttributes();
+
+            // write family attributes (always only the family photo)
+            ImportPackage.WriteToPackage( new FamilyAttribute()
+            {
+                Name = "Family Photo",
+                Key = "FamilyPhoto",
+                Category = "",
+                FieldType = "Rock.Field.Types.ImageFieldType"
+            } );
 
             int currentPage = 1;
             int loopCounter = 0;
@@ -512,7 +522,7 @@ namespace Slingshot.CCB.Utilities
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
-                Name = "Is Baptized",
+                Name = "Emergency Contact Name",
                 Key = "EmergencyContactName",
                 Category = "Safety & Security",
                 FieldType = "Rock.Field.Types.TextFieldType"
@@ -555,7 +565,7 @@ namespace Slingshot.CCB.Utilities
                 if ( field.Element( "label" ).Value.IsNotNullOrWhitespace() )
                 {
                     var personAttribute = new PersonAttribute();
-                    personAttribute.Key = field.Element( "name" ).Value;
+                    personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_"); // need to strip out the '_ind' so they match what is returned from CCB on the person record
                     personAttribute.Name = field.Element( "label" ).Value;
 
                     if ( field.Element( "name" ).Value.Contains( "_text_" ) )

@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\Attendance.cs" />
+    <Compile Include="Models\FamilyAttribute.cs" />
     <Compile Include="Models\Schedule.cs" />
     <Compile Include="Models\Location.cs" />
     <Compile Include="Models\GroupMember.cs" />

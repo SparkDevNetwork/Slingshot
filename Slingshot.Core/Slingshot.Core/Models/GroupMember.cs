@@ -12,20 +12,20 @@ namespace Slingshot.Core.Model
     public class GroupMember : IImportModel
     {
         /// <summary>
-        /// Gets or sets the identifier.
-        /// </summary>
-        /// <value>
-        /// The identifier.
-        /// </value>
-        public int Id { get; set; }
-
-        /// <summary>
         /// Gets or sets the person identifier.
         /// </summary>
         /// <value>
         /// The person identifier.
         /// </value>
         public int PersonId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group identifier.
+        /// </summary>
+        /// <value>
+        /// The group identifier.
+        /// </value>
+        public int GroupId { get; set; }
 
         /// <summary>
         /// Gets or sets the role.
