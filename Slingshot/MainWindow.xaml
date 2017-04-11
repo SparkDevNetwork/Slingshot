@@ -5,17 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
+        ResizeMode="NoResize"
         Title="MainWindow" Height="421.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="477"/>
         <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="4" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
         <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="75" Click="btnGo_Click" Margin="4,4,0,4"/>
-
-        <ScrollViewer Height="284" VerticalScrollBarVisibility="Visible">
-            <TextBlock x:Name="tbResults" HorizontalAlignment="Left" TextWrapping="Wrap" xml:space="preserve" Text="Results" VerticalAlignment="Top" Margin="4" FontFamily="Consolas" FontSize="10" />
-        </ScrollViewer>
-        
-
-
+        <TextBox x:Name="tbResults" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="270" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
     </StackPanel>
 </Window>

@@ -64,7 +64,20 @@ namespace Slingshot
         /// <param name="e">The <see cref="ProgressChangedEventArgs"/> instance containing the event data.</param>
         private void BackgroundWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
-            tbResults.Text = e.UserState?.ToString();
+            if ( e.UserState is string )
+            {
+                tbResults.Text = e.UserState.ToString();
+            }
+            else
+            {
+                var resultText = string.Empty;
+                foreach ( var result in _importer.Results )
+                {
+                    resultText += $"\n\n{result.Key}\n\n{result.Value}";
+                }
+
+                tbResults.Text = resultText.Trim();
+            }
         }
 
         /// <summary>
@@ -76,7 +89,14 @@ namespace Slingshot
         {
             if ( e.Error != null )
             {
-                tbResults.Text += e.Error.ToString() + "\n\n" + e.Error.StackTrace;
+                if ( e.Error is SlingshotEndpointNotFoundException )
+                {
+                    tbResults.Text += "\n\n"  + e.Error.Message;
+                }
+                else
+                {
+                    tbResults.Text += "\n\n" + e.Error.ToString() + "\n\n" + e.Error.StackTrace;
+                }
             }
 
             btnGo.IsEnabled = true;

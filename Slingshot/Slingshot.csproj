@@ -78,6 +78,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="SlingshotEndpointNotFoundException.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -105,6 +106,9 @@
     </Compile>
     <Compile Include="..\..\Rock\Rock\BulkUpdate\PhoneNumberImport.cs">
       <Link>Rock\BulkUpdate\PhoneNumberImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\ScheduleImport.cs">
+      <Link>Rock\BulkUpdate\ScheduleImport.cs</Link>
     </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\BooleanExtensions.cs">
       <Link>Rock\Extensions\BooleanExtensions.cs</Link>

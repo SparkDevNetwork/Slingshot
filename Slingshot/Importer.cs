@@ -27,23 +27,42 @@ namespace Slingshot
 
         /* Person Related */
         private Dictionary<Guid, Rock.Client.GroupTypeRole> FamilyRoles { get; set; }
+
         private Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordTypeValues { get; set; }
+
         private Dictionary<Guid, Rock.Client.DefinedValue> PersonRecordStatusValues { get; set; }
+
         private Dictionary<string, Rock.Client.DefinedValue> PersonConnectionStatusValues { get; set; }
+
         private Dictionary<string, Rock.Client.DefinedValue> PersonTitleValues { get; set; }
+
         private Dictionary<string, Rock.Client.DefinedValue> PersonSuffixValues { get; set; }
+
         private Dictionary<Guid, Rock.Client.DefinedValue> PersonMaritalStatusValues { get; set; }
+
         private Dictionary<string, Rock.Client.DefinedValue> PhoneNumberTypeValues { get; set; }
+
         private Dictionary<Guid, Rock.Client.DefinedValue> GroupLocationTypeValues { get; set; }
+
         private Dictionary<Guid, Rock.Client.DefinedValue> LocationTypeValues { get; set; }
+
         private Dictionary<string, Rock.Client.Attribute> PersonAttributeKeyLookup { get; set; }
+
+        private Dictionary<string, Rock.Client.Attribute> FamilyAttributeKeyLookup { get; set; }
+
         private List<Slingshot.Core.Model.PersonAttribute> SlingshotPersonAttributes { get; set; }
+
+        private List<Slingshot.Core.Model.FamilyAttribute> SlingshotFamilyAttributes { get; set; }
+
         private List<Slingshot.Core.Model.Person> SlingshotPersonList { get; set; }
 
         /* Core  */
         private List<Rock.Client.Campus> Campuses { get; set; }
+
         private Dictionary<Guid, Rock.Client.EntityType> EntityTypeLookup { get; set; }
+
         private Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; set; }
+
         private List<Rock.Client.Category> AttributeCategoryList { get; set; }
 
         // GroupType Lookup by ForeignId
@@ -51,9 +70,13 @@ namespace Slingshot
 
         /* Attendance */
         private List<Slingshot.Core.Model.Attendance> SlingshotAttendanceList { get; set; }
+
         private List<Slingshot.Core.Model.Group> SlingshotGroupList { get; set; }
+
         private List<Slingshot.Core.Model.GroupType> SlingshotGroupTypeList { get; set; }
+
         private List<Slingshot.Core.Model.Location> SlingshotLocationList { get; set; }
+
         private List<Slingshot.Core.Model.Schedule> SlingshotScheduleList { get; set; }
 
         /* */
@@ -65,7 +88,7 @@ namespace Slingshot
         /// <value>
         /// The results.
         /// </value>
-        public string Results { get; set; }
+        public Dictionary<string, string> Results { get; set; }
 
         /// <summary>
         /// Gets or sets the rock rest client.
@@ -82,6 +105,14 @@ namespace Slingshot
         /// The background worker.
         /// </value>
         private BackgroundWorker BackgroundWorker { get; set; }
+
+        /// <summary>
+        /// Gets or sets the group type identifier family.
+        /// </summary>
+        /// <value>
+        /// The group type identifier family.
+        /// </value>
+        private int GroupTypeIdFamily { get; set; }
 
         /// <summary>
         /// Handles the DoWork event of the BackgroundWorker control.
@@ -104,14 +135,17 @@ namespace Slingshot
 
             BackgroundWorker.ReportProgress( 0, "Updating Rock Lookups..." );
 
+            this.Results = new Dictionary<string, string>();
+
             // Populate Rock with stuff that comes from the Slingshot file
             AddCampuses();
             AddConnectionStatuses();
             AddPersonTitles();
             AddPersonSuffixes();
             AddPhoneTypes();
-            AddPersonAttributeCategories();
+            AddAttributeCategories();
             AddPersonAttributes();
+            AddFamilyAttributes();
 
             AddGroupTypes();
 
@@ -119,11 +153,97 @@ namespace Slingshot
             BackgroundWorker.ReportProgress( 0, "Reloading Rock Lookups..." );
             LoadLookups();
 
-            //SubmitPersonImport();
+            SubmitPersonImport();
 
             // Attendance Related
-            //SubmitLocationImport();
+            SubmitLocationImport();
             SubmitGroupImport();
+            SubmitScheduleImport();
+            SubmitAttendanceImport();
+        }
+
+        /// <summary>
+        /// Submits the attendance import.
+        /// </summary>
+        private void SubmitAttendanceImport()
+        {
+            BackgroundWorker.ReportProgress( 0, "Preparing AttendanceImport..." );
+            var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
+            var attendanceImportList = new List<Rock.BulkUpdate.AttendanceImport>();
+            foreach ( var slingshotAttendance in this.SlingshotAttendanceList )
+            {
+                var attendanceImport = new Rock.BulkUpdate.AttendanceImport();
+
+                // Note: There is no Attendance.Id in slingshotAttendance
+
+                attendanceImport.PersonForeignId = slingshotAttendance.PersonId;
+                attendanceImport.GroupForeignId = slingshotAttendance.GroupId;
+                attendanceImport.LocationForeignId = slingshotAttendance.LocationId;
+                attendanceImport.ScheduleForeignId = slingshotAttendance.ScheduleId;
+                attendanceImport.StartDateTime = slingshotAttendance.StartDateTime.Value;
+                attendanceImport.EndDateTime = slingshotAttendance.EndDateTime;
+                attendanceImport.Note = slingshotAttendance.Note;
+                if ( slingshotAttendance.CampusId.HasValue )
+                {
+                    attendanceImport.CampusId = campusLookup[slingshotAttendance.CampusId.Value];
+                }
+
+                attendanceImportList.Add( attendanceImport );
+            }
+
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/AttendanceImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
+            restImportRequest.AddBody( attendanceImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending Attendance Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            Results.Add( "Attendance Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else
+            {
+                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+            }
+        }
+
+        /// <summary>
+        /// Submits the schedule import.
+        /// </summary>
+        private void SubmitScheduleImport()
+        {
+            BackgroundWorker.ReportProgress( 0, "Preparing ScheduleImport..." );
+            var scheduleImportList = new List<Rock.BulkUpdate.ScheduleImport>();
+            foreach ( var slingshotSchedule in this.SlingshotScheduleList )
+            {
+                var scheduleImport = new Rock.BulkUpdate.ScheduleImport();
+                scheduleImport.ScheduleForeignId = slingshotSchedule.Id;
+                scheduleImport.Name = slingshotSchedule.Name;
+                scheduleImportList.Add( scheduleImport );
+            }
+
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/ScheduleImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
+            restImportRequest.AddBody( scheduleImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending Schedule Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            Results.Add( "Schedule Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else
+            {
+                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+            }
         }
 
         /// <summary>
@@ -141,26 +261,8 @@ namespace Slingshot
                 locationImport.Name = slingshotLocation.Name;
                 locationImport.IsActive = slingshotLocation.IsActive;
 
-                /* TODO: None of these line up with Core LocationTypes, just leave LocationTypeValueId null?
-                switch ( slingshotLocation.LocationType )
-                {
-                    case Core.Model.LocationType.GeographicArea:
-                        locationImport.LocationTypeValueId = this.LocationTypeValues[Rock.Client.SystemGuid.DefinedValue.LOCATION_TYPE_???.AsGuid()].Id;
-                        break;
-                    case Core.Model.LocationType.Home:
-                        locationImport.LocationTypeValueId = this.LocationTypeValues[Rock.Client.SystemGuid.DefinedValue.LOCATION_TYPE_???.AsGuid()].Id;
-                        break;
-                    case Core.Model.LocationType.MeetingLocation:
-                        locationImport.LocationTypeValueId = this.LocationTypeValues[Rock.Client.SystemGuid.DefinedValue.LOCATION_TYPE_??.AsGuid()].Id;
-                        break;
-                    case Core.Model.LocationType.Previous:
-                        locationImport.LocationTypeValueId = this.LocationTypeValues[Rock.Client.SystemGuid.DefinedValue.LOCATION_TYPE_??.AsGuid()].Id;
-                        break;
-                    case Core.Model.LocationType.Work:
-                        locationImport.LocationTypeValueId = this.LocationTypeValues[Rock.Client.SystemGuid.DefinedValue.LOCATION_TYPE_??.AsGuid()].Id;
-                        break;
-                }*/
-
+                // set LocationType to null since Rock usually leaves it null except for Campus, Building, and Room
+                locationImport.LocationTypeValueId = null;
                 locationImport.Street1 = slingshotLocation.Street1;
                 locationImport.Street2 = slingshotLocation.Street2;
                 locationImport.City = slingshotLocation.City;
@@ -180,7 +282,7 @@ namespace Slingshot
 
             var importResponse = this.RockRestClient.Post( restImportRequest );
 
-            Results += importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
+            Results.Add( "Location Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
 
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
@@ -204,16 +306,14 @@ namespace Slingshot
             {
                 var groupImport = new Rock.BulkUpdate.GroupImport();
                 groupImport.GroupForeignId = slingshotGroup.Id;
-                if ( slingshotGroup.GroupTypeId == 0 )
-                {
-                    groupImport.GroupTypeId = null;
-                }
-                else
-                {
-                    groupImport.GroupTypeId = this.GroupTypeLookupByForeignId[slingshotGroup.GroupTypeId].Id;
-                }
+                groupImport.GroupTypeId = this.GroupTypeLookupByForeignId[slingshotGroup.GroupTypeId].Id;
 
                 groupImport.Name = slingshotGroup.Name;
+                if ( slingshotGroup.Name.IsNullOrWhiteSpace() )
+                {
+                    groupImport.Name = "Unnamed Group";
+                }
+
                 groupImport.Order = slingshotGroup.Order;
                 if ( slingshotGroup.CampusId.HasValue )
                 {
@@ -223,13 +323,12 @@ namespace Slingshot
                 groupImport.ParentGroupForeignId = slingshotGroup.ParentGroupId == 0 ? ( int? ) null : slingshotGroup.ParentGroupId;
                 groupImport.GroupMemberImports = new List<Rock.BulkUpdate.GroupMemberImport>();
 
-                // TODO: It doesn't seem like Members are included yet...
                 foreach ( var groupMember in slingshotGroup.GroupMembers )
                 {
                     var groupMemberImport = new Rock.BulkUpdate.GroupMemberImport();
-                    groupMemberImport.GroupMemberForeignId = groupMember.Id;
                     groupMemberImport.PersonForeignId = groupMember.PersonId;
                     groupMemberImport.RoleName = groupMember.Role;
+                    groupImport.GroupMemberImports.Add( groupMemberImport );
                 }
 
                 groupImportList.Add( groupImport );
@@ -243,7 +342,7 @@ namespace Slingshot
 
             var importResponse = this.RockRestClient.Post( restImportRequest );
 
-            Results += importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
+            Results.Add( "Group Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
 
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
@@ -271,14 +370,14 @@ namespace Slingshot
             int postSizeMB = personImportListJSON.Length / 1024 / 1024;
 
             restPersonImportRequest.AddBody( personImportList );
-            const int fiveMinutesMS = ( 1000 * 60 ) * 5;
+            int fiveMinutesMS = ( 1000 * 60 ) * 5;
             restPersonImportRequest.Timeout = fiveMinutesMS;
 
             BackgroundWorker.ReportProgress( 0, "Sending Person Import to Rock..." );
 
             var importResponse = this.RockRestClient.Post( restPersonImportRequest );
 
-            Results = importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
+            Results.Add( "Person Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
 
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
@@ -286,8 +385,8 @@ namespace Slingshot
             }
             else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
             {
-                // either the endpoint doesn't exist, or the payload was too big 
-                BackgroundWorker.ReportProgress( 0, $"Error posting to api/BulkImport/PersonImport. Make sure that Rock has been updated to support PersonImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
+                // either the endpoint doesn't exist, or the payload was too big
+                throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/PersonImport. Make sure that Rock has been updated to support PersonImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
             }
             else
             {
@@ -538,7 +637,6 @@ namespace Slingshot
             }
         }
 
-
         /// <summary>
         /// Add any GroupTypes that aren't in Rock yet
         /// </summary>
@@ -561,12 +659,14 @@ namespace Slingshot
         }
 
         /// <summary>
-        /// Adds the person attribute categories.
+        /// Adds any attribute categories that are in the slingshot files (person and family attributes)
         /// </summary>
-        private void AddPersonAttributeCategories()
+        private void AddAttributeCategories()
         {
             int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
-            foreach ( var slingshotAttributeCategoryName in this.SlingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() )
+            var attributeCategoryNames = this.SlingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList();
+            attributeCategoryNames.AddRange( this.SlingshotFamilyAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() );
+            foreach ( var slingshotAttributeCategoryName in attributeCategoryNames.Distinct().ToList() )
             {
                 if ( !this.AttributeCategoryList.Any( a => a.Name.Equals( slingshotAttributeCategoryName, StringComparison.OrdinalIgnoreCase ) ) )
                 {
@@ -597,8 +697,7 @@ namespace Slingshot
             // NOTE: For now, just match by Attribute.Key. Don't try to do a customizable match
             foreach ( var slingshotPersonAttribute in this.SlingshotPersonAttributes )
             {
-                // TODO, possible bug in slingshot export, this is a temp workaround
-                slingshotPersonAttribute.Key = slingshotPersonAttribute.Key.Replace( "udf_ind_", "udf_" );
+                slingshotPersonAttribute.Key = slingshotPersonAttribute.Key;
 
                 Rock.Client.Attribute rockPersonAttribute = this.PersonAttributeKeyLookup.Select( a => a.Value ).FirstOrDefault( a => a.Key.Equals( slingshotPersonAttribute.Key, StringComparison.OrdinalIgnoreCase ) );
                 if ( rockPersonAttribute == null )
@@ -623,6 +722,50 @@ namespace Slingshot
                     RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
                     restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restAttributePostRequest.AddBody( rockPersonAttribute );
+
+                    var restAttributePostResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds the family attributes.
+        /// </summary>
+        private void AddFamilyAttributes()
+        {
+            int entityTypeIdGroup = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.GROUP.AsGuid()].Id;
+
+            // Add any Family Attributes to Rock that aren't in Rock yet
+            // NOTE: For now, just match by Attribute.Key. Don't try to do a customizable match
+            foreach ( var slingshotFamilyAttribute in this.SlingshotFamilyAttributes )
+            {
+                slingshotFamilyAttribute.Key = slingshotFamilyAttribute.Key;
+
+                Rock.Client.Attribute rockFamilyAttribute = this.FamilyAttributeKeyLookup.Select( a => a.Value ).FirstOrDefault( a => a.Key.Equals( slingshotFamilyAttribute.Key, StringComparison.OrdinalIgnoreCase ) );
+                if ( rockFamilyAttribute == null )
+                {
+                    rockFamilyAttribute = new Rock.Client.Attribute();
+                    rockFamilyAttribute.Key = slingshotFamilyAttribute.Key;
+                    rockFamilyAttribute.Name = slingshotFamilyAttribute.Name;
+                    rockFamilyAttribute.Guid = Guid.NewGuid();
+                    rockFamilyAttribute.EntityTypeId = entityTypeIdGroup;
+                    rockFamilyAttribute.EntityTypeQualifierColumn = "GroupTypeId";
+                    rockFamilyAttribute.EntityTypeQualifierValue = this.GroupTypeIdFamily.ToString();
+                    rockFamilyAttribute.FieldTypeId = this.FieldTypeLookup[slingshotFamilyAttribute.FieldType].Id;
+
+                    if ( !string.IsNullOrWhiteSpace( slingshotFamilyAttribute.Category ) )
+                    {
+                        var attributeCategory = this.AttributeCategoryList.FirstOrDefault( a => a.Name.Equals( slingshotFamilyAttribute.Category, StringComparison.OrdinalIgnoreCase ) );
+                        if ( attributeCategory != null )
+                        {
+                            rockFamilyAttribute.Categories = new List<Rock.Client.Category>();
+                            rockFamilyAttribute.Categories.Add( attributeCategory );
+                        }
+                    }
+
+                    RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
+                    restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    restAttributePostRequest.AddBody( rockFamilyAttribute );
 
                     var restAttributePostResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
                 }
@@ -749,6 +892,13 @@ namespace Slingshot
                 this.SlingshotPersonAttributes = csvReader.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
             }
 
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FamilyAttribute().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotFamilyAttributes = csvReader.GetRecords<Slingshot.Core.Model.FamilyAttribute>().ToList();
+            }
+
             /* Attendance */
             using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() ) ) )
             {
@@ -761,7 +911,30 @@ namespace Slingshot
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotGroupList = csvReader.GetRecords<Slingshot.Core.Model.Group>().ToList();
+                var uniqueGroups = new Dictionary<int, Slingshot.Core.Model.Group>();
+
+                foreach ( var group in csvReader.GetRecords<Slingshot.Core.Model.Group>().ToList() )
+                {
+                    if ( !uniqueGroups.ContainsKey( group.Id ) )
+                    {
+                        uniqueGroups.Add( group.Id, group );
+                    }
+                }
+
+                this.SlingshotGroupList = uniqueGroups.Select( a => a.Value ).ToList();
+            }
+
+            var groupLookup = this.SlingshotGroupList.ToDictionary( k => k.Id, v => v );
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.GroupMember().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+
+                var groupMemberList = csvReader.GetRecords<Slingshot.Core.Model.GroupMember>().ToList().GroupBy( a => a.GroupId ).ToDictionary( k => k.Key, v => v.ToList() );
+                foreach ( var groupIdMembers in groupMemberList )
+                {
+                    groupLookup[groupIdMembers.Key].GroupMembers = groupIdMembers.Value;
+                }
             }
 
             using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.GroupType().GetFileName() ) ) )
@@ -791,7 +964,17 @@ namespace Slingshot
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotScheduleList = csvReader.GetRecords<Slingshot.Core.Model.Schedule>().ToList();
+
+                var uniqueSchedules = new Dictionary<int, Slingshot.Core.Model.Schedule>();
+                foreach ( var schedule in csvReader.GetRecords<Slingshot.Core.Model.Schedule>().ToList() )
+                {
+                    if ( !uniqueSchedules.ContainsKey( schedule.Id ) )
+                    {
+                        uniqueSchedules.Add( schedule.Id, schedule );
+                    }
+                }
+
+                this.SlingshotScheduleList = uniqueSchedules.Select( a => a.Value ).ToList();
             }
         }
 
@@ -820,6 +1003,7 @@ namespace Slingshot
             this.EntityTypeLookup = entityTypes.ToDictionary( k => k.Guid, v => v );
 
             int entityTypeIdPerson = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.PERSON.AsGuid()].Id;
+            int entityTypeIdGroup = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.GROUP.AsGuid()].Id;
             int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
 
             // Family GroupTypeRoles
@@ -840,6 +1024,14 @@ namespace Slingshot
             var personAttributesResponse = restClient.Execute( requestPersonAttributes );
             var personAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( personAttributesResponse.Content );
             this.PersonAttributeKeyLookup = personAttributes.ToDictionary( k => k.Key, v => v );
+
+            // Family Attributes
+            this.GroupTypeIdFamily = this.FamilyRoles.Select( a => a.Value.GroupTypeId.Value ).First();
+            RestRequest requestFamilyAttributes = new RestRequest( Method.GET );
+            requestFamilyAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdGroup} and EntityTypeQualifierColumn eq 'GroupTypeId' and EntityTypeQualifierValue eq '{this.GroupTypeIdFamily}'&$expand=FieldType";
+            var familyAttributesResponse = restClient.Execute( requestFamilyAttributes );
+            var familyAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( familyAttributesResponse.Content );
+            this.FamilyAttributeKeyLookup = familyAttributes.ToDictionary( k => k.Key, v => v );
 
             // Attribute Categories
             RestRequest requestAttributeCategories = new RestRequest( Method.GET );
