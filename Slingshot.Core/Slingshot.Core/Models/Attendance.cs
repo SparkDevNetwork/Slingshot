@@ -58,7 +58,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The start date time.
         /// </value>
-        public DateTime? StartDateTime { get; set; }
+        public DateTime StartDateTime { get; set; }
 
         /// <summary>
         /// Gets or sets the end date time.

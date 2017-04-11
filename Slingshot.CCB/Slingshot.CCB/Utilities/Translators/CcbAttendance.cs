@@ -15,7 +15,7 @@ namespace Slingshot.CCB.Utilities.Translators
         {
             List<Attendance> attendanceList = new List<Attendance>();
 
-            var attendanceDate = inputAttendance.Element( "occurrence" ).Value.AsDateTime();
+            var attendanceDate = inputAttendance.Element( "occurrence" ).Value.AsDateTime().Value;
             var eventId = inputAttendance.Attribute( "id" ).Value.AsInteger();
             var locationId = eventDetails.Where( e => e.EventId == eventId ).Select( e => e.LocationId ).FirstOrDefault();
             var scheduleId = eventDetails.Where( e => e.EventId == eventId ).Select( e => e.ScheduleId ).FirstOrDefault();
