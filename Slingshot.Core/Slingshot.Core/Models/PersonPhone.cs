@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for Campus
+    /// Model for PersonPhone
     /// </summary>
     public class PersonPhone : IImportModel
     {
