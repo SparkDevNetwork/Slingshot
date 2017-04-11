@@ -79,6 +79,19 @@ namespace Slingshot
 
         private List<Slingshot.Core.Model.Schedule> SlingshotScheduleList { get; set; }
 
+        /* Financial Transactions */
+        private List<Slingshot.Core.Model.FinancialAccount> SlingshotFinancialAccountList { get; set; }
+
+        private List<Slingshot.Core.Model.FinancialBatch> SlingshotFinancialBatchList { get; set; }
+
+        private List<Slingshot.Core.Model.FinancialTransaction> SlingshotFinancialTransactionList { get; set; }
+
+        private Dictionary<Guid, Rock.Client.DefinedValue> TransactionSourceTypeValues { get; set; }
+
+        private Dictionary<Guid, Rock.Client.DefinedValue> TransactionTypeValues { get; set; }
+
+        private Dictionary<Guid, Rock.Client.DefinedValue> CurrencyTypeValues { get; set; }
+
         /* */
         private string SlingshotFileName { get; set; }
 
@@ -160,7 +173,249 @@ namespace Slingshot
             SubmitGroupImport();
             SubmitScheduleImport();
             SubmitAttendanceImport();
+
+            // Financial Transaction Related
+            SubmitFinancialAccountImport();
+            SubmitFinancialBatchImport();
+            SubmitFinancialTransactionImport();
         }
+
+        #region Financial Transaction Related
+
+        /// <summary>
+        /// Submits the financial account import.
+        /// </summary>
+        private void SubmitFinancialAccountImport()
+        {
+            BackgroundWorker.ReportProgress( 0, "Preparing FinancialAccountImport..." );
+            var financialAccountImportList = new List<Rock.BulkUpdate.FinancialAccountImport>();
+            var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
+            foreach ( var slingshotFinancialAccount in this.SlingshotFinancialAccountList )
+            {
+                var financialAccountImport = new Rock.BulkUpdate.FinancialAccountImport();
+                financialAccountImport.FinancialAccountForeignId = slingshotFinancialAccount.Id;
+
+                financialAccountImport.Name = slingshotFinancialAccount.Name;
+                if ( slingshotFinancialAccount.Name.IsNullOrWhiteSpace() )
+                {
+                    financialAccountImport.Name = "Unnamed Financial Account";
+                }
+
+                financialAccountImport.IsTaxDeductible = slingshotFinancialAccount.IsTaxDeductible;
+
+                financialAccountImport.CampusId = campusLookup[slingshotFinancialAccount.CampusId];
+                financialAccountImport.ParentFinancialAccountForeignId = slingshotFinancialAccount.ParentAccountId == 0 ? ( int? ) null : slingshotFinancialAccount.ParentAccountId;
+
+                financialAccountImportList.Add( financialAccountImport );
+            }
+
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialAccountImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
+            restImportRequest.AddBody( financialAccountImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending FinancialAccount Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            Results.Add( "FinancialAccount Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else
+            {
+                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+            }
+        }
+
+        /// <summary>
+        /// Submits the financial batch import.
+        /// </summary>
+        private void SubmitFinancialBatchImport()
+        {
+            BackgroundWorker.ReportProgress( 0, "Preparing FinancialBatchImport..." );
+            var financialBatchImportList = new List<Rock.BulkUpdate.FinancialBatchImport>();
+            var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
+            foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
+            {
+                var financialBatchImport = new Rock.BulkUpdate.FinancialBatchImport();
+                financialBatchImport.FinancialBatchForeignId = slingshotFinancialBatch.Id;
+
+                financialBatchImport.Name = slingshotFinancialBatch.Name;
+                if ( slingshotFinancialBatch.Name.IsNullOrWhiteSpace() )
+                {
+                    financialBatchImport.Name = "Unnamed Financial Batch";
+                }
+
+                financialBatchImport.ControlAmount = slingshotFinancialBatch.ControlAmount;
+                financialBatchImport.CreatedByPersonForeignId = slingshotFinancialBatch.CreatedByPersonId;
+                financialBatchImport.CreatedDateTime = slingshotFinancialBatch.CreatedDateTime;
+                financialBatchImport.EndDate = slingshotFinancialBatch.EndDate;
+                financialBatchImport.ModifiedByPersonForeignId = slingshotFinancialBatch.ModifiedByPersonId;
+                financialBatchImport.ModifiedDateTime = slingshotFinancialBatch.ModifiedDateTime;
+                financialBatchImport.StartDate = slingshotFinancialBatch.StartDate;
+
+                switch ( slingshotFinancialBatch.Status )
+                {
+                    case Core.Model.BatchStatus.Closed:
+                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Closed;
+                        break;
+                    case Core.Model.BatchStatus.Open:
+                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Open;
+                        break;
+                    case Core.Model.BatchStatus.Pending:
+                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Pending;
+                        break;
+                }
+
+                financialBatchImport.CampusId = slingshotFinancialBatch.CampusId.HasValue ? campusLookup[slingshotFinancialBatch.CampusId.Value] : ( int? ) null;
+
+                financialBatchImportList.Add( financialBatchImport );
+            }
+
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialBatchImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
+            restImportRequest.AddBody( financialBatchImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending FinancialBatch Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            Results.Add( "FinancialBatch Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else
+            {
+                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+            }
+        }
+
+        /// <summary>
+        /// Submits the financial transaction import.
+        /// </summary>
+        private void SubmitFinancialTransactionImport()
+        {
+            BackgroundWorker.ReportProgress( 0, "Preparing FinancialTransactionImport..." );
+            var financialTransactionImportList = new List<Rock.BulkUpdate.FinancialTransactionImport>();
+            var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
+            foreach ( var slingshotFinancialTransaction in this.SlingshotFinancialTransactionList )
+            {
+                var financialTransactionImport = new Rock.BulkUpdate.FinancialTransactionImport();
+                financialTransactionImport.FinancialTransactionForeignId = slingshotFinancialTransaction.Id;
+
+                financialTransactionImport.AuthorizedPersonForeignId = slingshotFinancialTransaction.AuthorizedPersonId;
+                financialTransactionImport.BatchForeignId = slingshotFinancialTransaction.BatchId;
+
+                switch ( slingshotFinancialTransaction.CurrencyType )
+                {
+                    case Core.Model.CurrencyType.ACH:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_ACH.AsGuid()].Id;
+                        break;
+                    case Core.Model.CurrencyType.Cash:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_CASH.AsGuid()].Id;
+                        break;
+                    case Core.Model.CurrencyType.Check:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_CHECK.AsGuid()].Id;
+                        break;
+                    case Core.Model.CurrencyType.CreditCard:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_CREDIT_CARD.AsGuid()].Id;
+                        break;
+                    case Core.Model.CurrencyType.NonCash:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_NONCASH.AsGuid()].Id;
+                        break;
+                    case Core.Model.CurrencyType.Other:
+                        // TODO: Do we need to support this?
+                        break;
+                }
+
+                switch ( slingshotFinancialTransaction.TransactionSource )
+                {
+                    case Core.Model.TransactionSource.BankChecks:
+                        financialTransactionImport.TransactionSourceValueId = this.TransactionSourceTypeValues[Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_BANK_CHECK.AsGuid()].Id;
+                        break;
+                    case Core.Model.TransactionSource.Kiosk:
+                        financialTransactionImport.TransactionSourceValueId = this.TransactionSourceTypeValues[Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_KIOSK.AsGuid()].Id;
+                        break;
+                    case Core.Model.TransactionSource.MobileApplication:
+                        financialTransactionImport.TransactionSourceValueId = this.TransactionSourceTypeValues[Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_MOBILE_APPLICATION.AsGuid()].Id;
+                        break;
+                    case Core.Model.TransactionSource.OnsiteCollection:
+                        financialTransactionImport.TransactionSourceValueId = this.TransactionSourceTypeValues[Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_ONSITE_COLLECTION.AsGuid()].Id;
+                        break;
+                    case Core.Model.TransactionSource.Website:
+                        financialTransactionImport.TransactionSourceValueId = this.TransactionSourceTypeValues[Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_WEBSITE.AsGuid()].Id;
+                        break;
+                }
+
+                switch ( slingshotFinancialTransaction.TransactionType )
+                {
+                    case Core.Model.TransactionType.Contribution:
+                        financialTransactionImport.TransactionTypeValueId = this.TransactionTypeValues[Rock.Client.SystemGuid.DefinedValue.TRANSACTION_TYPE_CONTRIBUTION.AsGuid()].Id;
+                        break;
+                    case Core.Model.TransactionType.EventRegistration:
+                        financialTransactionImport.TransactionTypeValueId = this.TransactionTypeValues[Rock.Client.SystemGuid.DefinedValue.TRANSACTION_TYPE_EVENT_REGISTRATION.AsGuid()].Id;
+                        break;
+                }
+
+                financialTransactionImport.FinancialTransactionDetailImports = new List<Rock.BulkUpdate.FinancialTransactionDetailImport>();
+                foreach ( var slingshotFinancialTransactionDetail in slingshotFinancialTransaction.FinancialTransactionDetails )
+                {
+                    var financialTransactionDetailImport = new Rock.BulkUpdate.FinancialTransactionDetailImport();
+                    financialTransactionDetailImport.FinancialAccountForeignId = slingshotFinancialTransactionDetail.AccountId;
+                    financialTransactionDetailImport.Amount = slingshotFinancialTransactionDetail.Amount;
+                    financialTransactionDetailImport.CreatedByPersonForeignId = slingshotFinancialTransactionDetail.CreatedByPersonId;
+                    financialTransactionDetailImport.CreatedDateTime = slingshotFinancialTransactionDetail.CreatedDateTime;
+                    financialTransactionDetailImport.FinancialTransactionDetailForeignId = slingshotFinancialTransactionDetail.Id;
+                    financialTransactionDetailImport.ModifiedByPersonForeignId = slingshotFinancialTransactionDetail.ModifiedByPersonId;
+                    financialTransactionDetailImport.ModifiedDateTime = slingshotFinancialTransactionDetail.ModifiedDateTime;
+                    financialTransactionDetailImport.Summary = slingshotFinancialTransactionDetail.Summary;
+                    financialTransactionImport.FinancialTransactionDetailImports.Add( financialTransactionDetailImport );
+                }
+
+                financialTransactionImport.Summary = slingshotFinancialTransaction.Summary;
+                financialTransactionImport.TransactionCode = slingshotFinancialTransaction.TransactionCode;
+                financialTransactionImport.TransactionDate = slingshotFinancialTransaction.TransactionDate;
+                financialTransactionImport.CreatedByPersonForeignId = slingshotFinancialTransaction.CreatedByPersonId;
+                financialTransactionImport.CreatedDateTime = slingshotFinancialTransaction.CreatedDateTime;
+                financialTransactionImport.ModifiedByPersonForeignId = slingshotFinancialTransaction.ModifiedByPersonId;
+                financialTransactionImport.ModifiedDateTime = slingshotFinancialTransaction.ModifiedDateTime;
+
+                financialTransactionImportList.Add( financialTransactionImport );
+            }
+
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialTransactionImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
+            restImportRequest.AddBody( financialTransactionImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending FinancialTransaction Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            Results.Add( "FinancialTransaction Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
+            {
+                // either the endpoint doesn't exist, or the payload was too big
+                int postSizeMB = financialTransactionImportList.ToJson().Length / 1024 / 1024;
+                throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/FinancialTransactionImport. Make sure that Rock has been updated to support FinancialTransactionImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
+            }
+            else
+            {
+                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+            }
+        }
+
+        #endregion Financial Transaction Related
+
+        #region Attendance Related
 
         /// <summary>
         /// Submits the attendance import.
@@ -174,13 +429,12 @@ namespace Slingshot
             {
                 var attendanceImport = new Rock.BulkUpdate.AttendanceImport();
 
-                // Note: There is no Attendance.Id in slingshotAttendance
-
+                //// Note: There is no Attendance.Id in slingshotAttendance
                 attendanceImport.PersonForeignId = slingshotAttendance.PersonId;
                 attendanceImport.GroupForeignId = slingshotAttendance.GroupId;
                 attendanceImport.LocationForeignId = slingshotAttendance.LocationId;
                 attendanceImport.ScheduleForeignId = slingshotAttendance.ScheduleId;
-                attendanceImport.StartDateTime = slingshotAttendance.StartDateTime.Value;
+                attendanceImport.StartDateTime = slingshotAttendance.StartDateTime;
                 attendanceImport.EndDateTime = slingshotAttendance.EndDateTime;
                 attendanceImport.Note = slingshotAttendance.Note;
                 if ( slingshotAttendance.CampusId.HasValue )
@@ -204,6 +458,12 @@ namespace Slingshot
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
                 BackgroundWorker.ReportProgress( 0, this.Results );
+            }
+            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
+            {
+                // either the endpoint doesn't exist, or the payload was too big
+                int postSizeMB = attendanceImportList.ToJson().Length / 1024 / 1024;
+                throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/AttendanceImport. Make sure that Rock has been updated to support AttendanceImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
             }
             else
             {
@@ -354,6 +614,10 @@ namespace Slingshot
             }
         }
 
+        #endregion Attendance Related
+
+        #region Person Related
+
         /// <summary>
         /// Submits the person import.
         /// </summary>
@@ -366,10 +630,8 @@ namespace Slingshot
             RestRequest restPersonImportRequest = new RestRequest( "api/BulkImport/PersonImport", Method.POST );
             restPersonImportRequest.RequestFormat = RestSharp.DataFormat.Json;
 
-            var personImportListJSON = personImportList.ToJson();
-            int postSizeMB = personImportListJSON.Length / 1024 / 1024;
-
             restPersonImportRequest.AddBody( personImportList );
+
             int fiveMinutesMS = ( 1000 * 60 ) * 5;
             restPersonImportRequest.Timeout = fiveMinutesMS;
 
@@ -386,6 +648,7 @@ namespace Slingshot
             else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
             {
                 // either the endpoint doesn't exist, or the payload was too big
+                int postSizeMB = personImportList.ToJson().Length / 1024 / 1024;
                 throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/PersonImport. Make sure that Rock has been updated to support PersonImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
             }
             else
@@ -610,6 +873,8 @@ namespace Slingshot
 
             return personImportList;
         }
+
+        #endregion Person Related
 
         /// <summary>
         /// Add any campuses that aren't in Rock yet
@@ -976,6 +1241,44 @@ namespace Slingshot
 
                 this.SlingshotScheduleList = uniqueSchedules.Select( a => a.Value ).ToList();
             }
+
+            /* Financial Transactions */
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialAccount().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotFinancialAccountList = csvReader.GetRecords<Slingshot.Core.Model.FinancialAccount>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialTransaction().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotFinancialTransactionList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransaction>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialTransactionDetail().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                var slingshotFinancialTransactionDetailList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransactionDetail>().ToList();
+                var slingshotFinancialTransactionLookup = this.SlingshotFinancialTransactionList.ToDictionary( k => k.Id, v => v );
+                foreach ( var slingshotFinancialTransactionDetail in slingshotFinancialTransactionDetailList )
+                {
+                    slingshotFinancialTransactionLookup[slingshotFinancialTransactionDetail.TransactionId].FinancialTransactionDetails.Add( slingshotFinancialTransactionDetail );
+                }
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialBatch().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotFinancialBatchList = csvReader.GetRecords<Slingshot.Core.Model.FinancialBatch>().ToList();
+                foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
+                {
+                    slingshotFinancialBatch.FinancialTransactions = this.SlingshotFinancialTransactionList.Where( a => a.BatchId == slingshotFinancialBatch.Id ).ToList();
+                }
+            }
         }
 
         /// <summary>
@@ -994,6 +1297,9 @@ namespace Slingshot
             this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
             this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
             this.LocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.LOCATION_TYPE.AsGuid() );
+            this.CurrencyTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_CURRENCY_TYPE.AsGuid() );
+            this.TransactionSourceTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_SOURCE_TYPE.AsGuid() );
+            this.TransactionTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_TRANSACTION_TYPE.AsGuid() );
 
             // EntityTypes
             RestRequest requestEntityTypes = new RestRequest( Method.GET );

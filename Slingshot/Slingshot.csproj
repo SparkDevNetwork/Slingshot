@@ -52,10 +52,6 @@
       <HintPath>..\Slingshot.CCB\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Rock.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Rock\Rock.Client\bin\Debug\Rock.Client.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.IO.Compression" />
@@ -78,6 +74,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialAccountImport.cs">
+      <Link>Rock\BulkUpdate\FinancialAccountImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialBatchImport.cs">
+      <Link>Rock\BulkUpdate\FinancialBatchImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionDetailImport.cs">
+      <Link>Rock\BulkUpdate\FinancialTransactionDetailImport.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionImport.cs">
+      <Link>Rock\BulkUpdate\FinancialTransactionImport.cs</Link>
+    </Compile>
     <Compile Include="SlingshotEndpointNotFoundException.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -158,6 +166,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Rock\Rock.Client\Rock.Client.csproj">
+      <Project>{6ea64bb9-9740-453a-939b-df43ad9ac164}</Project>
+      <Name>Rock.Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Slingshot.Core\Slingshot.Core\Slingshot.Core.csproj">
       <Project>{B6072804-DC94-473F-A7E9-E175DB03CAD4}</Project>
       <Name>Slingshot.Core</Name>
