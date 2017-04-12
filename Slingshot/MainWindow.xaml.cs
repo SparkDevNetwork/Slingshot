@@ -14,6 +14,30 @@ namespace Slingshot
         private Importer _importer = null;
 
         /// <summary>
+        /// Gets or sets the rock URL.
+        /// </summary>
+        /// <value>
+        /// The rock URL.
+        /// </value>
+        public string RockUrl { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the rock user.
+        /// </summary>
+        /// <value>
+        /// The name of the rock user.
+        /// </value>
+        public string RockUserName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rock password.
+        /// </summary>
+        /// <value>
+        /// The rock password.
+        /// </value>
+        public string RockPassword { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
         public MainWindow()
@@ -45,7 +69,7 @@ namespace Slingshot
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnGo_Click( object sender, RoutedEventArgs e )
         {
-            _importer = new Importer( tbSlingshotFileName.Text );
+            _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
 
             btnGo.IsEnabled = false;
 

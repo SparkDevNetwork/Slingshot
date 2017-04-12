@@ -74,50 +74,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialAccountImport.cs">
-      <Link>Rock\BulkUpdate\FinancialAccountImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialBatchImport.cs">
-      <Link>Rock\BulkUpdate\FinancialBatchImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionDetailImport.cs">
-      <Link>Rock\BulkUpdate\FinancialTransactionDetailImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionImport.cs">
-      <Link>Rock\BulkUpdate\FinancialTransactionImport.cs</Link>
+    <Compile Include="Login.xaml.cs">
+      <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
     <Compile Include="SlingshotEndpointNotFoundException.cs" />
+    <Page Include="Login.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\AttendanceImport.cs">
-      <Link>Rock\BulkUpdate\AttendanceImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\AttributeValueImport.cs">
-      <Link>Rock\BulkUpdate\AttributeValueImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupImport.cs">
-      <Link>Rock\BulkUpdate\GroupImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupMemberImport.cs">
-      <Link>Rock\BulkUpdate\GroupMemberImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\LocationImport.cs">
-      <Link>Rock\BulkUpdate\LocationImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonAddressImport.cs">
-      <Link>Rock\BulkUpdate\PersonAddressImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonImport.cs">
-      <Link>Rock\BulkUpdate\PersonImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PhoneNumberImport.cs">
-      <Link>Rock\BulkUpdate\PhoneNumberImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\ScheduleImport.cs">
-      <Link>Rock\BulkUpdate\ScheduleImport.cs</Link>
-    </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\BooleanExtensions.cs">
       <Link>Rock\Extensions\BooleanExtensions.cs</Link>
     </Compile>

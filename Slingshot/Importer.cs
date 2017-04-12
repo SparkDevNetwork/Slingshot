@@ -20,10 +20,37 @@ namespace Slingshot
         /// Initializes a new instance of the <see cref="Importer"/> class.
         /// </summary>
         /// <param name="slingshotFileName">Name of the slingshot file.</param>
-        public Importer( string slingshotFileName )
+        public Importer( string slingshotFileName, string rockUrl, string rockUserName, string rockPassword )
         {
             SlingshotFileName = slingshotFileName;
+            RockUrl = rockUrl;
+            RockUserName = rockUserName;
+            RockPassword = rockPassword;
         }
+
+        /// <summary>
+        /// Gets or sets the rock URL.
+        /// </summary>
+        /// <value>
+        /// The rock URL.
+        /// </value>
+        private string RockUrl { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the rock user.
+        /// </summary>
+        /// <value>
+        /// The name of the rock user.
+        /// </value>
+        private string RockUserName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rock password.
+        /// </summary>
+        /// <value>
+        /// The rock password.
+        /// </value>
+        private string RockPassword { get; set; }
 
         /* Person Related */
         private Dictionary<Guid, Rock.Client.GroupTypeRole> FamilyRoles { get; set; }
@@ -188,11 +215,11 @@ namespace Slingshot
         private void SubmitFinancialAccountImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing FinancialAccountImport..." );
-            var financialAccountImportList = new List<Rock.BulkUpdate.FinancialAccountImport>();
+            var financialAccountImportList = new List<Rock.Client.BulkUpdate.FinancialAccountImport>();
             var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
             foreach ( var slingshotFinancialAccount in this.SlingshotFinancialAccountList )
             {
-                var financialAccountImport = new Rock.BulkUpdate.FinancialAccountImport();
+                var financialAccountImport = new Rock.Client.BulkUpdate.FinancialAccountImport();
                 financialAccountImport.FinancialAccountForeignId = slingshotFinancialAccount.Id;
 
                 financialAccountImport.Name = slingshotFinancialAccount.Name;
@@ -235,11 +262,11 @@ namespace Slingshot
         private void SubmitFinancialBatchImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing FinancialBatchImport..." );
-            var financialBatchImportList = new List<Rock.BulkUpdate.FinancialBatchImport>();
+            var financialBatchImportList = new List<Rock.Client.BulkUpdate.FinancialBatchImport>();
             var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
             foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
             {
-                var financialBatchImport = new Rock.BulkUpdate.FinancialBatchImport();
+                var financialBatchImport = new Rock.Client.BulkUpdate.FinancialBatchImport();
                 financialBatchImport.FinancialBatchForeignId = slingshotFinancialBatch.Id;
 
                 financialBatchImport.Name = slingshotFinancialBatch.Name;
@@ -259,13 +286,13 @@ namespace Slingshot
                 switch ( slingshotFinancialBatch.Status )
                 {
                     case Core.Model.BatchStatus.Closed:
-                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Closed;
+                        financialBatchImport.Status = ( int ) Rock.Client.Enums.BatchStatus.Closed;
                         break;
                     case Core.Model.BatchStatus.Open:
-                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Open;
+                        financialBatchImport.Status = ( int ) Rock.Client.Enums.BatchStatus.Open;
                         break;
                     case Core.Model.BatchStatus.Pending:
-                        financialBatchImport.Status = Rock.BulkUpdate.FinancialBatchImport.BatchStatus.Pending;
+                        financialBatchImport.Status = ( int ) Rock.Client.Enums.BatchStatus.Pending;
                         break;
                 }
 
@@ -300,11 +327,11 @@ namespace Slingshot
         private void SubmitFinancialTransactionImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing FinancialTransactionImport..." );
-            var financialTransactionImportList = new List<Rock.BulkUpdate.FinancialTransactionImport>();
+            var financialTransactionImportList = new List<Rock.Client.BulkUpdate.FinancialTransactionImport>();
             var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
             foreach ( var slingshotFinancialTransaction in this.SlingshotFinancialTransactionList )
             {
-                var financialTransactionImport = new Rock.BulkUpdate.FinancialTransactionImport();
+                var financialTransactionImport = new Rock.Client.BulkUpdate.FinancialTransactionImport();
                 financialTransactionImport.FinancialTransactionForeignId = slingshotFinancialTransaction.Id;
 
                 financialTransactionImport.AuthorizedPersonForeignId = slingshotFinancialTransaction.AuthorizedPersonId;
@@ -361,10 +388,10 @@ namespace Slingshot
                         break;
                 }
 
-                financialTransactionImport.FinancialTransactionDetailImports = new List<Rock.BulkUpdate.FinancialTransactionDetailImport>();
+                financialTransactionImport.FinancialTransactionDetailImports = new List<Rock.Client.BulkUpdate.FinancialTransactionDetailImport>();
                 foreach ( var slingshotFinancialTransactionDetail in slingshotFinancialTransaction.FinancialTransactionDetails )
                 {
-                    var financialTransactionDetailImport = new Rock.BulkUpdate.FinancialTransactionDetailImport();
+                    var financialTransactionDetailImport = new Rock.Client.BulkUpdate.FinancialTransactionDetailImport();
                     financialTransactionDetailImport.FinancialAccountForeignId = slingshotFinancialTransactionDetail.AccountId;
                     financialTransactionDetailImport.Amount = slingshotFinancialTransactionDetail.Amount;
                     financialTransactionDetailImport.CreatedByPersonForeignId = slingshotFinancialTransactionDetail.CreatedByPersonId;
@@ -424,10 +451,10 @@ namespace Slingshot
         {
             BackgroundWorker.ReportProgress( 0, "Preparing AttendanceImport..." );
             var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
-            var attendanceImportList = new List<Rock.BulkUpdate.AttendanceImport>();
+            var attendanceImportList = new List<Rock.Client.BulkUpdate.AttendanceImport>();
             foreach ( var slingshotAttendance in this.SlingshotAttendanceList )
             {
-                var attendanceImport = new Rock.BulkUpdate.AttendanceImport();
+                var attendanceImport = new Rock.Client.BulkUpdate.AttendanceImport();
 
                 //// Note: There is no Attendance.Id in slingshotAttendance
                 attendanceImport.PersonForeignId = slingshotAttendance.PersonId;
@@ -477,10 +504,10 @@ namespace Slingshot
         private void SubmitScheduleImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing ScheduleImport..." );
-            var scheduleImportList = new List<Rock.BulkUpdate.ScheduleImport>();
+            var scheduleImportList = new List<Rock.Client.BulkUpdate.ScheduleImport>();
             foreach ( var slingshotSchedule in this.SlingshotScheduleList )
             {
-                var scheduleImport = new Rock.BulkUpdate.ScheduleImport();
+                var scheduleImport = new Rock.Client.BulkUpdate.ScheduleImport();
                 scheduleImport.ScheduleForeignId = slingshotSchedule.Id;
                 scheduleImport.Name = slingshotSchedule.Name;
                 scheduleImportList.Add( scheduleImport );
@@ -512,10 +539,10 @@ namespace Slingshot
         private void SubmitLocationImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing LocationImport..." );
-            var locationImportList = new List<Rock.BulkUpdate.LocationImport>();
+            var locationImportList = new List<Rock.Client.BulkUpdate.LocationImport>();
             foreach ( var slingshotLocation in this.SlingshotLocationList )
             {
-                var locationImport = new Rock.BulkUpdate.LocationImport();
+                var locationImport = new Rock.Client.BulkUpdate.LocationImport();
                 locationImport.LocationForeignId = slingshotLocation.Id;
                 locationImport.ParentLocationForeignId = slingshotLocation.ParentLocationId;
                 locationImport.Name = slingshotLocation.Name;
@@ -560,11 +587,11 @@ namespace Slingshot
         private void SubmitGroupImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing GroupImport..." );
-            var groupImportList = new List<Rock.BulkUpdate.GroupImport>();
+            var groupImportList = new List<Rock.Client.BulkUpdate.GroupImport>();
             var campusLookup = this.Campuses.Where( a => a.ForeignId.HasValue ).ToDictionary( k => k.ForeignId.Value, v => v.Id );
             foreach ( var slingshotGroup in this.SlingshotGroupList )
             {
-                var groupImport = new Rock.BulkUpdate.GroupImport();
+                var groupImport = new Rock.Client.BulkUpdate.GroupImport();
                 groupImport.GroupForeignId = slingshotGroup.Id;
                 groupImport.GroupTypeId = this.GroupTypeLookupByForeignId[slingshotGroup.GroupTypeId].Id;
 
@@ -581,11 +608,11 @@ namespace Slingshot
                 }
 
                 groupImport.ParentGroupForeignId = slingshotGroup.ParentGroupId == 0 ? ( int? ) null : slingshotGroup.ParentGroupId;
-                groupImport.GroupMemberImports = new List<Rock.BulkUpdate.GroupMemberImport>();
+                groupImport.GroupMemberImports = new List<Rock.Client.BulkUpdate.GroupMemberImport>();
 
                 foreach ( var groupMember in slingshotGroup.GroupMembers )
                 {
-                    var groupMemberImport = new Rock.BulkUpdate.GroupMemberImport();
+                    var groupMemberImport = new Rock.Client.BulkUpdate.GroupMemberImport();
                     groupMemberImport.PersonForeignId = groupMember.PersonId;
                     groupMemberImport.RoleName = groupMember.Role;
                     groupImport.GroupMemberImports.Add( groupMemberImport );
@@ -625,7 +652,7 @@ namespace Slingshot
         private void SubmitPersonImport()
         {
             BackgroundWorker.ReportProgress( 0, "Preparing PersonImport..." );
-            List<Rock.BulkUpdate.PersonImport> personImportList = GetPersonImportList();
+            List<Rock.Client.BulkUpdate.PersonImport> personImportList = GetPersonImportList();
 
             RestRequest restPersonImportRequest = new RestRequest( "api/BulkImport/PersonImport", Method.POST );
             restPersonImportRequest.RequestFormat = RestSharp.DataFormat.Json;
@@ -665,12 +692,12 @@ namespace Slingshot
         /// or
         /// personImport.FamilyForeignId must be greater than 0 or null
         /// or</exception>
-        private List<Rock.BulkUpdate.PersonImport> GetPersonImportList()
+        private List<Rock.Client.BulkUpdate.PersonImport> GetPersonImportList()
         {
-            List<Rock.BulkUpdate.PersonImport> personImportList = new List<Rock.BulkUpdate.PersonImport>();
+            List<Rock.Client.BulkUpdate.PersonImport> personImportList = new List<Rock.Client.BulkUpdate.PersonImport>();
             foreach ( var slingshotPerson in this.SlingshotPersonList )
             {
-                var personImport = new Rock.BulkUpdate.PersonImport();
+                var personImport = new Rock.Client.BulkUpdate.PersonImport();
                 personImport.PersonForeignId = slingshotPerson.Id;
                 personImport.FamilyForeignId = slingshotPerson.FamilyId;
 
@@ -802,10 +829,10 @@ namespace Slingshot
                 personImport.GivingIndividually = slingshotPerson.GiveIndividually ?? false;
 
                 // Phone Numbers
-                personImport.PhoneNumbers = new List<Rock.BulkUpdate.PhoneNumberImport>();
+                personImport.PhoneNumbers = new List<Rock.Client.BulkUpdate.PhoneNumberImport>();
                 foreach ( var slingshotPersonPhone in slingshotPerson.PhoneNumbers )
                 {
-                    var phoneNumberImport = new Rock.BulkUpdate.PhoneNumberImport();
+                    var phoneNumberImport = new Rock.Client.BulkUpdate.PhoneNumberImport();
                     phoneNumberImport.NumberTypeValueId = this.PhoneNumberTypeValues[slingshotPersonPhone.PhoneType].Id;
                     phoneNumberImport.Number = slingshotPersonPhone.PhoneNumber;
                     phoneNumberImport.IsMessagingEnabled = slingshotPersonPhone.IsMessagingEnabled ?? false;
@@ -814,7 +841,7 @@ namespace Slingshot
                 }
 
                 // Addresses
-                personImport.Addresses = new List<Rock.BulkUpdate.PersonAddressImport>();
+                personImport.Addresses = new List<Rock.Client.BulkUpdate.PersonAddressImport>();
                 foreach ( var slingshotPersonAddress in slingshotPerson.Addresses )
                 {
                     if ( !string.IsNullOrEmpty( slingshotPersonAddress.Street1 ) )
@@ -835,7 +862,7 @@ namespace Slingshot
 
                         if ( groupLocationTypeValueId.HasValue )
                         {
-                            var addressImport = new Rock.BulkUpdate.PersonAddressImport()
+                            var addressImport = new Rock.Client.BulkUpdate.PersonAddressImport()
                             {
                                 GroupLocationTypeValueId = groupLocationTypeValueId.Value,
                                 IsMailingLocation = slingshotPersonAddress.AddressType == Core.Model.AddressType.Home,
@@ -860,11 +887,11 @@ namespace Slingshot
                 }
 
                 // Attribute Values
-                personImport.AttributeValues = new List<Rock.BulkUpdate.AttributeValueImport>();
+                personImport.AttributeValues = new List<Rock.Client.BulkUpdate.AttributeValueImport>();
                 foreach ( var slingshotPersonAttributeValue in slingshotPerson.Attributes )
                 {
                     int attributeId = this.PersonAttributeKeyLookup[slingshotPersonAttributeValue.AttributeKey].Id;
-                    var attributeValueImport = new Rock.BulkUpdate.AttributeValueImport( attributeId, slingshotPersonAttributeValue.AttributeValue );
+                    var attributeValueImport = new Rock.Client.BulkUpdate.AttributeValueImport { AttributeId = attributeId, Value = slingshotPersonAttributeValue.AttributeValue };
                     personImport.AttributeValues.Add( attributeValueImport );
                 }
 
@@ -1274,9 +1301,13 @@ namespace Slingshot
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
                 this.SlingshotFinancialBatchList = csvReader.GetRecords<Slingshot.Core.Model.FinancialBatch>().ToList();
+                var transactionsByBatch = this.SlingshotFinancialTransactionList.GroupBy( a => a.BatchId ).ToDictionary( k => k.Key, v => v.ToList() );
                 foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
                 {
-                    slingshotFinancialBatch.FinancialTransactions = this.SlingshotFinancialTransactionList.Where( a => a.BatchId == slingshotFinancialBatch.Id ).ToList();
+                    if ( transactionsByBatch.ContainsKey( slingshotFinancialBatch.Id ) )
+                    {
+                        slingshotFinancialBatch.FinancialTransactions = transactionsByBatch[slingshotFinancialBatch.Id];
+                    }
                 }
             }
         }
@@ -1367,7 +1398,7 @@ namespace Slingshot
         private RestClient GetRockRestClient()
         {
             // TODO: Prompt for URL and Login Params
-            RestClient restClient = new RestClient( "http://localhost:6229" );
+            RestClient restClient = new RestClient( this.RockUrl );
 
             restClient.CookieContainer = new System.Net.CookieContainer();
 
@@ -1376,13 +1407,20 @@ namespace Slingshot
             restLoginRequest.Resource = "api/auth/login";
             var loginParameters = new
             {
-                UserName = "admin",
-                Password = "admin"
+                UserName = this.RockUserName,
+                Password = this.RockPassword
             };
 
             restLoginRequest.AddBody( loginParameters );
             var loginResponse = restClient.Post( restLoginRequest );
-            return restClient;
+            if ( loginResponse.StatusCode != System.Net.HttpStatusCode.NoContent )
+            {
+                throw new Exception( "Unable to login" );
+            }
+            else
+            {
+                return restClient;
+            }
         }
 
         /// <summary>
