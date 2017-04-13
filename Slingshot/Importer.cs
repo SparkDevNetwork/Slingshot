@@ -88,6 +88,8 @@ namespace Slingshot
 
         private Dictionary<Guid, Rock.Client.EntityType> EntityTypeLookup { get; set; }
 
+        private Dictionary<Guid, Rock.Client.DefinedType> DefinedTypeLookup { get; set; }
+
         private Dictionary<string, Rock.Client.FieldType> FieldTypeLookup { get; set; }
 
         private List<Rock.Client.Category> AttributeCategoryList { get; set; }
@@ -162,6 +164,9 @@ namespace Slingshot
         public void BackgroundWorker_DoWork( object sender, DoWorkEventArgs e )
         {
             BackgroundWorker = sender as BackgroundWorker;
+            BackgroundWorker.ReportProgress( 0, "Connecting to Rock REST Api..." );
+
+            this.RockRestClient = this.GetRockRestClient();
 
             // Load Slingshot Models from .slingshot
             BackgroundWorker.ReportProgress( 0, "Loading Slingshot Models..." );
@@ -171,7 +176,7 @@ namespace Slingshot
             BackgroundWorker.ReportProgress( 0, "Loading Rock Lookups..." );
             LoadLookups();
 
-            this.RockRestClient = this.GetRockRestClient();
+            EnsureDefinedValues();
 
             BackgroundWorker.ReportProgress( 0, "Updating Rock Lookups..." );
 
@@ -252,7 +257,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -317,7 +322,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -436,7 +441,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -494,7 +499,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -529,7 +534,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -577,7 +582,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -637,7 +642,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -680,7 +685,7 @@ namespace Slingshot
             }
             else
             {
-                BackgroundWorker.ReportProgress( 0, importResponse.StatusDescription );
+                throw new SlingshotPOSTFailedException( importResponse );
             }
         }
 
@@ -928,7 +933,12 @@ namespace Slingshot
                 restCampusPostRequest.RequestFormat = RestSharp.DataFormat.Json;
                 restCampusPostRequest.AddBody( campusToAdd );
 
-                var postCampusResponse = this.RockRestClient.Post( restCampusPostRequest );
+                var postResponse = this.RockRestClient.Post( restCampusPostRequest );
+
+                if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                {
+                    throw new SlingshotPOSTFailedException( postResponse );
+                }
             }
         }
 
@@ -950,6 +960,11 @@ namespace Slingshot
                 restPostRequest.AddBody( groupTypeToAdd );
 
                 var postResponse = this.RockRestClient.Post( restPostRequest );
+
+                if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                {
+                    throw new SlingshotPOSTFailedException( postResponse );
+                }
             }
         }
 
@@ -974,8 +989,14 @@ namespace Slingshot
                     restPostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restPostRequest.AddBody( attributeCategory );
 
-                    var restPostResponse = this.RockRestClient.Post<int>( restPostRequest );
-                    attributeCategory.Id = restPostResponse.Data;
+                    var postResponse = this.RockRestClient.Post<int>( restPostRequest );
+
+                    if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                    {
+                        throw new SlingshotPOSTFailedException( postResponse );
+                    }
+
+                    attributeCategory.Id = postResponse.Data;
                     this.AttributeCategoryList.Add( attributeCategory );
                 }
             }
@@ -1018,7 +1039,12 @@ namespace Slingshot
                     restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restAttributePostRequest.AddBody( rockPersonAttribute );
 
-                    var restAttributePostResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
+                    var postResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
+
+                    if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                    {
+                        throw new SlingshotPOSTFailedException( postResponse );
+                    }
                 }
             }
         }
@@ -1062,7 +1088,12 @@ namespace Slingshot
                     restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                     restAttributePostRequest.AddBody( rockFamilyAttribute );
 
-                    var restAttributePostResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
+                    var postResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
+
+                    if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                    {
+                        throw new SlingshotPOSTFailedException( postResponse );
+                    }
                 }
             }
         }
@@ -1072,7 +1103,7 @@ namespace Slingshot
         /// </summary>
         private void AddConnectionStatuses()
         {
-            AddDefinedValues( this.SlingshotPersonList.Select( a => a.ConnectionStatus ).Distinct().ToList(), this.PersonConnectionStatusValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.ConnectionStatus ).Where( a => !string.IsNullOrWhiteSpace( a ) ).Distinct().ToList(), this.PersonConnectionStatusValues );
         }
 
         /// <summary>
@@ -1080,7 +1111,7 @@ namespace Slingshot
         /// </summary>
         private void AddPersonTitles()
         {
-            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Salutation ).Distinct().ToList(), this.PersonTitleValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Salutation ).Where( a => !string.IsNullOrWhiteSpace( a ) ).Distinct().ToList(), this.PersonTitleValues );
         }
 
         /// <summary>
@@ -1088,7 +1119,7 @@ namespace Slingshot
         /// </summary>
         private void AddPersonSuffixes()
         {
-            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Suffix ).Distinct().ToList(), this.PersonSuffixValues );
+            AddDefinedValues( this.SlingshotPersonList.Select( a => a.Suffix ).Where( a => !string.IsNullOrWhiteSpace( a ) ).Distinct().ToList(), this.PersonSuffixValues );
         }
 
         /// <summary>
@@ -1115,7 +1146,12 @@ namespace Slingshot
                 restDefinedValuePostRequest.RequestFormat = RestSharp.DataFormat.Json;
                 restDefinedValuePostRequest.AddBody( definedValueToAdd );
 
-                var postDefinedValueResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
+                var postResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
+
+                if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                {
+                    throw new SlingshotPOSTFailedException( postResponse );
+                }
             }
         }
 
@@ -1316,29 +1352,112 @@ namespace Slingshot
         }
 
         /// <summary>
+        /// Ensures that the defined values that we need exist on the Rock Server
+        /// </summary>
+        private void EnsureDefinedValues()
+        {
+            List<Rock.Client.DefinedValue> definedValuesToAdd = new List<Rock.Client.DefinedValue>();
+            int definedTypeIdCurrencyType = this.DefinedTypeLookup[Rock.Client.SystemGuid.DefinedType.FINANCIAL_CURRENCY_TYPE.AsGuid()].Id;
+            int definedTypeIdTransactionSourceType = this.DefinedTypeLookup[Rock.Client.SystemGuid.DefinedType.FINANCIAL_SOURCE_TYPE.AsGuid()].Id;
+
+            // The following DefinedValues are not IsSystem, but are potentionally needed to do an import, so make sure they exist on the server
+            if ( !this.CurrencyTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_NONCASH.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdCurrencyType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_NONCASH.AsGuid(),
+                    Value = "Non-Cash",
+                    Description = "Used to track non-cash transactions."
+                } );
+            }
+
+            if ( !this.TransactionSourceTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_BANK_CHECK.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdTransactionSourceType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_BANK_CHECK.AsGuid(),
+                    Value = "Bank Checks",
+                    Description = "Transactions that originated from a bank's bill pay system"
+                } );
+            }
+
+            if ( !this.TransactionSourceTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_KIOSK.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdTransactionSourceType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_KIOSK.AsGuid(),
+                    Value = "Kiosk",
+                    Description = "Transactions that originated from a kiosk"
+                } );
+            }
+
+            if ( !this.TransactionSourceTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_MOBILE_APPLICATION.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdTransactionSourceType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_MOBILE_APPLICATION.AsGuid(),
+                    Value = "Mobile Application",
+                    Description = "Transactions that originated from a mobile application"
+                } );
+            }
+
+            if ( !this.TransactionSourceTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_ONSITE_COLLECTION.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdTransactionSourceType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.FINANCIAL_SOURCE_TYPE_ONSITE_COLLECTION.AsGuid(),
+                    Value = "On-Site Collection",
+                    Description = "Transactions that were collected on-site"
+                } );
+            }
+
+            foreach ( var definedValueToAdd in definedValuesToAdd )
+            {
+                RestRequest restDefinedValuePostRequest = new RestRequest( "api/DefinedValues", Method.POST );
+                restDefinedValuePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                restDefinedValuePostRequest.AddBody( definedValueToAdd );
+
+                var postResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
+
+                if ( postResponse.StatusCode != System.Net.HttpStatusCode.Created )
+                {
+                    throw new SlingshotPOSTFailedException( postResponse );
+                }
+            }
+        }
+
+        /// <summary>
         /// Loads the lookups.
         /// </summary>
         private void LoadLookups()
         {
-            RestClient restClient = GetRockRestClient();
-
-            this.PersonRecordTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_RECORD_TYPE.AsGuid() );
-            this.PersonRecordStatusValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_RECORD_STATUS.AsGuid() );
-            this.PersonConnectionStatusValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_CONNECTION_STATUS.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
-            this.PersonTitleValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_TITLE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
-            this.PersonSuffixValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_SUFFIX.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
-            this.PersonMaritalStatusValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_MARITAL_STATUS.AsGuid() );
-            this.PhoneNumberTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
-            this.GroupLocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
-            this.LocationTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.LOCATION_TYPE.AsGuid() );
-            this.CurrencyTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_CURRENCY_TYPE.AsGuid() );
-            this.TransactionSourceTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_SOURCE_TYPE.AsGuid() );
-            this.TransactionTypeValues = LoadDefinedValues( restClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_TRANSACTION_TYPE.AsGuid() );
+            this.PersonRecordTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_RECORD_TYPE.AsGuid() );
+            this.PersonRecordStatusValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_RECORD_STATUS.AsGuid() );
+            this.PersonConnectionStatusValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_CONNECTION_STATUS.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
+            this.PersonTitleValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_TITLE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
+            this.PersonSuffixValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_SUFFIX.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
+            this.PersonMaritalStatusValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_MARITAL_STATUS.AsGuid() );
+            this.PhoneNumberTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.PERSON_PHONE_TYPE.AsGuid() ).Select( a => a.Value ).ToDictionary( k => k.Value, v => v );
+            this.GroupLocationTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.GROUP_LOCATION_TYPE.AsGuid() );
+            this.LocationTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.LOCATION_TYPE.AsGuid() );
+            this.CurrencyTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_CURRENCY_TYPE.AsGuid() );
+            this.TransactionSourceTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_SOURCE_TYPE.AsGuid() );
+            this.TransactionTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_TRANSACTION_TYPE.AsGuid() );
 
             // EntityTypes
             RestRequest requestEntityTypes = new RestRequest( Method.GET );
             requestEntityTypes.Resource = "api/EntityTypes";
-            var requestEntityTypesResponse = restClient.Execute( requestEntityTypes );
+            var requestEntityTypesResponse = this.RockRestClient.Execute( requestEntityTypes );
+            if ( requestEntityTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( requestEntityTypesResponse );
+            }
+
             var entityTypes = JsonConvert.DeserializeObject<List<Rock.Client.EntityType>>( requestEntityTypesResponse.Content );
             this.EntityTypeLookup = entityTypes.ToDictionary( k => k.Guid, v => v );
 
@@ -1346,22 +1465,49 @@ namespace Slingshot
             int entityTypeIdGroup = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.GROUP.AsGuid()].Id;
             int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
 
+            // DefinedTypes
+            RestRequest requestDefinedTypes = new RestRequest( Method.GET );
+            requestDefinedTypes.Resource = "api/DefinedTypes";
+            var requestDefinedTypesResponse = this.RockRestClient.Execute( requestDefinedTypes );
+            if ( requestDefinedTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( requestDefinedTypesResponse );
+            }
+
+            var definedTypes = JsonConvert.DeserializeObject<List<Rock.Client.DefinedType>>( requestDefinedTypesResponse.Content );
+            this.DefinedTypeLookup = definedTypes.ToDictionary( k => k.Guid, v => v );
+
             // Family GroupTypeRoles
             RestRequest requestFamilyGroupType = new RestRequest( Method.GET );
             requestFamilyGroupType.Resource = $"api/GroupTypes?$filter=Guid eq guid'{Rock.Client.SystemGuid.GroupType.GROUPTYPE_FAMILY}'&$expand=Roles";
-            var familyGroupTypeResponse = restClient.Execute( requestFamilyGroupType );
+            var familyGroupTypeResponse = this.RockRestClient.Execute( requestFamilyGroupType );
+            if ( familyGroupTypeResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( familyGroupTypeResponse );
+            }
+
             this.FamilyRoles = JsonConvert.DeserializeObject<List<Rock.Client.GroupType>>( familyGroupTypeResponse.Content ).FirstOrDefault().Roles.ToDictionary( k => k.Guid, v => v );
 
             // Campuses
             RestRequest requestCampuses = new RestRequest( Method.GET );
             requestCampuses.Resource = "api/Campuses";
-            var campusResponse = restClient.Execute( requestCampuses );
+            var campusResponse = this.RockRestClient.Execute( requestCampuses );
+            if ( campusResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( campusResponse );
+            }
+
             this.Campuses = JsonConvert.DeserializeObject<List<Rock.Client.Campus>>( campusResponse.Content );
 
             // Person Attributes
             RestRequest requestPersonAttributes = new RestRequest( Method.GET );
             requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdPerson}&$expand=FieldType";
-            var personAttributesResponse = restClient.Execute( requestPersonAttributes );
+            var personAttributesResponse = this.RockRestClient.Execute( requestPersonAttributes );
+            if ( personAttributesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( personAttributesResponse );
+            }
+
             var personAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( personAttributesResponse.Content );
             this.PersonAttributeKeyLookup = personAttributes.ToDictionary( k => k.Key, v => v );
 
@@ -1369,27 +1515,47 @@ namespace Slingshot
             this.GroupTypeIdFamily = this.FamilyRoles.Select( a => a.Value.GroupTypeId.Value ).First();
             RestRequest requestFamilyAttributes = new RestRequest( Method.GET );
             requestFamilyAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdGroup} and EntityTypeQualifierColumn eq 'GroupTypeId' and EntityTypeQualifierValue eq '{this.GroupTypeIdFamily}'&$expand=FieldType";
-            var familyAttributesResponse = restClient.Execute( requestFamilyAttributes );
+            var familyAttributesResponse = this.RockRestClient.Execute( requestFamilyAttributes );
+            if ( familyAttributesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( familyAttributesResponse );
+            }
+
             var familyAttributes = JsonConvert.DeserializeObject<List<Rock.Client.Attribute>>( familyAttributesResponse.Content );
             this.FamilyAttributeKeyLookup = familyAttributes.ToDictionary( k => k.Key, v => v );
 
             // Attribute Categories
             RestRequest requestAttributeCategories = new RestRequest( Method.GET );
             requestAttributeCategories.Resource = $"api/Categories?$filter=EntityTypeId eq {entityTypeIdAttribute}";
-            var requestAttributeCategoriesResponse = restClient.Execute( requestAttributeCategories );
+            var requestAttributeCategoriesResponse = this.RockRestClient.Execute( requestAttributeCategories );
+            if ( requestAttributeCategoriesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( requestAttributeCategoriesResponse );
+            }
+
             this.AttributeCategoryList = JsonConvert.DeserializeObject<List<Rock.Client.Category>>( requestAttributeCategoriesResponse.Content );
 
             // FieldTypes
             RestRequest requestFieldTypes = new RestRequest( Method.GET );
             requestFieldTypes.Resource = "api/FieldTypes";
-            var requestFieldTypesResponse = restClient.Execute( requestFieldTypes );
+            var requestFieldTypesResponse = this.RockRestClient.Execute( requestFieldTypes );
+            if ( requestFieldTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( requestFieldTypesResponse );
+            }
+
             var fieldTypes = JsonConvert.DeserializeObject<List<Rock.Client.FieldType>>( requestFieldTypesResponse.Content );
             this.FieldTypeLookup = fieldTypes.ToDictionary( k => k.Class, v => v );
 
             // GroupTypes
             RestRequest requestGroupTypes = new RestRequest( Method.GET );
             requestGroupTypes.Resource = "api/GroupTypes?$filter=ForeignId ne null";
-            var requestGroupTypesResponse = restClient.Execute( requestGroupTypes );
+            var requestGroupTypesResponse = this.RockRestClient.Execute( requestGroupTypes );
+            if ( requestGroupTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
+            {
+                throw new SlingshotGETFailedException( requestGroupTypesResponse );
+            }
+
             var groupTypes = JsonConvert.DeserializeObject<List<Rock.Client.GroupType>>( requestGroupTypesResponse.Content );
             this.GroupTypeLookupByForeignId = groupTypes.ToDictionary( k => k.ForeignId.Value, v => v );
         }
@@ -1400,7 +1566,6 @@ namespace Slingshot
         /// <returns></returns>
         private RestClient GetRockRestClient()
         {
-            // TODO: Prompt for URL and Login Params
             RestClient restClient = new RestClient( this.RockUrl );
 
             restClient.CookieContainer = new System.Net.CookieContainer();
@@ -1418,7 +1583,7 @@ namespace Slingshot
             var loginResponse = restClient.Post( restLoginRequest );
             if ( loginResponse.StatusCode != System.Net.HttpStatusCode.NoContent )
             {
-                throw new Exception( "Unable to login" );
+                throw new SlingshotLoginFailedException( "Unable to login" );
             }
             else
             {

@@ -48,7 +48,6 @@ namespace Slingshot
 
                 restLoginRequest.AddBody( loginParameters );
 
-
                 // start a background thread to Login since this could take a little while and we want a Wait cursor
                 BackgroundWorker bw = new BackgroundWorker();
                 bw.DoWork += delegate ( object s, DoWorkEventArgs ee )
@@ -91,7 +90,6 @@ namespace Slingshot
             {
                 lblMessage.Text = "Please provide the information needed to connect.";
             }
-
         }
 
         /// <summary>

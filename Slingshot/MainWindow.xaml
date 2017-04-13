@@ -8,9 +8,14 @@
         ResizeMode="CanMinimize"
         Title="Slingshot - Rock Import" Height="421.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
-        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="477"/>
-        <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="4" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
-        <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="75" Click="btnGo_Click" Margin="4,4,0,4"/>
+        <StackPanel Orientation="Horizontal">
+        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="404"/>
+        <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="btnGo" Content="Import" Padding="4" Click="btnGo_Click" Margin="4,4,0,4"/>
+            <Label Name="lblTimer" Content="" Margin="4" />
+        </StackPanel>
         <TextBox x:Name="tbResults" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="270" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
     </StackPanel>
 </Window>

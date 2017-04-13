@@ -1,4 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Timers;
 using System.Windows;
 using Microsoft.Win32;
 
@@ -12,6 +15,7 @@ namespace Slingshot
     public partial class MainWindow : Window
     {
         private Importer _importer = null;
+        private Timer _timer = null;
 
         /// <summary>
         /// Gets or sets the rock URL.
@@ -62,6 +66,9 @@ namespace Slingshot
             }
         }
 
+        private static Stopwatch _stopwatch = null;
+        private object timerState = new object();
+
         /// <summary>
         /// Handles the Click event of the btnGo control.
         /// </summary>
@@ -72,6 +79,11 @@ namespace Slingshot
             _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
 
             btnGo.IsEnabled = false;
+            _stopwatch = Stopwatch.StartNew();
+
+            _timer = new Timer( 100 );
+            _timer.Elapsed += _timer_Elapsed;
+            _timer.Start();
 
             BackgroundWorker backgroundWorker = new BackgroundWorker();
             backgroundWorker.WorkerReportsProgress = true;
@@ -79,6 +91,20 @@ namespace Slingshot
             backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
             backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
             backgroundWorker.RunWorkerAsync();
+        }
+
+        /// <summary>
+        /// Handles the Elapsed event of the _timer control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="ElapsedEventArgs"/> instance containing the event data.</param>
+        private void _timer_Elapsed( object sender, ElapsedEventArgs e )
+        {
+            this.Dispatcher.Invoke( () =>
+            {
+                string timerText = $"{Math.Round( _stopwatch.Elapsed.TotalSeconds, 1 )} seconds";
+                lblTimer.Content = timerText;
+            } );
         }
 
         /// <summary>
@@ -113,9 +139,9 @@ namespace Slingshot
         {
             if ( e.Error != null )
             {
-                if ( e.Error is SlingshotEndpointNotFoundException )
+                if ( e.Error is SlingshotException )
                 {
-                    tbResults.Text += "\n\n"  + e.Error.Message;
+                    tbResults.Text += "\n\n" + e.Error.Message;
                 }
                 else
                 {
@@ -124,6 +150,8 @@ namespace Slingshot
             }
 
             btnGo.IsEnabled = true;
+            _timer.Stop();
+            _stopwatch.Stop();
         }
     }
 }
