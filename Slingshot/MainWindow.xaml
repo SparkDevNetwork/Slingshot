@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
-        ResizeMode="NoResize"
+        ResizeMode="CanMinimize"
         Title="Slingshot - Rock Import" Height="421.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="477"/>
