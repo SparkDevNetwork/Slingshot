@@ -1,9 +1,14 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using CsvHelper;
 using Newtonsoft.Json;
 using RestSharp;
@@ -23,10 +28,57 @@ namespace Slingshot
         public Importer( string slingshotFileName, string rockUrl, string rockUserName, string rockPassword )
         {
             SlingshotFileName = slingshotFileName;
+            SlingshotDirectoryName = Path.Combine( Path.GetDirectoryName( this.SlingshotFileName ), "slingshots", Path.GetFileNameWithoutExtension( this.SlingshotFileName ) );
             RockUrl = rockUrl;
             RockUserName = rockUserName;
             RockPassword = rockPassword;
+
+            var slingshotFilesDirectory = new DirectoryInfo( this.SlingshotDirectoryName );
+            if ( slingshotFilesDirectory.Exists )
+            {
+                slingshotFilesDirectory.Delete( true );
+            }
+
+            slingshotFilesDirectory.Create();
+            ZipFile.ExtractToDirectory( this.SlingshotFileName, slingshotFilesDirectory.FullName );
+
+            this.Results = new Dictionary<string, string>();
         }
+
+        /// <summary>
+        /// The sample photo urls
+        /// </summary>
+        public List<string> SamplePhotoUrls = new List<string>
+        {
+            { "http://storage.rockrms.com/sampledata/person-images/decker_ted.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/decker_cindy.png" },
+            { "http://storage.rockrms.com/sampledata/person-images/decker_noah.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/decker_alexis.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/jones_ben.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/jones_brian.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/simmons_jim.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/simmons_sarah.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/jackson_mariah.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/lowe_madison.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/lowe_craig.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/lowe_tricia.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/marble_alisha.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/marble_bill.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/miller_tom.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/foster_peter.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/foster_pamela.jpg" },
+            { "http://storage.rockrms.com/sampledata/person-images/michaels_jenny.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo0.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo1.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo2.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo3.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo4.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo5.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" }
+        };
 
         /// <summary>
         /// Gets or sets the rock URL.
@@ -123,6 +175,7 @@ namespace Slingshot
 
         /* */
         private string SlingshotFileName { get; set; }
+        private string SlingshotDirectoryName { get; set; }
 
         /// <summary>
         /// Gets or sets the results.
@@ -161,7 +214,7 @@ namespace Slingshot
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="DoWorkEventArgs"/> instance containing the event data.</param>
-        public void BackgroundWorker_DoWork( object sender, DoWorkEventArgs e )
+        public void BackgroundWorker_DoImport( object sender, DoWorkEventArgs e )
         {
             BackgroundWorker = sender as BackgroundWorker;
             BackgroundWorker.ReportProgress( 0, "Connecting to Rock REST Api..." );
@@ -180,7 +233,7 @@ namespace Slingshot
 
             BackgroundWorker.ReportProgress( 0, "Updating Rock Lookups..." );
 
-            this.Results = new Dictionary<string, string>();
+            
 
             // Populate Rock with stuff that comes from the Slingshot file
             AddCampuses();
@@ -210,6 +263,180 @@ namespace Slingshot
             SubmitFinancialAccountImport();
             SubmitFinancialBatchImport();
             SubmitFinancialTransactionImport();
+        }
+
+        /// <summary>
+        /// Handles the DoImportPhotos event of the BackgroundWorker control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="DoWorkEventArgs"/> instance containing the event data.</param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void BackgroundWorker_DoImportPhotos( object sender, DoWorkEventArgs e )
+        {
+            BackgroundWorker = sender as BackgroundWorker;
+            BackgroundWorker.ReportProgress( 0, "Connecting to Rock REST Api..." );
+
+            this.RockRestClient = this.GetRockRestClient();
+
+            // Load Slingshot Models from .slingshot
+            BackgroundWorker.ReportProgress( 0, "Loading Person Slingshot Models..." );
+            LoadPersonSlingshotLists();
+
+            var randomPhoto = new Random();
+            int samplePhotoCount = this.SamplePhotoUrls.Count();
+            foreach ( var person in this.SlingshotPersonList )
+            {
+                int randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
+                person.PersonPhotoUrl = this.SamplePhotoUrls[randomPhotoIndex];
+                randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
+                person.FamilyImageUrl = this.SamplePhotoUrls[randomPhotoIndex];
+            }
+
+            var slingshotPersonsWithPhotoList = this.SlingshotPersonList.Where( a => !string.IsNullOrEmpty( a.PersonPhotoUrl ) || !string.IsNullOrEmpty( a.FamilyImageUrl ) ).ToList();
+
+            var photoImportList = new ConcurrentBag<Rock.Client.BulkImport.PhotoImport>();
+
+            long photoLoadProgress = 0;
+            long photoUploadProgress = 0;
+            int totalCount = slingshotPersonsWithPhotoList.Where( a => !string.IsNullOrWhiteSpace( a.PersonPhotoUrl ) ).Count()
+                + slingshotPersonsWithPhotoList.Where( a => a.FamilyId.HasValue && !string.IsNullOrWhiteSpace( a.FamilyImageUrl ) ).Count();
+            
+            List<Task> photoDataTasks = new List<Task>();
+            List<Task> photoUploadTasks = new List<Task>();
+            foreach ( var slingshotPerson in slingshotPersonsWithPhotoList )
+            {
+                var photoDataTask = new Task( () =>
+                {
+                    if ( !string.IsNullOrEmpty( slingshotPerson.PersonPhotoUrl ) )
+                    {
+                        var personPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 1 };
+                        personPhotoImport.ForeignId = slingshotPerson.Id;
+                        SetPhotoData( personPhotoImport, slingshotPerson.PersonPhotoUrl );
+                        photoImportList.Add( personPhotoImport );
+                    }
+
+                    if ( !string.IsNullOrEmpty( slingshotPerson.FamilyImageUrl ) && slingshotPerson.FamilyId.HasValue )
+                    {
+                        var familyPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 2 };
+                        familyPhotoImport.ForeignId = slingshotPerson.FamilyId.Value;
+                        SetPhotoData( familyPhotoImport, slingshotPerson.FamilyImageUrl );
+                        photoImportList.Add( familyPhotoImport );
+                    }
+                    
+                    Interlocked.Increment( ref photoLoadProgress );
+                    
+                    BackgroundWorker.ReportProgress( 0, $@"
+Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
+Uploaded Photos: {Interlocked.Read( ref photoUploadProgress )} of {totalCount}
+" );
+                } );
+
+                photoDataTask.Start();
+
+                photoDataTasks.Add( photoDataTask );
+
+                if ( photoDataTasks.Count > 100 )
+                {
+                    Task.WaitAll( photoDataTasks.ToArray() );
+                    var uploadList = photoImportList.ToList();
+                    photoUploadTasks.Add( Task.Run( () =>
+                    {
+                        photoUploadProgress += uploadList.Count();
+                        UploadPhotoImports( uploadList );
+                        BackgroundWorker.ReportProgress( 0, $@"
+Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
+Uploaded Photos: {Interlocked.Read( ref photoUploadProgress )} of {totalCount}
+" );
+
+                    } ) );
+
+                    photoDataTasks = new List<Task>();
+                    photoImportList = new ConcurrentBag<Rock.Client.BulkImport.PhotoImport>();
+                    GC.Collect();
+                }
+            }
+
+            Task.WaitAll( photoDataTasks.ToArray() );
+            Task.WaitAll( photoUploadTasks.ToArray() );
+            UploadPhotoImports( photoImportList.ToList() );
+
+            BackgroundWorker.ReportProgress( 0, $@"
+Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
+Uploaded Photos: {photoImportList.ToList().Count()} of {totalCount}
+" );
+
+            BackgroundWorker.ReportProgress( 0, this.Results );
+        }
+
+        /// <summary>
+        /// Uploads the photo imports.
+        /// </summary>
+        /// <param name="photoImportList">The photo import list.</param>
+        /// <exception cref="SlingshotPOSTFailedException"></exception>
+        private void UploadPhotoImports( List<Rock.Client.BulkImport.PhotoImport> photoImportList )
+        {
+            RestRequest restImportRequest = new RestRequest( "api/BulkImport/PhotoImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            restImportRequest.AddBody( photoImportList );
+
+            BackgroundWorker.ReportProgress( 0, "Sending Photo Import to Rock..." );
+
+            var importResponse = this.RockRestClient.Post( restImportRequest );
+
+            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            {
+                BackgroundWorker.ReportProgress( 0, "Uploaded" );
+            }
+            else
+            {
+                throw new SlingshotPOSTFailedException( importResponse );
+            }
+        }
+
+        /// <summary>
+        /// Gets the photo data.
+        /// </summary>
+        /// <param name="photoUrl">The photo URL.</param>
+        /// <returns></returns>
+        private void SetPhotoData( Rock.Client.BulkImport.PhotoImportEntity photoImport, string photoUrl )
+        {
+            Uri photoUri;
+            if ( Uri.TryCreate( photoUrl, UriKind.Absolute, out photoUri ) && photoUri?.Scheme != "file" )
+            {
+                try
+                {
+                    HttpWebRequest imageRequest = ( HttpWebRequest ) HttpWebRequest.Create( photoUri );
+                    HttpWebResponse imageResponse = ( HttpWebResponse ) imageRequest.GetResponse();
+                    var imageStream = imageResponse.GetResponseStream();
+                    using ( MemoryStream ms = new MemoryStream() )
+                    {
+                        imageStream.CopyTo( ms );
+                        photoImport.MimeType = imageResponse.ContentType;
+                        photoImport.PhotoData = Convert.ToBase64String( ms.ToArray() );
+                        try
+                        {
+                            photoImport.FileName = Path.GetFileName( photoUrl );
+                        }
+                        catch
+                        {
+                            photoImport.FileName = "Photo";
+                        }
+                    }
+                }
+                catch ( Exception ex )
+                {
+                    Debug.WriteLine( ex.Message );
+                }
+            }
+            else
+            {
+                FileInfo photoFile = new FileInfo( photoUrl );
+                if ( photoFile.Exists )
+                {
+                    photoImport.MimeType = System.Web.MimeMapping.GetMimeMapping( photoFile.FullName );
+                    photoImport.PhotoData = Convert.ToBase64String( File.ReadAllBytes( photoFile.FullName ) );
+                    photoImport.FileName = photoFile.Name;
+                }
+            }
         }
 
         #region Financial Transaction Related
@@ -717,7 +944,6 @@ namespace Slingshot
                 }
 
                 personImport.FamilyName = slingshotPerson.FamilyName;
-                personImport.FamilyImageUrl = slingshotPerson.FamilyImageUrl;
 
                 switch ( slingshotPerson.FamilyRole )
                 {
@@ -831,7 +1057,6 @@ namespace Slingshot
 
                 personImport.CreatedDateTime = slingshotPerson.CreatedDateTime;
                 personImport.ModifiedDateTime = slingshotPerson.ModifiedDateTime;
-                personImport.PersonPhotoUrl = slingshotPerson.PersonPhotoUrl;
 
                 personImport.Note = slingshotPerson.Note;
                 personImport.GivingIndividually = slingshotPerson.GiveIndividually;
@@ -1156,74 +1381,14 @@ namespace Slingshot
         }
 
         /// <summary>
-        /// Loads the slingshot person list.
+        /// Loads all the slingshot lists
         /// </summary>
         /// <returns></returns>
         private void LoadSlingshotLists()
         {
-            var slingshotFileName = SlingshotFileName;
-            var slingshotDirectoryName = Path.Combine( Path.GetDirectoryName( slingshotFileName ), "slingshots", Path.GetFileNameWithoutExtension( slingshotFileName ) );
+            LoadPersonSlingshotLists();
 
-            var slingshotFilesDirectory = new DirectoryInfo( slingshotDirectoryName );
-            if ( slingshotFilesDirectory.Exists )
-            {
-                slingshotFilesDirectory.Delete( true );
-            }
-
-            slingshotFilesDirectory.Create();
-            ZipFile.ExtractToDirectory( slingshotFileName, slingshotFilesDirectory.FullName );
-
-            List<Slingshot.Core.Model.Person> slingshotPersonList;
-            Dictionary<int, List<Slingshot.Core.Model.PersonAddress>> slingshotPersonAddressListLookup;
-            Dictionary<int, List<Slingshot.Core.Model.PersonAttributeValue>> slingshotPersonAttributeValueListLookup;
-            Dictionary<int, List<Slingshot.Core.Model.PersonPhone>> slingshotPersonPhoneListLookup;
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Person().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                csvReader.Configuration.WillThrowOnMissingField = false;
-                slingshotPersonList = csvReader.GetRecords<Slingshot.Core.Model.Person>().ToList();
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAddress().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                slingshotPersonAddressListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAddress>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttributeValue().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                slingshotPersonAttributeValueListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAttributeValue>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonPhone().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                slingshotPersonPhoneListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonPhone>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
-            }
-
-            foreach ( var slingshotPerson in slingshotPersonList )
-            {
-                slingshotPerson.Addresses = slingshotPersonAddressListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonAddressListLookup[slingshotPerson.Id] : new List<Slingshot.Core.Model.PersonAddress>();
-                slingshotPerson.Attributes = slingshotPersonAttributeValueListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonAttributeValueListLookup[slingshotPerson.Id].ToList() : new List<Slingshot.Core.Model.PersonAttributeValue>();
-                slingshotPerson.PhoneNumbers = slingshotPersonPhoneListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonPhoneListLookup[slingshotPerson.Id].ToList() : new List<Slingshot.Core.Model.PersonPhone>();
-            }
-
-            this.SlingshotPersonList = slingshotPersonList;
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.PersonAttribute().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotPersonAttributes = csvReader.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FamilyAttribute().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FamilyAttribute().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1231,14 +1396,14 @@ namespace Slingshot
             }
 
             /* Attendance */
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
                 this.SlingshotAttendanceList = csvReader.GetRecords<Slingshot.Core.Model.Attendance>().ToList();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1256,7 +1421,7 @@ namespace Slingshot
             }
 
             var groupLookup = this.SlingshotGroupList.ToDictionary( k => k.Id, v => v );
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.GroupMember().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupMember().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1268,14 +1433,14 @@ namespace Slingshot
                 }
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.GroupType().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupType().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
                 this.SlingshotGroupTypeList = csvReader.GetRecords<Slingshot.Core.Model.GroupType>().ToList();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Location().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Location().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1291,7 +1456,7 @@ namespace Slingshot
                 this.SlingshotLocationList = uniqueLocations.Select( a => a.Value ).ToList();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.Schedule().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Schedule().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1309,21 +1474,21 @@ namespace Slingshot
             }
 
             /* Financial Transactions */
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialAccount().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialAccount().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
                 this.SlingshotFinancialAccountList = csvReader.GetRecords<Slingshot.Core.Model.FinancialAccount>().ToList();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialTransaction().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransaction().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
                 this.SlingshotFinancialTransactionList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransaction>().ToList();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialTransactionDetail().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransactionDetail().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1335,7 +1500,7 @@ namespace Slingshot
                 }
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( slingshotDirectoryName, new Slingshot.Core.Model.FinancialBatch().GetFileName() ) ) )
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialBatch().GetFileName() ) ) )
             {
                 CsvReader csvReader = new CsvReader( slingshotFileStream );
                 csvReader.Configuration.HasHeaderRecord = true;
@@ -1348,6 +1513,59 @@ namespace Slingshot
                         slingshotFinancialBatch.FinancialTransactions = transactionsByBatch[slingshotFinancialBatch.Id];
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Loads the person slingshot lists.
+        /// </summary>
+        private void LoadPersonSlingshotLists()
+        {
+            Dictionary<int, List<Slingshot.Core.Model.PersonAddress>> slingshotPersonAddressListLookup;
+            Dictionary<int, List<Slingshot.Core.Model.PersonAttributeValue>> slingshotPersonAttributeValueListLookup;
+            Dictionary<int, List<Slingshot.Core.Model.PersonPhone>> slingshotPersonPhoneListLookup;
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Person().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                csvReader.Configuration.WillThrowOnMissingField = false;
+                this.SlingshotPersonList = csvReader.GetRecords<Slingshot.Core.Model.Person>().ToList();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.PersonAddress().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonAddressListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAddress>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.PersonAttributeValue().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonAttributeValueListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonAttributeValue>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.PersonPhone().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                slingshotPersonPhoneListLookup = csvReader.GetRecords<Slingshot.Core.Model.PersonPhone>().GroupBy( a => a.PersonId ).ToDictionary( k => k.Key, v => v.ToList() );
+            }
+
+            foreach ( var slingshotPerson in this.SlingshotPersonList )
+            {
+                slingshotPerson.Addresses = slingshotPersonAddressListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonAddressListLookup[slingshotPerson.Id] : new List<Slingshot.Core.Model.PersonAddress>();
+                slingshotPerson.Attributes = slingshotPersonAttributeValueListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonAttributeValueListLookup[slingshotPerson.Id].ToList() : new List<Slingshot.Core.Model.PersonAttributeValue>();
+                slingshotPerson.PhoneNumbers = slingshotPersonPhoneListLookup.ContainsKey( slingshotPerson.Id ) ? slingshotPersonPhoneListLookup[slingshotPerson.Id].ToList() : new List<Slingshot.Core.Model.PersonPhone>();
+            }
+
+            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.PersonAttribute().GetFileName() ) ) )
+            {
+                CsvReader csvReader = new CsvReader( slingshotFileStream );
+                csvReader.Configuration.HasHeaderRecord = true;
+                this.SlingshotPersonAttributes = csvReader.GetRecords<Slingshot.Core.Model.PersonAttribute>().ToList();
             }
         }
 
