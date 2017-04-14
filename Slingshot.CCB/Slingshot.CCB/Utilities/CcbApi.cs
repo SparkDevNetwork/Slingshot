@@ -282,10 +282,10 @@ namespace Slingshot.CCB.Utilities
                 foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
                 {
                     var group = new Group();
-                    group.Id = ("999999" + sourceDepartment.Element( "id" ).Value).AsInteger();
+                    group.Id = ("9999" + sourceDepartment.Element( "id" ).Value).AsInteger();
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
-                    group.GroupTypeId = 999999;
+                    group.GroupTypeId = 9999;
 
                     ImportPackage.WriteToPackage( group );
                 }
@@ -851,13 +851,13 @@ namespace Slingshot.CCB.Utilities
             // hardcode the department and director group types as these are baked into the box
             ImportPackage.WriteToPackage( new GroupType()
             {
-                Id = 999999,
+                Id = 9999,
                 Name = "Department"
             } );
 
             ImportPackage.WriteToPackage( new GroupType()
             {
-                Id = 999998,
+                Id = 9998,
                 Name = "Director"
             } );
 
