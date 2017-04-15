@@ -48,7 +48,7 @@ namespace Slingshot
         /// <summary>
         /// The sample photo urls
         /// </summary>
-        public List<string> SamplePhotoUrls = new List<string>
+        /*public List<string> SamplePhotoUrls = new List<string>
         {
             { "http://storage.rockrms.com/sampledata/person-images/decker_ted.jpg" },
             { "http://storage.rockrms.com/sampledata/person-images/decker_cindy.png" },
@@ -78,7 +78,7 @@ namespace Slingshot
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" }
-        };
+        };*/
 
         /// <summary>
         /// Gets or sets the rock URL.
@@ -210,6 +210,14 @@ namespace Slingshot
         private int GroupTypeIdFamily { get; set; }
 
         /// <summary>
+        /// Gets or sets the photo batch size mb.
+        /// </summary>
+        /// <value>
+        /// The photo batch size mb.
+        /// </value>
+        public int? PhotoBatchSizeMB { get; set; }
+
+        /// <summary>
         /// Handles the DoWork event of the BackgroundWorker control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
@@ -232,8 +240,6 @@ namespace Slingshot
             EnsureDefinedValues();
 
             BackgroundWorker.ReportProgress( 0, "Updating Rock Lookups..." );
-
-            
 
             // Populate Rock with stuff that comes from the Slingshot file
             AddCampuses();
@@ -265,6 +271,10 @@ namespace Slingshot
             SubmitFinancialTransactionImport();
         }
 
+        const string PREPARE_PHOTO_DATA = "Prepare Photo Data";
+        const string UPLOADING_PHOTO_DATA = "Uploading Photo Data";
+        const string UPLOAD_PHOTO_STATS = "Stats";
+
         /// <summary>
         /// Handles the DoImportPhotos event of the BackgroundWorker control.
         /// </summary>
@@ -278,10 +288,17 @@ namespace Slingshot
 
             this.RockRestClient = this.GetRockRestClient();
 
+            this.Results.Clear();
+
+            this.Results.Add( PREPARE_PHOTO_DATA, "" );
+            this.Results.Add( UPLOADING_PHOTO_DATA, "" );
+            this.Results.Add( UPLOAD_PHOTO_STATS, "" );
+
             // Load Slingshot Models from .slingshot
             BackgroundWorker.ReportProgress( 0, "Loading Person Slingshot Models..." );
             LoadPersonSlingshotLists();
 
+            /*
             var randomPhoto = new Random();
             int samplePhotoCount = this.SamplePhotoUrls.Count();
             foreach ( var person in this.SlingshotPersonList )
@@ -290,19 +307,27 @@ namespace Slingshot
                 person.PersonPhotoUrl = this.SamplePhotoUrls[randomPhotoIndex];
                 randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
                 person.FamilyImageUrl = this.SamplePhotoUrls[randomPhotoIndex];
-            }
+            }*/
 
             var slingshotPersonsWithPhotoList = this.SlingshotPersonList.Where( a => !string.IsNullOrEmpty( a.PersonPhotoUrl ) || !string.IsNullOrEmpty( a.FamilyImageUrl ) ).ToList();
 
             var photoImportList = new ConcurrentBag<Rock.Client.BulkImport.PhotoImport>();
 
+            HashSet<int> importedFamilyPhotos = new HashSet<int>();
+
             long photoLoadProgress = 0;
             long photoUploadProgress = 0;
             int totalCount = slingshotPersonsWithPhotoList.Where( a => !string.IsNullOrWhiteSpace( a.PersonPhotoUrl ) ).Count()
-                + slingshotPersonsWithPhotoList.Where( a => a.FamilyId.HasValue && !string.IsNullOrWhiteSpace( a.FamilyImageUrl ) ).Count();
-            
+                + slingshotPersonsWithPhotoList.Where( a => a.FamilyId.HasValue && !string.IsNullOrWhiteSpace( a.FamilyImageUrl ) ).Select( a => a.FamilyId ).Distinct().Count();
+
             List<Task> photoDataTasks = new List<Task>();
-            List<Task> photoUploadTasks = new List<Task>();
+            int totalPhotoDataBytes = 0;
+            if ( !this.PhotoBatchSizeMB.HasValue || this.PhotoBatchSizeMB.Value < 1 )
+            {
+                this.PhotoBatchSizeMB = 50;
+            }
+
+            int maxUploadSize = this.PhotoBatchSizeMB.Value * 1024 * 1024;
             foreach ( var slingshotPerson in slingshotPersonsWithPhotoList )
             {
                 var photoDataTask = new Task( () =>
@@ -313,59 +338,62 @@ namespace Slingshot
                         personPhotoImport.ForeignId = slingshotPerson.Id;
                         SetPhotoData( personPhotoImport, slingshotPerson.PersonPhotoUrl );
                         photoImportList.Add( personPhotoImport );
+
+                        Interlocked.Increment( ref photoLoadProgress );
                     }
 
                     if ( !string.IsNullOrEmpty( slingshotPerson.FamilyImageUrl ) && slingshotPerson.FamilyId.HasValue )
                     {
-                        var familyPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 2 };
-                        familyPhotoImport.ForeignId = slingshotPerson.FamilyId.Value;
-                        SetPhotoData( familyPhotoImport, slingshotPerson.FamilyImageUrl );
-                        photoImportList.Add( familyPhotoImport );
+                        // make sure to only upload one photo per family
+                        if ( !importedFamilyPhotos.Contains( slingshotPerson.FamilyId.Value ) )
+                        {
+                            importedFamilyPhotos.Add( slingshotPerson.FamilyId.Value );
+                            var familyPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 2 };
+                            familyPhotoImport.ForeignId = slingshotPerson.FamilyId.Value;
+                            SetPhotoData( familyPhotoImport, slingshotPerson.FamilyImageUrl );
+                            photoImportList.Add( familyPhotoImport );
+
+
+                            Interlocked.Increment( ref photoLoadProgress );
+                        }
                     }
-                    
-                    Interlocked.Increment( ref photoLoadProgress );
-                    
-                    BackgroundWorker.ReportProgress( 0, $@"
-Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
-Uploaded Photos: {Interlocked.Read( ref photoUploadProgress )} of {totalCount}
-" );
+
+                    this.Results[PREPARE_PHOTO_DATA] = $"{Interlocked.Read( ref photoLoadProgress )} of {totalCount}";
+                    this.Results[UPLOADING_PHOTO_DATA] = $"{Interlocked.Read( ref photoUploadProgress )} of {totalCount}";
+
+                    BackgroundWorker.ReportProgress( 0, Results );
                 } );
 
-                photoDataTask.Start();
+                photoDataTask.RunSynchronously();
 
-                photoDataTasks.Add( photoDataTask );
+                totalPhotoDataBytes = photoImportList.Sum( a => a.PhotoData.Length );
 
-                if ( photoDataTasks.Count > 100 )
+                if ( totalPhotoDataBytes > maxUploadSize )
                 {
-                    Task.WaitAll( photoDataTasks.ToArray() );
                     var uploadList = photoImportList.ToList();
-                    photoUploadTasks.Add( Task.Run( () =>
-                    {
-                        photoUploadProgress += uploadList.Count();
-                        UploadPhotoImports( uploadList );
-                        BackgroundWorker.ReportProgress( 0, $@"
-Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
-Uploaded Photos: {Interlocked.Read( ref photoUploadProgress )} of {totalCount}
-" );
-
-                    } ) );
-
-                    photoDataTasks = new List<Task>();
                     photoImportList = new ConcurrentBag<Rock.Client.BulkImport.PhotoImport>();
+                    photoUploadProgress += uploadList.Count();
+                    UploadPhotoImports( uploadList );
+                    this.Results[PREPARE_PHOTO_DATA] = $"{Interlocked.Read( ref photoLoadProgress )} of {totalCount}";
+                    this.Results[UPLOADING_PHOTO_DATA] = $"{Interlocked.Read( ref photoUploadProgress )} of {totalCount}";
+                    BackgroundWorker.ReportProgress( 0, Results );
+
                     GC.Collect();
                 }
+
+                photoDataTasks.Add( photoDataTask );
             }
 
             Task.WaitAll( photoDataTasks.ToArray() );
-            Task.WaitAll( photoUploadTasks.ToArray() );
+
+            photoUploadProgress += photoImportList.Count();
+
             UploadPhotoImports( photoImportList.ToList() );
 
-            BackgroundWorker.ReportProgress( 0, $@"
-Fetching Photo Data:  {Interlocked.Read( ref photoLoadProgress )} of {totalCount}
-Uploaded Photos: {photoImportList.ToList().Count()} of {totalCount}
-" );
+            this.Results[PREPARE_PHOTO_DATA] = $"{Interlocked.Read( ref photoLoadProgress )} of {totalCount}";
+            this.Results[UPLOADING_PHOTO_DATA] = $"{Interlocked.Read( ref photoUploadProgress )} of {totalCount}";
 
-            BackgroundWorker.ReportProgress( 0, this.Results );
+            BackgroundWorker.ReportProgress( 0, Results );
         }
 
         /// <summary>
@@ -376,15 +404,21 @@ Uploaded Photos: {photoImportList.ToList().Count()} of {totalCount}
         private void UploadPhotoImports( List<Rock.Client.BulkImport.PhotoImport> photoImportList )
         {
             RestRequest restImportRequest = new RestRequest( "api/BulkImport/PhotoImport", Method.POST ) { RequestFormat = DataFormat.Json };
+
             restImportRequest.AddBody( photoImportList );
 
             BackgroundWorker.ReportProgress( 0, "Sending Photo Import to Rock..." );
+
+            this.Results[UPLOADING_PHOTO_DATA] = $"Uploading {photoImportList.Count} photos...";
+
+            BackgroundWorker.ReportProgress( 0, Results );
 
             var importResponse = this.RockRestClient.Post( restImportRequest );
 
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
-                BackgroundWorker.ReportProgress( 0, "Uploaded" );
+                this.Results[UPLOAD_PHOTO_STATS] = importResponse.Content + Environment.NewLine + this.Results[UPLOAD_PHOTO_STATS];
+                BackgroundWorker.ReportProgress( 0, Results );
             }
             else
             {
@@ -411,7 +445,7 @@ Uploaded Photos: {photoImportList.ToList().Count()} of {totalCount}
                     {
                         imageStream.CopyTo( ms );
                         photoImport.MimeType = imageResponse.ContentType;
-                        photoImport.PhotoData = Convert.ToBase64String( ms.ToArray() );
+                        photoImport.PhotoData = Convert.ToBase64String( ms.ToArray(), Base64FormattingOptions.None );
                         try
                         {
                             photoImport.FileName = Path.GetFileName( photoUrl );
@@ -844,10 +878,17 @@ Uploaded Photos: {photoImportList.ToList().Count()} of {totalCount}
 
                 foreach ( var groupMember in slingshotGroup.GroupMembers )
                 {
-                    var groupMemberImport = new Rock.Client.BulkImport.GroupMemberImport();
-                    groupMemberImport.PersonForeignId = groupMember.PersonId;
-                    groupMemberImport.RoleName = groupMember.Role;
-                    groupImport.GroupMemberImports.Add( groupMemberImport );
+                    if ( !groupImport.GroupMemberImports.Any( gm => gm.PersonForeignId == groupMember.PersonId && gm.RoleName == groupMember.Role ) )
+                    {
+                        var groupMemberImport = new Rock.Client.BulkImport.GroupMemberImport();
+                        groupMemberImport.PersonForeignId = groupMember.PersonId;
+                        groupMemberImport.RoleName = groupMember.Role;
+                        groupImport.GroupMemberImports.Add( groupMemberImport );
+                    }
+                    else
+                    {
+                        Debug.WriteLine( $"Duplicate GroupMember {groupMember.PersonId} {groupImport.Name}" );
+                    }
                 }
 
                 groupImportList.Add( groupImport );

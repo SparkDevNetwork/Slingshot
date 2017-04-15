@@ -9,12 +9,14 @@
         Title="Slingshot - Rock Import" Height="421.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <StackPanel Orientation="Horizontal">
-        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="404"/>
-        <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
+            <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" Text="C:\Users\admin\Downloads\ccb-export-withfreshphotos.slingshot" VerticalAlignment="Top" Width="404"/>
+            <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal">
             <Button x:Name="btnImport" Content="Import" Padding="4" Click="btnImport_Click" Margin="4,4,0,4"/>
             <Button x:Name="btnImportPhotos" Content="Import Photos" Padding="4" Click="btnImportPhotos_Click" Margin="4,4,0,4"/>
+            <Label Name="lblBatchSize" Content="Photo Batch Size (MB)" Margin="4,4,0,4"/>
+            <TextBox x:Name="tbPhotoBatchSize" Width="40" Margin="0,4,0,4" Padding="4" Text="90" />
             <Label Name="lblTimer" Content="" Margin="4" />
         </StackPanel>
         <TextBox x:Name="tbResults" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="270" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />

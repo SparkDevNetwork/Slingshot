@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Timers;
 using System.Windows;
 using Microsoft.Win32;
+
+using Rock;
 
 namespace Slingshot
 {
@@ -115,20 +119,19 @@ namespace Slingshot
         /// <param name="e">The <see cref="ProgressChangedEventArgs"/> instance containing the event data.</param>
         private void BackgroundWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
+            string resultText = string.Empty;
             if ( e.UserState is string )
             {
-                tbResults.Text = e.UserState.ToString();
+                resultText = e.UserState.ToString();
             }
-            else
-            {
-                var resultText = string.Empty;
-                foreach ( var result in _importer.Results )
-                {
-                    resultText += $"\n\n{result.Key}\n\n{result.Value}";
-                }
 
-                tbResults.Text = resultText.Trim();
+            var resultsCopy = _importer.Results.ToArray();
+            foreach ( var result in resultsCopy )
+            {
+                resultText += $"\n\n{result.Key}\n\n{result.Value}";
             }
+
+            tbResults.Text = resultText.Trim();
         }
 
         /// <summary>
@@ -142,11 +145,11 @@ namespace Slingshot
             {
                 if ( e.Error is SlingshotException )
                 {
-                    tbResults.Text += "\n\n" + e.Error.Message;
+                    tbResults.Text = e.Error.Message + "\n\n" + tbResults.Text;
                 }
                 else
                 {
-                    tbResults.Text += "\n\n" + e.Error.ToString() + "\n\n" + e.Error.StackTrace;
+                    tbResults.Text = e.Error.ToString() + "\n\n" + e.Error.StackTrace + "\n\n" + tbResults.Text;
                 }
             }
 
@@ -165,6 +168,7 @@ namespace Slingshot
         private void btnImportPhotos_Click( object sender, RoutedEventArgs e )
         {
             _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
+            _importer.PhotoBatchSizeMB = tbPhotoBatchSize.Text.AsInteger();
 
             btnImportPhotos.IsEnabled = false;
             btnImport.IsEnabled = false;
