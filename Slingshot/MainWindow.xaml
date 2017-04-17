@@ -18,8 +18,12 @@
             <Label Name="lblBatchSize" Content="Photo Batch Size (MB)" Margin="4,4,0,4"/>
             <TextBox x:Name="tbPhotoBatchSize" Width="40" Margin="0,4,0,4" Padding="4" Text="90" />
             <Button x:Name="btnCancelPhotoImport" Content="Cancel Import" Width="Auto"  Margin="4,4,0,4" Padding="4" Visibility="Collapsed" Click="btnCancelPhotoImport_Click"/>
-            <Label Name="lblTimer" Content="" Margin="4" />
         </StackPanel>
-        <TextBox x:Name="tbResults" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="270" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
+        <DockPanel Name="dpResults">
+            <Label Name="lblProgressText" Margin="4" HorizontalAlignment="Left" Content=""/>
+            <Label Name="lblTimer" HorizontalAlignment="Right" Content="" Margin="4" />
+        </DockPanel>
+        <TextBox x:Name="tbResults" Visibility="Hidden" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="260" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
+        
     </StackPanel>
 </Window>

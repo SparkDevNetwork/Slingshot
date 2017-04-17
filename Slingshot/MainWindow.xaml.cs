@@ -83,6 +83,8 @@ namespace Slingshot
 
             btnImport.IsEnabled = false;
             btnImportPhotos.IsEnabled = false;
+            dpResults.Visibility = Visibility.Visible;
+            tbResults.Visibility = Visibility.Visible;
             _stopwatch = Stopwatch.StartNew();
 
             _timer = new Timer( 100 );
@@ -121,7 +123,7 @@ namespace Slingshot
             string resultText = string.Empty;
             if ( e.UserState is string )
             {
-                resultText = e.UserState.ToString();
+                lblProgressText.Content = e.UserState.ToString();
             }
 
             var resultsCopy = _importer.Results.ToArray();
@@ -152,6 +154,8 @@ namespace Slingshot
                 }
             }
 
+            lblProgressText.Content = "Import Complete";
+
             tbResults.Text += string.Join( Environment.NewLine, _importer.Exceptions.Select( a => a.Message ).ToArray() );
 
             btnImport.IsEnabled = true;
@@ -177,6 +181,8 @@ namespace Slingshot
 
             btnImportPhotos.IsEnabled = false;
             btnImport.IsEnabled = false;
+            dpResults.Visibility = Visibility.Visible;
+            tbResults.Visibility = Visibility.Visible;
             _stopwatch = Stopwatch.StartNew();
 
             _timer = new Timer( 100 );

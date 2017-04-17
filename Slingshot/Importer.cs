@@ -359,6 +359,8 @@ namespace Slingshot
             BackgroundWorker.ReportProgress( 0, "Loading Person Slingshot Models..." );
             LoadPersonSlingshotLists();
 
+            BackgroundWorker.ReportProgress( 0, "Processing..." );
+
             if ( this.TEST_UseSamplePhotos )
             {
                 var randomPhoto = new Random();
