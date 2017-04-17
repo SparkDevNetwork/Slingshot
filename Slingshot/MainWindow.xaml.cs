@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -153,8 +152,11 @@ namespace Slingshot
                 }
             }
 
+            tbResults.Text += string.Join( Environment.NewLine, _importer.Exceptions.Select( a => a.Message ).ToArray() );
+
             btnImport.IsEnabled = true;
             btnImportPhotos.IsEnabled = true;
+            btnCancelPhotoImport.Visibility = Visibility.Collapsed;
             _timer.Stop();
             _stopwatch.Stop();
         }
@@ -170,6 +172,9 @@ namespace Slingshot
             _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
             _importer.PhotoBatchSizeMB = tbPhotoBatchSize.Text.AsInteger();
 
+            // NOTE: only set TEST_UseSamplePhotos to true to test using sample photos instead of real photos
+            _importer.TEST_UseSamplePhotos = false;
+
             btnImportPhotos.IsEnabled = false;
             btnImport.IsEnabled = false;
             _stopwatch = Stopwatch.StartNew();
@@ -183,7 +188,19 @@ namespace Slingshot
             backgroundWorker.DoWork += _importer.BackgroundWorker_DoImportPhotos;
             backgroundWorker.RunWorkerCompleted += BackgroundWorker_RunWorkerCompleted;
             backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
+
+            btnCancelPhotoImport.Visibility = Visibility.Visible;
             backgroundWorker.RunWorkerAsync();
+        }
+
+        /// <summary>
+        /// Handles the Click event of the btnCancelPhotoImport control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
+        private void btnCancelPhotoImport_Click( object sender, RoutedEventArgs e )
+        {
+            _importer.CancelPhotoImport = true;
         }
     }
 }

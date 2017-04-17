@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -46,9 +45,25 @@ namespace Slingshot
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether [use sample photos].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [use sample photos]; otherwise, <c>false</c>.
+        /// </value>
+        public bool TEST_UseSamplePhotos { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether [cancel photo import].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [cancel photo import]; otherwise, <c>false</c>.
+        /// </value>
+        public bool CancelPhotoImport { get; set; }
+
+        /// <summary>
         /// The sample photo urls
         /// </summary>
-        /*public List<string> SamplePhotoUrls = new List<string>
+        private List<string> SamplePhotoUrls { get; set; } = new List<string>
         {
             { "http://storage.rockrms.com/sampledata/person-images/decker_ted.jpg" },
             { "http://storage.rockrms.com/sampledata/person-images/decker_cindy.png" },
@@ -77,8 +92,48 @@ namespace Slingshot
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo0.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo1.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo2.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo3.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo4.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo5.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo0.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo1.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo2.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo3.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo4.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo5.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo0.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo1.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo2.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo3.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo4.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo5.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo0.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo1.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo2.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo3.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo4.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo5.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo6.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo7.jpg" },
+            { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo8.jpg" },
             { @"C:\Users\admin\Downloads\slingshots\TESTPHOTOS\Photo9.jpg" }
-        };*/
+        };
 
         /// <summary>
         /// Gets or sets the rock URL.
@@ -175,6 +230,7 @@ namespace Slingshot
 
         /* */
         private string SlingshotFileName { get; set; }
+
         private string SlingshotDirectoryName { get; set; }
 
         /// <summary>
@@ -184,6 +240,11 @@ namespace Slingshot
         /// The results.
         /// </value>
         public Dictionary<string, string> Results { get; set; }
+
+        /// <summary>
+        /// The exceptions
+        /// </summary>
+        public List<Exception> Exceptions { get; set; } = new List<Exception>();
 
         /// <summary>
         /// Gets or sets the rock rest client.
@@ -271,9 +332,9 @@ namespace Slingshot
             SubmitFinancialTransactionImport();
         }
 
-        const string PREPARE_PHOTO_DATA = "Prepare Photo Data";
-        const string UPLOADING_PHOTO_DATA = "Uploading Photo Data";
-        const string UPLOAD_PHOTO_STATS = "Stats";
+        private const string PREPARE_PHOTO_DATA = "Prepare Photo Data:";
+        private const string UPLOADING_PHOTO_DATA = "Uploading Photo Data:";
+        private const string UPLOAD_PHOTO_STATS = "Stats:";
 
         /// <summary>
         /// Handles the DoImportPhotos event of the BackgroundWorker control.
@@ -290,24 +351,26 @@ namespace Slingshot
 
             this.Results.Clear();
 
-            this.Results.Add( PREPARE_PHOTO_DATA, "" );
-            this.Results.Add( UPLOADING_PHOTO_DATA, "" );
-            this.Results.Add( UPLOAD_PHOTO_STATS, "" );
+            this.Results.Add( PREPARE_PHOTO_DATA, string.Empty );
+            this.Results.Add( UPLOADING_PHOTO_DATA, string.Empty );
+            this.Results.Add( UPLOAD_PHOTO_STATS, string.Empty );
 
             // Load Slingshot Models from .slingshot
             BackgroundWorker.ReportProgress( 0, "Loading Person Slingshot Models..." );
             LoadPersonSlingshotLists();
 
-            /*
-            var randomPhoto = new Random();
-            int samplePhotoCount = this.SamplePhotoUrls.Count();
-            foreach ( var person in this.SlingshotPersonList )
+            if ( this.TEST_UseSamplePhotos )
             {
-                int randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
-                person.PersonPhotoUrl = this.SamplePhotoUrls[randomPhotoIndex];
-                randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
-                person.FamilyImageUrl = this.SamplePhotoUrls[randomPhotoIndex];
-            }*/
+                var randomPhoto = new Random();
+                int samplePhotoCount = this.SamplePhotoUrls.Count();
+                foreach ( var person in this.SlingshotPersonList )
+                {
+                    int randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
+                    person.PersonPhotoUrl = this.SamplePhotoUrls[randomPhotoIndex];
+                    randomPhotoIndex = randomPhoto.Next( samplePhotoCount );
+                    person.FamilyImageUrl = this.SamplePhotoUrls[randomPhotoIndex];
+                }
+            }
 
             var slingshotPersonsWithPhotoList = this.SlingshotPersonList.Where( a => !string.IsNullOrEmpty( a.PersonPhotoUrl ) || !string.IsNullOrEmpty( a.FamilyImageUrl ) ).ToList();
 
@@ -330,14 +393,21 @@ namespace Slingshot
             int maxUploadSize = this.PhotoBatchSizeMB.Value * 1024 * 1024;
             foreach ( var slingshotPerson in slingshotPersonsWithPhotoList )
             {
+                if ( this.CancelPhotoImport )
+                {
+                    return;
+                }
+
                 var photoDataTask = new Task( () =>
                 {
                     if ( !string.IsNullOrEmpty( slingshotPerson.PersonPhotoUrl ) )
                     {
                         var personPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 1 };
                         personPhotoImport.ForeignId = slingshotPerson.Id;
-                        SetPhotoData( personPhotoImport, slingshotPerson.PersonPhotoUrl );
-                        photoImportList.Add( personPhotoImport );
+                        if ( SetPhotoData( personPhotoImport, slingshotPerson.PersonPhotoUrl ) )
+                        {
+                            photoImportList.Add( personPhotoImport );
+                        }
 
                         Interlocked.Increment( ref photoLoadProgress );
                     }
@@ -350,9 +420,10 @@ namespace Slingshot
                             importedFamilyPhotos.Add( slingshotPerson.FamilyId.Value );
                             var familyPhotoImport = new Rock.Client.BulkImport.PhotoImport { PhotoType = 2 };
                             familyPhotoImport.ForeignId = slingshotPerson.FamilyId.Value;
-                            SetPhotoData( familyPhotoImport, slingshotPerson.FamilyImageUrl );
-                            photoImportList.Add( familyPhotoImport );
-
+                            if ( SetPhotoData( familyPhotoImport, slingshotPerson.FamilyImageUrl ) )
+                            {
+                                photoImportList.Add( familyPhotoImport );
+                            }
 
                             Interlocked.Increment( ref photoLoadProgress );
                         }
@@ -367,6 +438,11 @@ namespace Slingshot
                 photoDataTask.RunSynchronously();
 
                 totalPhotoDataBytes = photoImportList.Sum( a => a.PhotoData.Length );
+
+                if ( this.CancelPhotoImport )
+                {
+                    return;
+                }
 
                 if ( totalPhotoDataBytes > maxUploadSize )
                 {
@@ -417,7 +493,7 @@ namespace Slingshot
 
             if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
             {
-                this.Results[UPLOAD_PHOTO_STATS] = importResponse.Content + Environment.NewLine + this.Results[UPLOAD_PHOTO_STATS];
+                this.Results[UPLOAD_PHOTO_STATS] = ( importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content ) + Environment.NewLine + this.Results[UPLOAD_PHOTO_STATS];
                 BackgroundWorker.ReportProgress( 0, Results );
             }
             else
@@ -431,7 +507,7 @@ namespace Slingshot
         /// </summary>
         /// <param name="photoUrl">The photo URL.</param>
         /// <returns></returns>
-        private void SetPhotoData( Rock.Client.BulkImport.PhotoImportEntity photoImport, string photoUrl )
+        private bool SetPhotoData( Rock.Client.BulkImport.PhotoImportEntity photoImport, string photoUrl )
         {
             Uri photoUri;
             if ( Uri.TryCreate( photoUrl, UriKind.Absolute, out photoUri ) && photoUri?.Scheme != "file" )
@@ -458,7 +534,8 @@ namespace Slingshot
                 }
                 catch ( Exception ex )
                 {
-                    Debug.WriteLine( ex.Message );
+                    Exceptions.Add( new Exception( "Photo Get Data Error " + photoUrl, ex ) );
+                    return false;
                 }
             }
             else
@@ -471,6 +548,8 @@ namespace Slingshot
                     photoImport.FileName = photoFile.Name;
                 }
             }
+
+            return true;
         }
 
         #region Financial Transaction Related
@@ -884,10 +963,6 @@ namespace Slingshot
                         groupMemberImport.PersonForeignId = groupMember.PersonId;
                         groupMemberImport.RoleName = groupMember.Role;
                         groupImport.GroupMemberImports.Add( groupMemberImport );
-                    }
-                    else
-                    {
-                        Debug.WriteLine( $"Duplicate GroupMember {groupMember.PersonId} {groupImport.Name}" );
                     }
                 }
 
