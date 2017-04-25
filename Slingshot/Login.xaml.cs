@@ -17,9 +17,9 @@ namespace Slingshot
         {
             InitializeComponent();
 
-            txtRockUrl.Text = "http://localhost:6229";
-            txtUsername.Text = "admin";
-            txtPassword.Password = "admin";
+            // txtRockUrl.Text = "http://localhost:6229";
+            // txtUsername.Text = "admin";
+            // txtPassword.Password = "admin";
         }
 
         /// <summary>
