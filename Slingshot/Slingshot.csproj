@@ -33,7 +33,8 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Slingshot.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CsvHelper, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
@@ -138,6 +139,10 @@
     <ProjectReference Include="..\..\Rock\Rock.Client\Rock.Client.csproj">
       <Project>{6ea64bb9-9740-453a-939b-df43ad9ac164}</Project>
       <Name>Rock.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Rock\Rock.Slingshot.Model\Rock.Slingshot.Model.csproj">
+      <Project>{962944de-8bf4-4175-b55a-e75cf7918272}</Project>
+      <Name>Rock.Slingshot.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\Slingshot.Core\Slingshot.Core\Slingshot.Core.csproj">
       <Project>{B6072804-DC94-473F-A7E9-E175DB03CAD4}</Project>
