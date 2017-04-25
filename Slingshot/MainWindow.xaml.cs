@@ -26,7 +26,21 @@ namespace Slingshot
         /// <value>
         /// The rock URL.
         /// </value>
-        public string RockUrl { get; set; }
+        public string RockUrl
+        {
+            get
+            {
+                return _rockUrl;
+            }
+
+            set
+            {
+                _rockUrl = value;
+                lblConnectionInfo.Content = "Connected to " + value;
+            }
+        }
+
+        private string _rockUrl;
 
         /// <summary>
         /// Gets or sets the name of the rock user.

@@ -24,7 +24,7 @@
             <TextBox Name="txtRockUrl" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="1">Username</Label>
-            <TextBox Name="txtUsername" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="RockExportTest" />
+            <TextBox Name="txtUsername" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="2">Password</Label>
             <PasswordBox Name="txtPassword" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" />

@@ -8,6 +8,7 @@
         ResizeMode="CanMinimize"
         Title="Slingshot - Rock Import" Height="421.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
+        <Label Name="lblConnectionInfo" Content="Connected to: http://...." />
         <StackPanel Orientation="Horizontal">
             <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" Text="C:\Users\admin\Downloads\ccb-export-withfreshphotos.slingshot" VerticalAlignment="Top" Width="404"/>
             <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
