@@ -701,6 +701,9 @@ namespace Slingshot
                     case Core.Model.CurrencyType.NonCash:
                         financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_NONCASH.AsGuid()].Id;
                         break;
+                    case Core.Model.CurrencyType.Unknown:
+                        financialTransactionImport.CurrencyTypeValueId = this.CurrencyTypeValues[Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_UNKNOWN.AsGuid()].Id;
+                        break;
                     case Core.Model.CurrencyType.Other:
                         // TODO: Do we need to support this?
                         break;
@@ -1705,6 +1708,17 @@ namespace Slingshot
                     Guid = Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_NONCASH.AsGuid(),
                     Value = "Non-Cash",
                     Description = "Used to track non-cash transactions."
+                } );
+            }
+
+            if ( !this.CurrencyTypeValues.ContainsKey( Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_UNKNOWN.AsGuid() ) )
+            {
+                definedValuesToAdd.Add( new Rock.Client.DefinedValue
+                {
+                    DefinedTypeId = definedTypeIdCurrencyType,
+                    Guid = Rock.Client.SystemGuid.DefinedValue.CURRENCY_TYPE_UNKNOWN.AsGuid(),
+                    Value = "Unknown",
+                    Description = "The currency type is unknown. For example, it might have been imported from a system that doesn't indicate currency type."
                 } );
             }
 

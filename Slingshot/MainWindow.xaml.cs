@@ -64,6 +64,8 @@ namespace Slingshot
         public MainWindow()
         {
             InitializeComponent();
+            btnCancelPhotoImport.Visibility = Visibility.Hidden;
+            tbResults.Visibility = Visibility.Hidden;
         }
 
         /// <summary>
