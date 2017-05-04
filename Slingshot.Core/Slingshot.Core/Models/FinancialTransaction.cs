@@ -150,6 +150,7 @@ namespace Slingshot.Core.Model
 
     public enum CurrencyType
     {
+        Unknown,
         Check,
         Cash,
         CreditCard,

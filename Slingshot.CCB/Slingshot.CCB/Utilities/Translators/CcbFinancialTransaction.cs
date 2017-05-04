@@ -13,8 +13,6 @@ namespace Slingshot.CCB.Utilities.Translators
     {
         public static FinancialTransaction Translate(XElement inputTransaction, int batchId)
         {
-            // note the api doesn't tell us the currency type
-
             var financialTransaction = new FinancialTransaction();
 
             financialTransaction.Id = inputTransaction.Attribute( "id" ).Value.AsInteger();
@@ -23,6 +21,9 @@ namespace Slingshot.CCB.Utilities.Translators
             financialTransaction.TransactionCode = inputTransaction.Element( "check_number" )?.Value;
             financialTransaction.TransactionDate = inputTransaction.Element( "date" )?.Value.AsDateTime();
             financialTransaction.AuthorizedPersonId = inputTransaction.Element( "individual" )?.Attribute("id")?.Value.AsIntegerOrNull();
+
+            // note the api doesn't tell us the currency type
+            financialTransaction.CurrencyType = CurrencyType.Unknown;
 
             var source = inputTransaction.Element( "payment_type" )?.Value;
             switch( source )
