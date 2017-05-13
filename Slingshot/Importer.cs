@@ -1051,6 +1051,7 @@ namespace Slingshot
             foreach ( var slingshotPerson in this.SlingshotPersonList )
             {
                 var personImport = new Rock.Slingshot.Model.PersonImport();
+                personImport.RecordTypeValueId = this.PersonRecordTypeValues[Rock.Client.SystemGuid.DefinedValue.PERSON_RECORD_TYPE_PERSON.AsGuid()].Id;
                 personImport.PersonForeignId = slingshotPerson.Id;
                 personImport.FamilyForeignId = slingshotPerson.FamilyId;
 
