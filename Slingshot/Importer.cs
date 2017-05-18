@@ -481,7 +481,7 @@ namespace Slingshot
         /// <exception cref="SlingshotPOSTFailedException"></exception>
         private void UploadPhotoImports( List<Rock.Slingshot.Model.PhotoImport> photoImportList )
         {
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/PhotoImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/PhotoImport", Method.POST );
 
             restImportRequest.AddBody( photoImportList );
 
@@ -583,7 +583,7 @@ namespace Slingshot
                 financialAccountImportList.Add( financialAccountImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialAccountImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/FinancialAccountImport", Method.POST );
 
             restImportRequest.AddBody( financialAccountImportList );
 
@@ -648,7 +648,7 @@ namespace Slingshot
                 financialBatchImportList.Add( financialBatchImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialBatchImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/FinancialBatchImport", Method.POST );
 
             restImportRequest.AddBody( financialBatchImportList );
 
@@ -764,7 +764,7 @@ namespace Slingshot
                 financialTransactionImportList.Add( financialTransactionImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/FinancialTransactionImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/FinancialTransactionImport", Method.POST );
 
             restImportRequest.AddBody( financialTransactionImportList );
 
@@ -822,7 +822,7 @@ namespace Slingshot
                 attendanceImportList.Add( attendanceImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/AttendanceImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/AttendanceImport", Method.POST );
 
             restImportRequest.AddBody( attendanceImportList );
 
@@ -863,7 +863,7 @@ namespace Slingshot
                 scheduleImportList.Add( scheduleImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/ScheduleImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/ScheduleImport", Method.POST );
 
             restImportRequest.AddBody( scheduleImportList );
 
@@ -911,7 +911,7 @@ namespace Slingshot
                 locationImportList.Add( locationImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/LocationImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/LocationImport", Method.POST );
 
             restImportRequest.AddBody( locationImportList );
 
@@ -974,7 +974,7 @@ namespace Slingshot
                 groupImportList.Add( groupImport );
             }
 
-            RestRequest restImportRequest = new RestRequest( "api/BulkImport/GroupImport", Method.POST ) { RequestFormat = DataFormat.Json };
+            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/GroupImport", Method.POST );
 
             restImportRequest.AddBody( groupImportList );
 
@@ -1007,9 +1007,7 @@ namespace Slingshot
             BackgroundWorker.ReportProgress( 0, "Preparing PersonImport..." );
             List<Rock.Slingshot.Model.PersonImport> personImportList = GetPersonImportList();
 
-            RestRequest restPersonImportRequest = new RestRequest( "api/BulkImport/PersonImport", Method.POST );
-            restPersonImportRequest.RequestFormat = RestSharp.DataFormat.Json;
-
+            RestRequest restPersonImportRequest = new JsonNETRestRequest( "api/BulkImport/PersonImport", Method.POST );
             restPersonImportRequest.AddBody( personImportList );
 
             int fiveMinutesMS = ( 1000 * 60 ) * 5;
@@ -1276,8 +1274,7 @@ namespace Slingshot
             {
                 var campusToAdd = new Rock.Client.CampusEntity { ForeignId = importCampus.CampusId, Name = importCampus.CampusName, Guid = Guid.NewGuid() };
 
-                RestRequest restCampusPostRequest = new RestRequest( "api/Campuses", Method.POST );
-                restCampusPostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                RestRequest restCampusPostRequest = new JsonNETRestRequest( "api/Campuses", Method.POST );
                 restCampusPostRequest.AddBody( campusToAdd );
 
                 var postResponse = this.RockRestClient.Post( restCampusPostRequest );
@@ -1302,8 +1299,7 @@ namespace Slingshot
                 groupTypeToAdd.GroupTerm = "Group";
                 groupTypeToAdd.GroupMemberTerm = "Member";
 
-                RestRequest restPostRequest = new RestRequest( "api/GroupTypes", Method.POST );
-                restPostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                RestRequest restPostRequest = new JsonNETRestRequest( "api/GroupTypes", Method.POST );
                 restPostRequest.AddBody( groupTypeToAdd );
 
                 var postResponse = this.RockRestClient.Post( restPostRequest );
@@ -1332,8 +1328,7 @@ namespace Slingshot
                     attributeCategory.EntityTypeId = entityTypeIdAttribute;
                     attributeCategory.Guid = Guid.NewGuid();
 
-                    RestRequest restPostRequest = new RestRequest( "api/Categories", Method.POST );
-                    restPostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    RestRequest restPostRequest = new JsonNETRestRequest( "api/Categories", Method.POST );
                     restPostRequest.AddBody( attributeCategory );
 
                     var postResponse = this.RockRestClient.Post<int>( restPostRequest );
@@ -1382,8 +1377,7 @@ namespace Slingshot
                         }
                     }
 
-                    RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
-                    restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    RestRequest restAttributePostRequest = new JsonNETRestRequest( "api/Attributes", Method.POST );
                     restAttributePostRequest.AddBody( rockPersonAttribute );
 
                     var postResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
@@ -1431,8 +1425,7 @@ namespace Slingshot
                         }
                     }
 
-                    RestRequest restAttributePostRequest = new RestRequest( "api/Attributes", Method.POST );
-                    restAttributePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                    RestRequest restAttributePostRequest = new JsonNETRestRequest( "api/Attributes", Method.POST );
                     restAttributePostRequest.AddBody( rockFamilyAttribute );
 
                     var postResponse = this.RockRestClient.Post<int>( restAttributePostRequest );
@@ -1489,8 +1482,7 @@ namespace Slingshot
             {
                 var definedValueToAdd = new Rock.Client.DefinedValue { DefinedTypeId = definedTypeId, Value = importDefinedValue, Guid = Guid.NewGuid() };
 
-                RestRequest restDefinedValuePostRequest = new RestRequest( "api/DefinedValues", Method.POST );
-                restDefinedValuePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                RestRequest restDefinedValuePostRequest = new JsonNETRestRequest( "api/DefinedValues", Method.POST );
                 restDefinedValuePostRequest.AddBody( definedValueToAdd );
 
                 var postResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
@@ -1769,8 +1761,7 @@ namespace Slingshot
 
             foreach ( var definedValueToAdd in definedValuesToAdd )
             {
-                RestRequest restDefinedValuePostRequest = new RestRequest( "api/DefinedValues", Method.POST );
-                restDefinedValuePostRequest.RequestFormat = RestSharp.DataFormat.Json;
+                RestRequest restDefinedValuePostRequest = new JsonNETRestRequest( "api/DefinedValues", Method.POST );
                 restDefinedValuePostRequest.AddBody( definedValueToAdd );
 
                 var postResponse = this.RockRestClient.Post( restDefinedValuePostRequest );
@@ -1801,7 +1792,7 @@ namespace Slingshot
             this.TransactionTypeValues = LoadDefinedValues( this.RockRestClient, Rock.Client.SystemGuid.DefinedType.FINANCIAL_TRANSACTION_TYPE.AsGuid() );
 
             // EntityTypes
-            RestRequest requestEntityTypes = new RestRequest( Method.GET );
+            RestRequest requestEntityTypes = new JsonNETRestRequest( Method.GET );
             requestEntityTypes.Resource = "api/EntityTypes";
             var requestEntityTypesResponse = this.RockRestClient.Execute( requestEntityTypes );
             if ( requestEntityTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1817,7 +1808,7 @@ namespace Slingshot
             int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
 
             // DefinedTypes
-            RestRequest requestDefinedTypes = new RestRequest( Method.GET );
+            RestRequest requestDefinedTypes = new JsonNETRestRequest( Method.GET );
             requestDefinedTypes.Resource = "api/DefinedTypes";
             var requestDefinedTypesResponse = this.RockRestClient.Execute( requestDefinedTypes );
             if ( requestDefinedTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1829,7 +1820,7 @@ namespace Slingshot
             this.DefinedTypeLookup = definedTypes.ToDictionary( k => k.Guid, v => v );
 
             // Family GroupTypeRoles
-            RestRequest requestFamilyGroupType = new RestRequest( Method.GET );
+            RestRequest requestFamilyGroupType = new JsonNETRestRequest( Method.GET );
             requestFamilyGroupType.Resource = $"api/GroupTypes?$filter=Guid eq guid'{Rock.Client.SystemGuid.GroupType.GROUPTYPE_FAMILY}'&$expand=Roles";
             var familyGroupTypeResponse = this.RockRestClient.Execute( requestFamilyGroupType );
             if ( familyGroupTypeResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1840,7 +1831,7 @@ namespace Slingshot
             this.FamilyRoles = JsonConvert.DeserializeObject<List<Rock.Client.GroupType>>( familyGroupTypeResponse.Content ).FirstOrDefault().Roles.ToDictionary( k => k.Guid, v => v );
 
             // Campuses
-            RestRequest requestCampuses = new RestRequest( Method.GET );
+            RestRequest requestCampuses = new JsonNETRestRequest( Method.GET );
             requestCampuses.Resource = "api/Campuses";
             var campusResponse = this.RockRestClient.Execute( requestCampuses );
             if ( campusResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1851,7 +1842,7 @@ namespace Slingshot
             this.Campuses = JsonConvert.DeserializeObject<List<Rock.Client.Campus>>( campusResponse.Content );
 
             // Person Attributes
-            RestRequest requestPersonAttributes = new RestRequest( Method.GET );
+            RestRequest requestPersonAttributes = new JsonNETRestRequest( Method.GET );
             requestPersonAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdPerson}&$expand=FieldType";
             var personAttributesResponse = this.RockRestClient.Execute( requestPersonAttributes );
             if ( personAttributesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1864,7 +1855,7 @@ namespace Slingshot
 
             // Family Attributes
             this.GroupTypeIdFamily = this.FamilyRoles.Select( a => a.Value.GroupTypeId.Value ).First();
-            RestRequest requestFamilyAttributes = new RestRequest( Method.GET );
+            RestRequest requestFamilyAttributes = new JsonNETRestRequest( Method.GET );
             requestFamilyAttributes.Resource = $"api/Attributes?$filter=EntityTypeId eq {entityTypeIdGroup} and EntityTypeQualifierColumn eq 'GroupTypeId' and EntityTypeQualifierValue eq '{this.GroupTypeIdFamily}'&$expand=FieldType";
             var familyAttributesResponse = this.RockRestClient.Execute( requestFamilyAttributes );
             if ( familyAttributesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1876,7 +1867,7 @@ namespace Slingshot
             this.FamilyAttributeKeyLookup = familyAttributes.ToDictionary( k => k.Key, v => v );
 
             // Attribute Categories
-            RestRequest requestAttributeCategories = new RestRequest( Method.GET );
+            RestRequest requestAttributeCategories = new JsonNETRestRequest( Method.GET );
             requestAttributeCategories.Resource = $"api/Categories?$filter=EntityTypeId eq {entityTypeIdAttribute}";
             var requestAttributeCategoriesResponse = this.RockRestClient.Execute( requestAttributeCategories );
             if ( requestAttributeCategoriesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1887,7 +1878,7 @@ namespace Slingshot
             this.AttributeCategoryList = JsonConvert.DeserializeObject<List<Rock.Client.Category>>( requestAttributeCategoriesResponse.Content );
 
             // FieldTypes
-            RestRequest requestFieldTypes = new RestRequest( Method.GET );
+            RestRequest requestFieldTypes = new JsonNETRestRequest( Method.GET );
             requestFieldTypes.Resource = "api/FieldTypes";
             var requestFieldTypesResponse = this.RockRestClient.Execute( requestFieldTypes );
             if ( requestFieldTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1899,7 +1890,7 @@ namespace Slingshot
             this.FieldTypeLookup = fieldTypes.ToDictionary( k => k.Class, v => v );
 
             // GroupTypes
-            RestRequest requestGroupTypes = new RestRequest( Method.GET );
+            RestRequest requestGroupTypes = new JsonNETRestRequest( Method.GET );
             requestGroupTypes.Resource = "api/GroupTypes?$filter=ForeignId ne null";
             var requestGroupTypesResponse = this.RockRestClient.Execute( requestGroupTypes );
             if ( requestGroupTypesResponse.StatusCode != System.Net.HttpStatusCode.OK )
@@ -1921,9 +1912,7 @@ namespace Slingshot
 
             restClient.CookieContainer = new System.Net.CookieContainer();
 
-            RestRequest restLoginRequest = new RestRequest( Method.POST );
-            restLoginRequest.RequestFormat = RestSharp.DataFormat.Json;
-            restLoginRequest.Resource = "api/auth/login";
+            RestRequest restLoginRequest = new JsonNETRestRequest( "api/auth/login", Method.POST );
             var loginParameters = new
             {
                 UserName = this.RockUserName,
@@ -1950,7 +1939,7 @@ namespace Slingshot
         /// <returns></returns>
         private Dictionary<Guid, Rock.Client.DefinedValue> LoadDefinedValues( RestClient restClient, Guid definedTypeGuid )
         {
-            RestRequest requestDefinedType = new RestRequest( Method.GET );
+            RestRequest requestDefinedType = new JsonNETRestRequest( Method.GET );
 
             requestDefinedType.Resource = $"api/DefinedTypes?$filter=Guid eq guid'{definedTypeGuid}'&$expand=DefinedValues";
 
