@@ -7,6 +7,7 @@ namespace Slingshot
 {
     /// <summary>
     /// Special JSON.NET based RestSharp Serializer that doesn't use ISO8601 for Dates
+    /// derived from https://github.com/restsharp/RestSharp/blob/86b31f9adf049d7fb821de8279154f41a17b36f7/RestSharp/Serializers/JsonSerializer.cs
     /// </summary>
     /// <seealso cref="RestSharp.Serializers.ISerializer" />
     public class JsonNETRestSharpSerializer : ISerializer
@@ -22,7 +23,7 @@ namespace Slingshot
             _serializer = new JsonSerializer
             {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
-                NullValueHandling = NullValueHandling.Include,
+                NullValueHandling = NullValueHandling.Ignore,
                 DefaultValueHandling = DefaultValueHandling.Include,
                 DateTimeZoneHandling = DateTimeZoneHandling.Unspecified
             };
@@ -48,7 +49,7 @@ namespace Slingshot
             {
                 using ( var jsonTextWriter = new JsonTextWriter( stringWriter ) )
                 {
-                    jsonTextWriter.Formatting = Formatting.Indented;
+                    jsonTextWriter.Formatting = Formatting.None;
                     jsonTextWriter.QuoteChar = '"';
                     _serializer.Serialize( jsonTextWriter, obj );
                     var result = stringWriter.ToString();

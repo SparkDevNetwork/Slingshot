@@ -122,11 +122,14 @@ namespace Slingshot
         /// <param name="e">The <see cref="ElapsedEventArgs"/> instance containing the event data.</param>
         private void _timer_Elapsed( object sender, ElapsedEventArgs e )
         {
-            this.Dispatcher.Invoke( () =>
+            if ( !( this.Dispatcher.HasShutdownStarted || this.Dispatcher.HasShutdownFinished ) )
             {
-                string timerText = $"{Math.Round( _stopwatch.Elapsed.TotalSeconds, 1 )} seconds";
-                lblTimer.Content = timerText;
-            } );
+                this.Dispatcher.Invoke( () =>
+                {
+                    string timerText = $"{Math.Round( _stopwatch.Elapsed.TotalSeconds, 1 )} seconds";
+                    lblTimer.Content = timerText;
+                } );
+            }
         }
 
         /// <summary>
