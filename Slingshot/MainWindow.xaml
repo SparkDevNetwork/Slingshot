@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
         ResizeMode="CanMinimize"
-        Title="Slingshot - Rock Import" Height="421.552" Width="525">
+        Title="Slingshot - Rock Import" Height="500.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <Label Name="lblConnectionInfo" Content="Connected to: http://...." />
         <StackPanel Orientation="Horizontal">
@@ -29,7 +29,7 @@
             <Label Name="lblProgressText" Margin="4" HorizontalAlignment="Left" Content=""/>
             <Label Name="lblTimer" HorizontalAlignment="Right" Content="" Margin="4" />
         </DockPanel>
-        <TextBox x:Name="tbResults" Visibility="Visible" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="228" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
+        <TextBox x:Name="tbResults" Visibility="Visible" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="257" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
         
     </StackPanel>
 </Window>
