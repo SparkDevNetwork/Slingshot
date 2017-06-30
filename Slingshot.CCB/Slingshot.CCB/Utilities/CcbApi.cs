@@ -744,15 +744,18 @@ namespace Slingshot.CCB.Utilities
 
                     var sourceEvents = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" ).Elements( "event" );
 
-                    foreach ( var sourceEvent in sourceEvents )
+                    if ( sourceEvents != null )
                     {
-                        var attendances = CcbAttendance.Translate( sourceEvent, eventDetails );
-                                             
-                        if ( attendances != null )
+                        foreach ( var sourceEvent in sourceEvents )
                         {
-                            foreach ( var attendance in attendances )
+                            var attendances = CcbAttendance.Translate( sourceEvent, eventDetails );
+
+                            if ( attendances != null )
                             {
-                                ImportPackage.WriteToPackage( attendance );
+                                foreach ( var attendance in attendances )
+                                {
+                                    ImportPackage.WriteToPackage( attendance );
+                                }
                             }
                         }
                     }

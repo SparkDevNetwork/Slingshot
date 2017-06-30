@@ -74,7 +74,10 @@ namespace Slingshot.CCB
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
-                    txtMessages.Text = $"Error exporting individuals: {CcbApi.ErrorMessage}";
+                    this.Dispatcher.Invoke( () =>
+                    {
+                        exportWorker.ReportProgress( 2, $"Error exporting individuals: {CcbApi.ErrorMessage}" );
+                    } );
                 }
             }
 
