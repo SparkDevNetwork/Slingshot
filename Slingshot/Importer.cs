@@ -524,14 +524,7 @@ namespace Slingshot
                         imageStream.CopyTo( ms );
                         photoImport.MimeType = imageResponse.ContentType;
                         photoImport.PhotoData = Convert.ToBase64String( ms.ToArray(), Base64FormattingOptions.None );
-                        try
-                        {
-                            photoImport.FileName = Path.GetFileName( photoUrl );
-                        }
-                        catch
-                        {
-                            photoImport.FileName = "Photo";
-                        }
+                        photoImport.FileName = $"Photo{photoImport.ForeignId}";
                     }
                 }
                 catch ( Exception ex )
@@ -824,6 +817,9 @@ namespace Slingshot
 
             RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/AttendanceImport", Method.POST );
 
+            int fifteenMinutesMS = ( 1000 * 60 ) * 15;
+            restImportRequest.Timeout = fifteenMinutesMS;
+
             restImportRequest.AddBody( attendanceImportList );
 
             BackgroundWorker.ReportProgress( 0, "Sending Attendance Import to Rock..." );
@@ -1010,8 +1006,8 @@ namespace Slingshot
             RestRequest restPersonImportRequest = new JsonNETRestRequest( "api/BulkImport/PersonImport", Method.POST );
             restPersonImportRequest.AddBody( personImportList );
 
-            int fiveMinutesMS = ( 1000 * 60 ) * 5;
-            restPersonImportRequest.Timeout = fiveMinutesMS;
+            int fifteenMinutesMS = ( 1000 * 60 ) * 15;
+            restPersonImportRequest.Timeout = fifteenMinutesMS;
 
             BackgroundWorker.ReportProgress( 0, "Sending Person Import to Rock..." );
 
@@ -1510,11 +1506,19 @@ namespace Slingshot
             }
 
             /* Attendance */
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() ) ) )
+            var attendanceFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Attendance().GetFileName() );
+            if ( File.Exists( attendanceFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotAttendanceList = csvReader.GetRecords<Slingshot.Core.Model.Attendance>().ToList();
+                using ( var slingshotFileStream = File.OpenText( attendanceFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotAttendanceList = csvReader.GetRecords<Slingshot.Core.Model.Attendance>().ToList();
+                }
+            }
+            else
+            {
+                this.SlingshotAttendanceList = new List<Core.Model.Attendance>();
             }
 
             using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() ) ) )
