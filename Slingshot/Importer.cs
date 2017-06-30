@@ -39,7 +39,10 @@ namespace Slingshot
             }
 
             slingshotFilesDirectory.Create();
-            ZipFile.ExtractToDirectory( this.SlingshotFileName, slingshotFilesDirectory.FullName );
+            if ( File.Exists( this.SlingshotFileName ) )
+            {
+                ZipFile.ExtractToDirectory( this.SlingshotFileName, slingshotFilesDirectory.FullName );
+            }
 
             this.Results = new Dictionary<string, string>();
         }
@@ -277,6 +280,15 @@ namespace Slingshot
         /// The photo batch size mb.
         /// </value>
         public int? PhotoBatchSizeMB { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the financial transaction chunk.
+        /// Just in case the Target size reports a Timeout from the SqlBulkImport API.
+        /// </summary>
+        /// <value>
+        /// The size of the financial transaction chunk.
+        /// </value>
+        public int? FinancialTransactionChunkSize { get; set; }
 
         /// <summary>
         /// Handles the DoWork event of the BackgroundWorker control.
@@ -757,29 +769,51 @@ namespace Slingshot
                 financialTransactionImportList.Add( financialTransactionImport );
             }
 
-            RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/FinancialTransactionImport", Method.POST );
+            int postChunkSize = this.FinancialTransactionChunkSize ?? int.MaxValue;
 
-            restImportRequest.AddBody( financialTransactionImportList );
-
-            BackgroundWorker.ReportProgress( 0, "Sending FinancialTransaction Import to Rock..." );
-
-            var importResponse = this.RockRestClient.Post( restImportRequest );
-
-            Results.Add( "FinancialTransaction Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
-
-            if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+            while ( financialTransactionImportList.Any() )
             {
-                BackgroundWorker.ReportProgress( 0, this.Results );
-            }
-            else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
-            {
-                // either the endpoint doesn't exist, or the payload was too big
-                int postSizeMB = financialTransactionImportList.ToJson().Length / 1024 / 1024;
-                throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/FinancialTransactionImport. Make sure that Rock has been updated to support FinancialTransactionImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
-            }
-            else
-            {
-                throw new SlingshotPOSTFailedException( importResponse );
+                RestRequest restImportRequest = new JsonNETRestRequest( "api/BulkImport/FinancialTransactionImport", Method.POST );
+
+                int fifteenMinutesMS = ( 1000 * 60 ) * 15;
+                restImportRequest.Timeout = fifteenMinutesMS;
+
+                var postChunk = financialTransactionImportList.Take( postChunkSize ).ToList();
+
+                restImportRequest.AddBody( postChunk );
+
+                foreach ( var tran in postChunk.ToList() )
+                {
+                    financialTransactionImportList.Remove( tran );
+                }
+
+                BackgroundWorker.ReportProgress( 0, "Sending FinancialTransaction Import to Rock..." );
+
+                var importResponse = this.RockRestClient.Post( restImportRequest );
+
+                if ( Results.ContainsKey( "FinancialTransaction Import" ) )
+                {
+                    Results["FinancialTransaction Import"] += "\n" + importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content;
+                }
+                else
+                {
+                    Results.Add( "FinancialTransaction Import", importResponse.Content.FromJsonOrNull<string>() ?? importResponse.Content );
+                }
+
+                if ( importResponse.StatusCode == System.Net.HttpStatusCode.Created )
+                {
+                    BackgroundWorker.ReportProgress( 0, this.Results );
+                }
+                else if ( importResponse.StatusCode == System.Net.HttpStatusCode.NotFound )
+                {
+                    // either the endpoint doesn't exist, or the payload was too big
+                    int postSizeMB = financialTransactionImportList.ToJson().Length / 1024 / 1024;
+                    throw new SlingshotEndpointNotFoundException( $"Error posting to api/BulkImport/FinancialTransactionImport. Make sure that Rock has been updated to support FinancialTransactionImport, and also verify that Rock > Home / System Settings / System Configuration is configured to accept uploads larger than {postSizeMB}MB" );
+                }
+                else
+                {
+                    throw new SlingshotPOSTFailedException( importResponse );
+                }
             }
         }
 

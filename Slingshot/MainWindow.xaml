@@ -10,15 +10,20 @@
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <Label Name="lblConnectionInfo" Content="Connected to: http://...." />
         <StackPanel Orientation="Horizontal">
-            <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" Text="C:\Users\admin\Downloads\ccb-export-withfreshphotos.slingshot" VerticalAlignment="Top" Width="404"/>
+            <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" Text="C:\Users\admin\Downloads\" VerticalAlignment="Top" Width="404"/>
             <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal">
             <Button x:Name="btnImport" Content="Import" Padding="4" Click="btnImport_Click" Margin="4,4,0,4"/>
             <Button x:Name="btnImportPhotos" Content="Import Photos" Padding="4" Click="btnImportPhotos_Click" Margin="4,4,0,4"/>
+            
+            
+            <Button x:Name="btnCancelPhotoImport" Content="Cancel Import" Width="Auto"  Margin="4,4,0,4" Padding="4" Visibility="Visible" Click="btnCancelPhotoImport_Click"/>
+        </StackPanel>
+        <CheckBox x:Name="cbUploadFinancialTransactionsInChunks" Content="Upload Financial Transactions in Chunks" Margin="8,8,0,4"/>
+        <StackPanel Orientation="Horizontal">
             <Label Name="lblBatchSize" Content="Photo Batch Size (MB)" Margin="4,4,0,4"/>
             <TextBox x:Name="tbPhotoBatchSize" Width="40" Margin="0,4,0,4" Padding="4" Text="90" />
-            <Button x:Name="btnCancelPhotoImport" Content="Cancel Import" Width="Auto"  Margin="4,4,0,4" Padding="4" Visibility="Visible" Click="btnCancelPhotoImport_Click"/>
         </StackPanel>
         <DockPanel Name="dpResults">
             <Label Name="lblProgressText" Margin="4" HorizontalAlignment="Left" Content=""/>

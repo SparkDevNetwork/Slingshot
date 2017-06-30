@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Timers;
 using System.Windows;
@@ -95,7 +96,14 @@ namespace Slingshot
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnImport_Click( object sender, RoutedEventArgs e )
         {
+            if (!File.Exists(tbSlingshotFileName.Text))
+            {
+                MessageBox.Show( "Please select a .slingshot file" );
+                return;
+            }
+
             _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
+            _importer.FinancialTransactionChunkSize = cbUploadFinancialTransactionsInChunks.IsChecked == true ? 1000 : (int?)null;
 
             btnImport.IsEnabled = false;
             btnImportPhotos.IsEnabled = false;
@@ -192,6 +200,12 @@ namespace Slingshot
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnImportPhotos_Click( object sender, RoutedEventArgs e )
         {
+            if ( !File.Exists( tbSlingshotFileName.Text ) )
+            {
+                MessageBox.Show( "Please select a .slingshot file" );
+                return;
+            }
+
             _importer = new Importer( tbSlingshotFileName.Text, this.RockUrl, this.RockUserName, this.RockPassword );
             _importer.PhotoBatchSizeMB = tbPhotoBatchSize.Text.AsInteger();
 
