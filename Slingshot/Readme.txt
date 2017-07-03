@@ -1,4 +1,5 @@
 ﻿-- Make sure they are updated to 1.6.4 (or above) or 1.7
+-- NOTE: If they are at 1.6.7 or earlier, they will need the 'EntityFramework.Utilities.dll' dll put into their RockWeb/Bin folder
 -- Backup the Customer’s Database
 -- Update Rock > Home / System Settings / System Configuration and set Max Upload File Size to 100MB (if it isn’t already)
 -- Verify that Rock > Home / General Settings / File Types / ‘Person Image’, has the Storage Type set to what you want.  Slingshot will use that when importing Photos
