@@ -53,7 +53,7 @@ namespace Slingshot.Core.Utilities
         /// <param name="model">The model.</param>
         public static void WriteToPackage<T>(T model )
         {
-            var typeName = model.GetType().ToString();
+            var typeName = model.GetType().Name;
 
             if ( model is IImportModel )
             {
