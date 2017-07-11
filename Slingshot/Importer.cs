@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1532,11 +1532,19 @@ namespace Slingshot
         {
             LoadPersonSlingshotLists();
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FamilyAttribute().GetFileName() ) ) )
+            var familyAttributesFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FamilyAttribute().GetFileName() );
+            if ( File.Exists( familyAttributesFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotFamilyAttributes = csvReader.GetRecords<Slingshot.Core.Model.FamilyAttribute>().ToList();
+                using ( var slingshotFileStream = File.OpenText( familyAttributesFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotFamilyAttributes = csvReader.GetRecords<Slingshot.Core.Model.FamilyAttribute>().ToList();
+                }
+            }
+            else
+            {
+                this.SlingshotFamilyAttributes = new List<Core.Model.FamilyAttribute>();
             }
 
             /* Attendance */
@@ -1555,116 +1563,181 @@ namespace Slingshot
                 this.SlingshotAttendanceList = new List<Core.Model.Attendance>();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() ) ) )
+            var groupFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Group().GetFileName() );
+            if ( File.Exists( groupFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                var uniqueGroups = new Dictionary<int, Slingshot.Core.Model.Group>();
-
-                foreach ( var group in csvReader.GetRecords<Slingshot.Core.Model.Group>().ToList() )
+                using ( var slingshotFileStream = File.OpenText( groupFileName ) )
                 {
-                    if ( !uniqueGroups.ContainsKey( group.Id ) )
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    var uniqueGroups = new Dictionary<int, Slingshot.Core.Model.Group>();
+
+                    foreach ( var group in csvReader.GetRecords<Slingshot.Core.Model.Group>().ToList() )
                     {
-                        uniqueGroups.Add( group.Id, group );
+                        if ( !uniqueGroups.ContainsKey( group.Id ) )
+                        {
+                            uniqueGroups.Add( group.Id, group );
+                        }
+                    }
+
+                    this.SlingshotGroupList = uniqueGroups.Select( a => a.Value ).ToList();
+                }
+            }
+            else
+            {
+                this.SlingshotGroupList = new List<Core.Model.Group>();
+            }
+
+            var groupMemberFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupMember().GetFileName() );
+            if ( File.Exists( groupMemberFileName ) )
+            {
+                var groupLookup = this.SlingshotGroupList.ToDictionary( k => k.Id, v => v );
+                using ( var slingshotFileStream = File.OpenText( groupMemberFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+
+                    var groupMemberList = csvReader.GetRecords<Slingshot.Core.Model.GroupMember>().ToList().GroupBy( a => a.GroupId ).ToDictionary( k => k.Key, v => v.ToList() );
+                    foreach ( var groupIdMembers in groupMemberList )
+                    {
+                        groupLookup[groupIdMembers.Key].GroupMembers = groupIdMembers.Value;
                     }
                 }
-
-                this.SlingshotGroupList = uniqueGroups.Select( a => a.Value ).ToList();
             }
 
-            var groupLookup = this.SlingshotGroupList.ToDictionary( k => k.Id, v => v );
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupMember().GetFileName() ) ) )
+            var groupTypeFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupType().GetFileName() );
+            if ( File.Exists( groupTypeFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-
-                var groupMemberList = csvReader.GetRecords<Slingshot.Core.Model.GroupMember>().ToList().GroupBy( a => a.GroupId ).ToDictionary( k => k.Key, v => v.ToList() );
-                foreach ( var groupIdMembers in groupMemberList )
+                using ( var slingshotFileStream = File.OpenText( groupTypeFileName ) )
                 {
-                    groupLookup[groupIdMembers.Key].GroupMembers = groupIdMembers.Value;
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotGroupTypeList = csvReader.GetRecords<Slingshot.Core.Model.GroupType>().ToList();
                 }
             }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.GroupType().GetFileName() ) ) )
+            else
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotGroupTypeList = csvReader.GetRecords<Slingshot.Core.Model.GroupType>().ToList();
+                this.SlingshotGroupTypeList = new List<Core.Model.GroupType>();
             }
 
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Location().GetFileName() ) ) )
+            var locationFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Location().GetFileName() );
+            if ( File.Exists( locationFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                var uniqueLocations = new Dictionary<int, Slingshot.Core.Model.Location>();
-                foreach ( var location in csvReader.GetRecords<Slingshot.Core.Model.Location>().ToList() )
+                using ( var slingshotFileStream = File.OpenText( locationFileName ) )
                 {
-                    if ( !uniqueLocations.ContainsKey( location.Id ) )
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    var uniqueLocations = new Dictionary<int, Slingshot.Core.Model.Location>();
+                    foreach ( var location in csvReader.GetRecords<Slingshot.Core.Model.Location>().ToList() )
                     {
-                        uniqueLocations.Add( location.Id, location );
+                        if ( !uniqueLocations.ContainsKey( location.Id ) )
+                        {
+                            uniqueLocations.Add( location.Id, location );
+                        }
                     }
+
+                    this.SlingshotLocationList = uniqueLocations.Select( a => a.Value ).ToList();
                 }
-
-                this.SlingshotLocationList = uniqueLocations.Select( a => a.Value ).ToList();
             }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Schedule().GetFileName() ) ) )
+            else
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-
-                var uniqueSchedules = new Dictionary<int, Slingshot.Core.Model.Schedule>();
-                foreach ( var schedule in csvReader.GetRecords<Slingshot.Core.Model.Schedule>().ToList() )
-                {
-                    if ( !uniqueSchedules.ContainsKey( schedule.Id ) )
-                    {
-                        uniqueSchedules.Add( schedule.Id, schedule );
-                    }
-                }
-
-                this.SlingshotScheduleList = uniqueSchedules.Select( a => a.Value ).ToList();
+                this.SlingshotLocationList = new List<Core.Model.Location>();
             }
+
+            var scheduleFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.Schedule().GetFileName() );
+            if ( File.Exists( scheduleFileName ) )
+            {
+                using ( var slingshotFileStream = File.OpenText( scheduleFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+
+                    var uniqueSchedules = new Dictionary<int, Slingshot.Core.Model.Schedule>();
+                    foreach ( var schedule in csvReader.GetRecords<Slingshot.Core.Model.Schedule>().ToList() )
+                    {
+                        if ( !uniqueSchedules.ContainsKey( schedule.Id ) )
+                        {
+                            uniqueSchedules.Add( schedule.Id, schedule );
+                        }
+                    }
+
+                    this.SlingshotScheduleList = uniqueSchedules.Select( a => a.Value ).ToList();
+                }
+            }
+            else
+            {
+                this.SlingshotScheduleList = new List<Core.Model.Schedule>();
+            }
+
 
             /* Financial Transactions */
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialAccount().GetFileName() ) ) )
+            var financialAccountFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialAccount().GetFileName() );
+            if ( File.Exists( financialAccountFileName ) )
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotFinancialAccountList = csvReader.GetRecords<Slingshot.Core.Model.FinancialAccount>().ToList();
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransaction().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotFinancialTransactionList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransaction>().ToList();
-            }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransactionDetail().GetFileName() ) ) )
-            {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                var slingshotFinancialTransactionDetailList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransactionDetail>().ToList();
-                var slingshotFinancialTransactionLookup = this.SlingshotFinancialTransactionList.ToDictionary( k => k.Id, v => v );
-                foreach ( var slingshotFinancialTransactionDetail in slingshotFinancialTransactionDetailList )
+                using ( var slingshotFileStream = File.OpenText( financialAccountFileName ) )
                 {
-                    slingshotFinancialTransactionLookup[slingshotFinancialTransactionDetail.TransactionId].FinancialTransactionDetails.Add( slingshotFinancialTransactionDetail );
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotFinancialAccountList = csvReader.GetRecords<Slingshot.Core.Model.FinancialAccount>().ToList();
                 }
             }
-
-            using ( var slingshotFileStream = File.OpenText( Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialBatch().GetFileName() ) ) )
+            else
             {
-                CsvReader csvReader = new CsvReader( slingshotFileStream );
-                csvReader.Configuration.HasHeaderRecord = true;
-                this.SlingshotFinancialBatchList = csvReader.GetRecords<Slingshot.Core.Model.FinancialBatch>().ToList();
-                var transactionsByBatch = this.SlingshotFinancialTransactionList.GroupBy( a => a.BatchId ).ToDictionary( k => k.Key, v => v.ToList() );
-                foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
+                this.SlingshotFinancialAccountList = new List<Core.Model.FinancialAccount>();
+            }
+
+            var financialTransactionFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransaction().GetFileName() );
+            if ( File.Exists( financialTransactionFileName ) )
+            {
+                using ( var slingshotFileStream = File.OpenText( financialTransactionFileName ) )
                 {
-                    if ( transactionsByBatch.ContainsKey( slingshotFinancialBatch.Id ) )
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotFinancialTransactionList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransaction>().ToList();
+                } 
+            }
+            else
+            {
+                this.SlingshotFinancialTransactionList = new List<Core.Model.FinancialTransaction>();
+            }
+
+            var financialTransactionDetailFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialTransactionDetail().GetFileName() );
+            if ( File.Exists( financialTransactionDetailFileName ) )
+            {
+                using ( var slingshotFileStream = File.OpenText( financialTransactionDetailFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    var slingshotFinancialTransactionDetailList = csvReader.GetRecords<Slingshot.Core.Model.FinancialTransactionDetail>().ToList();
+                    var slingshotFinancialTransactionLookup = this.SlingshotFinancialTransactionList.ToDictionary( k => k.Id, v => v );
+                    foreach ( var slingshotFinancialTransactionDetail in slingshotFinancialTransactionDetailList )
                     {
-                        slingshotFinancialBatch.FinancialTransactions = transactionsByBatch[slingshotFinancialBatch.Id];
+                        slingshotFinancialTransactionLookup[slingshotFinancialTransactionDetail.TransactionId].FinancialTransactionDetails.Add( slingshotFinancialTransactionDetail );
                     }
                 }
+            }
+
+            var financialBatchFileName = Path.Combine( this.SlingshotDirectoryName, new Slingshot.Core.Model.FinancialBatch().GetFileName() );
+            if ( File.Exists( financialBatchFileName ) )
+            {
+                using ( var slingshotFileStream = File.OpenText( financialBatchFileName ) )
+                {
+                    CsvReader csvReader = new CsvReader( slingshotFileStream );
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    this.SlingshotFinancialBatchList = csvReader.GetRecords<Slingshot.Core.Model.FinancialBatch>().ToList();
+                    var transactionsByBatch = this.SlingshotFinancialTransactionList.GroupBy( a => a.BatchId ).ToDictionary( k => k.Key, v => v.ToList() );
+                    foreach ( var slingshotFinancialBatch in this.SlingshotFinancialBatchList )
+                    {
+                        if ( transactionsByBatch.ContainsKey( slingshotFinancialBatch.Id ) )
+                        {
+                            slingshotFinancialBatch.FinancialTransactions = transactionsByBatch[slingshotFinancialBatch.Id];
+                        }
+                    }
+                }
+            }
+            else
+            {
+                this.SlingshotFinancialBatchList = new List<Core.Model.FinancialBatch>();
             }
         }
 
