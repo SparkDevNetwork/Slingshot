@@ -53,6 +53,9 @@
       <HintPath>packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Rock.Client">
+      <HintPath>..\Libs\Rock.Client\Rock.Client.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.IO.Compression" />
@@ -138,10 +141,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Rock\Rock.Client\Rock.Client.csproj">
-      <Project>{6ea64bb9-9740-453a-939b-df43ad9ac164}</Project>
-      <Name>Rock.Client</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Rock\Rock.Slingshot.Model\Rock.Slingshot.Model.csproj">
       <Project>{962944de-8bf4-4175-b55a-e75cf7918272}</Project>
       <Name>Rock.Slingshot.Model</Name>
