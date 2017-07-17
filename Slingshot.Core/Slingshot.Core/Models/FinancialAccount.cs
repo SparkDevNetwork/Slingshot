@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,7 +41,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The campus identifier.
         /// </value>
-        public int CampusId { get; set; }
+        public int? CampusId { get; set; }
 
         /// <summary>
         /// Gets or sets the parent account identifier.

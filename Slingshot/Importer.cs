@@ -582,7 +582,11 @@ namespace Slingshot
 
                 financialAccountImport.IsTaxDeductible = slingshotFinancialAccount.IsTaxDeductible;
 
-                financialAccountImport.CampusId = campusLookup[slingshotFinancialAccount.CampusId];
+                if ( slingshotFinancialAccount.CampusId.HasValue )
+                {
+                    financialAccountImport.CampusId = campusLookup[slingshotFinancialAccount.CampusId.Value];
+                }
+                         
                 financialAccountImport.ParentFinancialAccountForeignId = slingshotFinancialAccount.ParentAccountId == 0 ? ( int? ) null : slingshotFinancialAccount.ParentAccountId;
 
                 financialAccountImportList.Add( financialAccountImport );
@@ -1292,7 +1296,7 @@ namespace Slingshot
         private void AddCampuses()
         {
             Dictionary<int, Slingshot.Core.Model.Campus> importCampuses = new Dictionary<int, Slingshot.Core.Model.Campus>();
-            foreach ( var campus in this.SlingshotPersonList.Select( a => a.Campus ) )
+            foreach ( var campus in this.SlingshotPersonList.Select( a => a.Campus ).Where( a => a.CampusId > 0 ) )
             {
                 if ( !importCampuses.ContainsKey( campus.CampusId ) )
                 {
@@ -1346,6 +1350,7 @@ namespace Slingshot
         /// </summary>
         private void AddAttributeCategories()
         {
+            int entityTypeIdPerson = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.PERSON.AsGuid()].Id;
             int entityTypeIdAttribute = this.EntityTypeLookup[Rock.Client.SystemGuid.EntityType.ATTRIBUTE.AsGuid()].Id;
             var attributeCategoryNames = this.SlingshotPersonAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList();
             attributeCategoryNames.AddRange( this.SlingshotFamilyAttributes.Where( a => !string.IsNullOrWhiteSpace( a.Category ) ).Select( a => a.Category ).Distinct().ToList() );
@@ -1356,6 +1361,8 @@ namespace Slingshot
                     Rock.Client.Category attributeCategory = new Rock.Client.Category();
                     attributeCategory.Name = slingshotAttributeCategoryName;
                     attributeCategory.EntityTypeId = entityTypeIdAttribute;
+                    attributeCategory.EntityTypeQualifierColumn = "EntityTypeId";
+                    attributeCategory.EntityTypeQualifierValue = entityTypeIdPerson.ToString();
                     attributeCategory.Guid = Guid.NewGuid();
 
                     RestRequest restPostRequest = new JsonNETRestRequest( "api/Categories", Method.POST );
@@ -2061,3 +2068,4 @@ namespace Slingshot
         }
     }
 }
+			
