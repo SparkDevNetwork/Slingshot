@@ -56,6 +56,17 @@ namespace Slingshot.Core.Model
         public PledgeFrequency? PledgeFrequency { get; set; }
 
         /// <summary>
+        /// Gets or sets the pledge amount that is promised to be given at the specified <see cref="PledgeFrequencyValue"/>.
+        /// </summary>
+        /// <value>
+        /// A <see cref="System.Decimal"/> representing the amount to be pledged at the specified frequency.
+        /// </value>
+        /// <remarks>
+        /// An example is that a person pledges $100.00 to be given monthly for the next year. This value will be $100.00 and the grand total of the pledge would be $1,200.00
+        /// </remarks>
+        public decimal TotalAmount { get; set; }
+
+        /// <summary>
         /// Gets the name of the file.
         /// </summary>
         /// <returns></returns>
