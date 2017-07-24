@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
         ResizeMode="CanMinimize"
-        Title="Slingshot - Rock Import" Height="500.552" Width="525">
+        Title="Slingshot - Rock Import" Height="520.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
         <Label Name="lblConnectionInfo" Content="Connected to: http://...." />
         <StackPanel Orientation="Horizontal">

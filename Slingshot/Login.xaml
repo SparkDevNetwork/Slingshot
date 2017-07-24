@@ -19,6 +19,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Label Grid.Row="0">Rock URL</Label>
             <TextBox Name="txtRockUrl" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
@@ -29,11 +30,14 @@
             <Label Grid.Row="2">Password</Label>
             <PasswordBox Name="txtPassword" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" />
 
-            <Button Name="btnLogin" Grid.Row="3" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5"  >
+            <Label Grid.Row="3" Grid.Column="1" Content="NOTE: This App is obsolete. Use the BulkImport block in Rock instead." Foreground="Red" />
+
+            <Button Name="btnLogin" Grid.Row="4" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5" IsEnabled="False"  >
                 <Label>Login</Label>
             </Button>
 
-            <TextBlock Name="lblMessage" Grid.Row="4" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+            <TextBlock Name="lblMessage" Grid.Row="5" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+            
         </Grid>
     </Grid>
 </Window>
