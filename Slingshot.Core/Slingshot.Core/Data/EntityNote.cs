@@ -1,4 +1,6 @@
-﻿namespace Slingshot.Core.Data
+﻿using System;
+
+namespace Slingshot.Core.Data
 {
     public abstract class EntityNote
     {
@@ -50,5 +52,18 @@
         /// A <see cref="System.String"/> representing the text/body of the note.
         /// </value>
         public string Text { get; set; }
+
+        /// <summary>
+        /// The date/time of the note
+        /// </summary>
+        public DateTime? DateTime { get; set; }
+
+        /// <summary>
+        /// The Id of the Person that created the note
+        /// </summary>
+        /// <value>
+        /// The created by person identifier.
+        /// </value>
+        public int? CreatedByPersonId { get; set; }
     }
 }
