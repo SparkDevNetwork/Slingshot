@@ -12,6 +12,15 @@ namespace Slingshot.Core.Model
     public class Attendance : IImportModel
     {
         /// <summary>
+        /// Gets or sets the attendance identifier.
+        /// For systems that don't have AttendanceId, or can't produce attendance ids by hashing, this can be set to 0. However, this will create duplicate records if attendance is imported more than once
+        /// </summary>
+        /// <value>
+        /// The attendance identifier.
+        /// </value>
+        public int AttendanceId { get; set; }
+        
+        /// <summary>
         /// Gets or sets the identifier.
         /// </summary>
         /// <value>
