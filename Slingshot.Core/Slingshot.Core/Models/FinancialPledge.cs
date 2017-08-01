@@ -67,6 +67,22 @@ namespace Slingshot.Core.Model
         public decimal TotalAmount { get; set; }
 
         /// <summary>
+        /// Gets or sets the created date time.
+        /// </summary>
+        /// <value>
+        /// The created date time.
+        /// </value>
+        public DateTime? CreatedDateTime { get; set; }
+
+        /// <summary>
+        /// Gets or sets the modified date time.
+        /// </summary>
+        /// <value>
+        /// The modified date time.
+        /// </value>
+        public DateTime? ModifiedDateTime { get; set; }
+
+        /// <summary>
         /// Gets the name of the file.
         /// </summary>
         /// <returns></returns>
