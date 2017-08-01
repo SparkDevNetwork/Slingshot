@@ -23,6 +23,7 @@ namespace Slingshot.CCB.Utilities
         private static RestClient _client;
         private static int loopThreshold = 100;
 
+        // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
         public static bool DumpResponseToXmlFile { get; set; }
                 
         /// <summary>

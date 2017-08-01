@@ -67,7 +67,7 @@ namespace Slingshot.CCB
             CcbApi.InitializeExport();
 
             // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            // CcbApi.DumpResponseToXmlFile = true;
+            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
             // export individuals
             if ( exportSettings.ExportIndividuals )
