@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,6 +22,8 @@ namespace Slingshot.CCB.Utilities
     {
         private static RestClient _client;
         private static int loopThreshold = 100;
+
+        public static bool DumpResponseToXmlFile { get; set; }
                 
         /// <summary>
         /// Gets or sets the last run date.
@@ -156,6 +159,11 @@ namespace Slingshot.CCB.Utilities
 
                 XDocument xdocCustomFields = XDocument.Parse( response.Content );
 
+                if ( CcbApi.DumpResponseToXmlFile )
+                {
+                    xdocCustomFields.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUP_TYPES_ResponseLog.xml" ) );
+                }
+
                 var sourceGroupTypes = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Element( "items" ).Elements( "item" );
 
                 foreach ( var sourceGroupType in sourceGroupTypes )
@@ -207,6 +215,11 @@ namespace Slingshot.CCB.Utilities
                     var response = _client.Execute( request );
 
                     XDocument xdoc = XDocument.Parse( response.Content );
+
+                    if ( CcbApi.DumpResponseToXmlFile )
+                    {
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{loopCounter}.xml" ) );
+                    }
 
                     var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
 
@@ -277,6 +290,11 @@ namespace Slingshot.CCB.Utilities
 
                 XDocument xdocCustomFields = XDocument.Parse( response.Content );
 
+                if ( CcbApi.DumpResponseToXmlFile )
+                {
+                    xdocCustomFields.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_DEPARTMENTS_ResponseLog.xml" ) );
+                }
+
                 var sourceDepartments = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Elements( "items" );
 
                 foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
@@ -331,6 +349,11 @@ namespace Slingshot.CCB.Utilities
                     var response = _client.Execute( request );
 
                     XDocument xdoc = XDocument.Parse( response.Content );
+
+                    if ( CcbApi.DumpResponseToXmlFile )
+                    {
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUALS_ResponseLog_{loopCounter}.xml" ) );
+                    }
 
                     var individuals = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
 
@@ -388,7 +411,7 @@ namespace Slingshot.CCB.Utilities
             // we'll make an api call for each month until the modifiedSince date 
             var today = DateTime.Now;
             var numberOfMonths = (((today.Year - modifiedSince.Year) * 12) + today.Month - modifiedSince.Month) + 1;
-
+            int loopCounter = 0;
             try {
                 for ( int i = 0; i < numberOfMonths; i++ )
                 {
@@ -415,6 +438,11 @@ namespace Slingshot.CCB.Utilities
                     var response = _client.Execute( request );
 
                     XDocument xdoc = XDocument.Parse( response.Content );
+
+                    if ( CcbApi.DumpResponseToXmlFile )
+                    {
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ResponseLog_{loopCounter++}.xml" ) );
+                    }
 
                     var sourceBatches = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "batches" ).Elements( "batch" );
 
@@ -468,6 +496,11 @@ namespace Slingshot.CCB.Utilities
                 var response = _client.Execute( request );
 
                 XDocument xdocCustomFields = XDocument.Parse( response.Content );
+
+                if ( CcbApi.DumpResponseToXmlFile )
+                {
+                    xdocCustomFields.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_ACCOUNTS_ResponseLog.xml" ) );
+                }
 
                 var sourceAccounts = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Elements( "transaction_detail_types" );
 
@@ -557,6 +590,11 @@ namespace Slingshot.CCB.Utilities
             var customFieldResponse = _client.Execute( customFieldRequest );
 
             XDocument xdocCustomFields = XDocument.Parse( customFieldResponse.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdocCustomFields.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_CUSTOM_FIELDS_ResponseLog.xml" ) );
+            }
 
             var customFields = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Element( "custom_fields" );
 
@@ -713,6 +751,7 @@ namespace Slingshot.CCB.Utilities
             // we'll make an api call for each month until the modifiedSince date 
             var today = DateTime.Now;
             var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
+            int loopCounter = 0;
 
             try
             {
@@ -741,6 +780,11 @@ namespace Slingshot.CCB.Utilities
                     var response = _client.Execute( request );
 
                     XDocument xdoc = XDocument.Parse( response.Content );
+
+                    if ( CcbApi.DumpResponseToXmlFile )
+                    {
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_ATTENDANCE_ResponseLog_{loopCounter++}.xml" ) );
+                    }
 
                     var sourceEvents = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" ).Elements( "event" );
 
@@ -795,6 +839,11 @@ namespace Slingshot.CCB.Utilities
                     if ( response.StatusCode == System.Net.HttpStatusCode.OK )
                     {
                         XDocument xdoc = XDocument.Parse( response.Content );
+
+                        if ( CcbApi.DumpResponseToXmlFile )
+                        {
+                            xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_EVENTS_ResponseLog_{loopCounter++}.xml" ) );
+                        }
 
                         var returnCount = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" )?.Attribute( "count" )?.Value.AsIntegerOrNull();
 
