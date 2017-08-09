@@ -1,6 +1,6 @@
 # Slingshot
 
-![Slingshot](https://raw.githubusercontent.com/SparkDevNetwork/Slingshot/master/Images/slingshot.svg =250x)
+![Slingshot](https://raw.githubusercontent.com/SparkDevNetwork/Slingshot/develop/Images/slingshot.png)
 
 ## Introduction
 Slingshot is a rapid migration tool for moving data from a legacy system (you're old system) into Rock (your shiny new system). This project has separate utilities to run for each type of system (currently supports Church Community Builder (CCB) and F1). These utilities will take the data from the legacy system and create a *.slingshot* file. This file can then be imported to Rock from *Admin Tools > Power Tools > Legacy Import*.
