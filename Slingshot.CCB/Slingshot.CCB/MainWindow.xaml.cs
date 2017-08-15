@@ -37,6 +37,9 @@ namespace Slingshot.CCB
 
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick; ;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
+            
+            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
+            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
@@ -66,8 +69,7 @@ namespace Slingshot.CCB
             // clear filesystem directories
             CcbApi.InitializeExport();
 
-            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
+            
 
             // export individuals
             if ( exportSettings.ExportIndividuals )
