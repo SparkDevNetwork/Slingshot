@@ -1,0 +1,38 @@
+﻿<Window x:Class="Slingshot.CCB.Login"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Slingshot.CCB"
+        mc:Ignorable="d"
+        Title="Church Community Builder Connection Information" Height="276.41" Width="525" Icon="icon.ico">
+    <Grid>
+        <Grid Margin="20,40,20,20" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0">Hostname</Label>
+            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+
+            <Label Grid.Row="1">API Username</Label>
+            <TextBox Name="txtApiUsername" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="RockExportTest" />
+
+            <Label Grid.Row="2">API Password</Label>
+            <TextBox Name="txtApiPassword" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+
+            <Button Name="btnLogin" Grid.Row="3" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5"  >
+                <Label>Login</Label>
+            </Button>
+
+            <TextBlock Name="lblMessage" Grid.Row="4" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+        </Grid>
+    </Grid>
+</Window>

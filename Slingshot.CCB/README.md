@@ -1,0 +1,3 @@
+# Slingshot.CCB
+
+License: GPL
