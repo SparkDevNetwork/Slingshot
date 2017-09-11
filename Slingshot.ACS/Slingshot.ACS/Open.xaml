@@ -1,0 +1,33 @@
+﻿<Window x:Class="Slingshot.ACS.Open"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Slingshot.ACS"
+        mc:Ignorable="d"
+        Title="ACS Database Import" Height="276.41" Width="525" Icon="icon.ico">
+    <Grid>
+        <Grid Margin="20,40,20,20" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0">Filename</Label>
+            <TextBox Name="txtFilename" Grid.Row="0" Grid.Column="1" Margin="0,2,104,10" Padding="3" Text="" />
+            <Button Content="Browse" Name="btnFileOpen" Grid.Column="1" Margin="321,2,0,0" VerticalAlignment="Top" Height="25" Click="Browse_Click"/>
+
+            <Button Name="btnOpen" Grid.Row="3" Grid.Column="1" IsDefault="True" Click="btnOpen_Click" Margin="0,0,0,5"  >
+                <Label>Open</Label>
+            </Button>
+
+            <TextBlock Name="lblMessage" Grid.Row="4" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+        </Grid>
+    </Grid>
+</Window>
