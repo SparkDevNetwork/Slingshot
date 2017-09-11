@@ -1,3 +1,5 @@
+![status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange.svg)
+
 # Slingshot
 
 ![Slingshot](https://raw.githubusercontent.com/SparkDevNetwork/Slingshot/develop/Images/slingshot.png)
