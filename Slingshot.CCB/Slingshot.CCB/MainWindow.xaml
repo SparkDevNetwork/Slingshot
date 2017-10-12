@@ -49,6 +49,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Label Content="Import Records Modified Since" Grid.Row="1" FontWeight="Bold" />
@@ -70,11 +71,15 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+                <StackPanel Grid.Row="6">
+                    <Label Content="Advanced" FontWeight="Bold" Margin="0,0,0,0"/>
+                    <CheckBox Name="cbDumpResponseToXmlFile" Content="Dump Response to XmlFiles" Margin="0,10,0,10"  Padding="3,0,0,0"  />
+                </StackPanel>
 
-                <Button Name="btnDownloadPackage" Grid.Row="6" Click="btnDownloadPackage_Click">
+                <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">
                     <Label Content="Create Download Package" />
                 </Button>
-                <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="7" Margin="0,10,0,0" />
+                <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,10,0,0" />
             </Grid>
             </ScrollViewer>
         </DockPanel>

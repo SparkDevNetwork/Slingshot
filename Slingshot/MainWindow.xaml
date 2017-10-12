@@ -5,12 +5,31 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot"
         mc:Ignorable="d"
-        ResizeMode="NoResize"
-        Title="MainWindow" Height="421.552" Width="525">
+        ResizeMode="CanMinimize"
+        Title="Slingshot - Rock Import" Height="520.552" Width="525">
     <StackPanel VerticalAlignment="Top" Margin="8"  >
-        <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left" Height="23" Margin="4" TextWrapping="Wrap" Text="C:\Users\admin\Downloads\ccb-export-withattendance.slingshot" VerticalAlignment="Top" Width="477"/>
-        <Button x:Name="btnSelectSlingshotFile" Content="Open Slingshot File" HorizontalAlignment="Left" Margin="4" VerticalAlignment="Top" Width="157" Click="btnSelectSlingshotFile_Click"/>
-        <Button x:Name="btnGo" Content="GO" HorizontalAlignment="Left"  VerticalAlignment="Top" Width="75" Click="btnGo_Click" Margin="4,4,0,4"/>
-        <TextBox x:Name="tbResults" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="270" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
+        <Label Name="lblConnectionInfo" Content="Connected to: http://...." />
+        <StackPanel Orientation="Horizontal">
+            <TextBox x:Name="tbSlingshotFileName" HorizontalAlignment="Left"  Margin="4,4,0,4" Padding="4" Text="C:\Users\admin\Downloads\" VerticalAlignment="Top" Width="404"/>
+            <Button x:Name="btnSelectSlingshotFile" Content="Browse" HorizontalAlignment="Left" Padding="4" Margin="4,4,0,4" VerticalAlignment="Top" Width="Auto" Click="btnSelectSlingshotFile_Click"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="btnImport" Content="Import" Padding="4" Click="btnImport_Click" Margin="4,4,0,4"/>
+            <Button x:Name="btnImportPhotos" Content="Import Photos" Padding="4" Click="btnImportPhotos_Click" Margin="4,4,0,4"/>
+            
+            
+            <Button x:Name="btnCancelPhotoImport" Content="Cancel Import" Width="Auto"  Margin="4,4,0,4" Padding="4" Visibility="Visible" Click="btnCancelPhotoImport_Click"/>
+        </StackPanel>
+        <CheckBox x:Name="cbUploadFinancialTransactionsInChunks" Content="Upload Financial Transactions in Chunks" Margin="8,8,0,4"/>
+        <StackPanel Orientation="Horizontal">
+            <Label Name="lblBatchSize" Content="Photo Batch Size (MB)" Margin="4,4,0,4"/>
+            <TextBox x:Name="tbPhotoBatchSize" Width="40" Margin="0,4,0,4" Padding="4" Text="90" />
+        </StackPanel>
+        <DockPanel Name="dpResults">
+            <Label Name="lblProgressText" Margin="4" HorizontalAlignment="Left" Content=""/>
+            <Label Name="lblTimer" HorizontalAlignment="Right" Content="" Margin="4" />
+        </DockPanel>
+        <TextBox x:Name="tbResults" Visibility="Visible" TextWrapping="Wrap" xml:space="preserve" Text="Results" Height="257" VerticalAlignment="Stretch" Margin="4" FontFamily="Consolas" FontSize="10" VerticalScrollBarVisibility="Visible" />
+        
     </StackPanel>
 </Window>

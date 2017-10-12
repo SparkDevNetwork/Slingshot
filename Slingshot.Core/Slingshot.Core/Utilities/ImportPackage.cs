@@ -23,6 +23,14 @@ namespace Slingshot.Core.Utilities
         static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
         static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
 
+        public static string PackageDirectory
+        {
+            get
+            {
+                return _packageDirectory;
+            }
+        }
+
         /// <summary>
         /// Initializes the <see cref="ImportPackage"/> class.
         /// </summary>
@@ -53,7 +61,7 @@ namespace Slingshot.Core.Utilities
         /// <param name="model">The model.</param>
         public static void WriteToPackage<T>(T model )
         {
-            var typeName = model.GetType().ToString();
+            var typeName = model.GetType().Name;
 
             if ( model is IImportModel )
             {

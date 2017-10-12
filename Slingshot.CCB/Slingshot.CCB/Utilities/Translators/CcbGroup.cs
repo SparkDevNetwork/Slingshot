@@ -30,27 +30,33 @@ namespace Slingshot.CCB.Utilities.Translators
                 groups.Add( group );
             }
 
-            // add the department as a group with an id of 999999 + its id to create a unique group id for it
+            // add the department as a group with an id of 9999 + its id to create a unique group id for it
             if (inputGroup.Element("department") != null && inputGroup.Element( "department" ).Attribute("id") != null && inputGroup.Element("department").Attribute("id").Value.IsNotNullOrWhitespace() )
             {
-                departmentId = ( "999999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
+                departmentId = ( "9999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
                 var departmentName = inputGroup.Element( "department" ).Value;
                 if ( departmentName.IsNullOrWhiteSpace() )
                 {
                     departmentName = "No Department Name";
                 }
-                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, GroupTypeId = 999999 } );
+                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, GroupTypeId = 9999 } );
             }
 
-            // add the director as a group with an id of 999998 + its id to create a unique group id for it
+            // add the director as a group with an id of 9998 + its id to create a unique group id for it
             if ( inputGroup.Element( "director" ) != null && inputGroup.Element( "director" ).Attribute( "id" ) != null && inputGroup.Element( "director" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
             {
-                directorId = ( "999998" + inputGroup.Element( "director" ).Attribute( "id" ).Value ).AsInteger();
+                directorId = ( "9998" + inputGroup.Element( "director" ).Attribute( "id" ).Value ).AsInteger();
 
                 var directorGroup = new Group();
-                directorGroup.Id = departmentId.Value;
+                directorGroup.Id = directorId.Value;
                 directorGroup.Name = inputGroup.Element( "director" ).Element( "full_name" ).Value;
-                directorGroup.GroupTypeId = 999998;
+                directorGroup.GroupTypeId = 9998;
+
+                // add parent group of the department if it exists
+                if ( departmentId.HasValue )
+                {
+                    directorGroup.ParentGroupId = departmentId.Value;
+                }
 
                 directorGroup.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "director" ).Attribute( "id" ).Value.AsInteger(), Role = "Leader", GroupId = directorGroup.Id } );
 

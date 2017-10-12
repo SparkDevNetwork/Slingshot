@@ -143,6 +143,7 @@ namespace Slingshot.CCB.Utilities.Translators
                         person.MaritalStatus = MaritalStatus.Single;
                         break;
                     default:
+                        person.MaritalStatus = MaritalStatus.Unknown;
                         if ( maritalStatus.IsNotNullOrWhitespace() )
                         {
                             notes.Add( "maritial_status:" + maritalStatus );

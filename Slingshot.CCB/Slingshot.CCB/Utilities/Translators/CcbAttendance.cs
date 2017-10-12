@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -30,6 +31,16 @@ namespace Slingshot.CCB.Utilities.Translators
                 attendance.LocationId = locationId;
                 attendance.ScheduleId = scheduleId;
                 attendance.GroupId = groupId;
+
+                MD5 md5Hasher = MD5.Create();
+                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+ {attendance.PersonId}
+ {attendance.StartDateTime}
+ {attendance.LocationId}
+ {attendance.ScheduleId}
+ {attendance.GroupId}
+" ) );
+                attendance.AttendanceId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
             }
 
             return attendanceList;

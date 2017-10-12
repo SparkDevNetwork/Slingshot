@@ -52,14 +52,6 @@ namespace Slingshot.Core.Model
         public string Summary { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this instance is non cash.
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is non cash; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsNonCash { get; set; }
-
-        /// <summary>
         /// Gets or sets the created by person identifier.
         /// </summary>
         /// <value>

@@ -16,7 +16,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -33,29 +33,34 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Slingshot.XML</DocumentationFile>
+    <DocumentationFile>
+    </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CsvHelper, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
-      <HintPath>..\Slingshot.CCB\packages\CsvHelper.2.16.3.0\lib\net45\CsvHelper.dll</HintPath>
+      <HintPath>packages\CsvHelper.2.16.3.0\lib\net45\CsvHelper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Ionic.Zip.Reduced, Version=1.9.1.8, Culture=neutral, PublicKeyToken=edbe51ad942a3f5c, processorArchitecture=MSIL">
-      <HintPath>..\Slingshot.CCB\packages\DotNetZip.Reduced.1.9.1.8\lib\net20\Ionic.Zip.Reduced.dll</HintPath>
+      <HintPath>packages\DotNetZip.Reduced.1.9.1.8\lib\net20\Ionic.Zip.Reduced.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\Slingshot.CCB\packages\Newtonsoft.Json.10.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>packages\Newtonsoft.Json.10.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\Slingshot.CCB\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
+      <HintPath>packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="Rock.Client">
+      <HintPath>..\Libs\Rock.Client\Rock.Client.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -74,50 +79,20 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialAccountImport.cs">
-      <Link>Rock\BulkUpdate\FinancialAccountImport.cs</Link>
+    <Compile Include="JsonNETRestRequest.cs" />
+    <Compile Include="Login.xaml.cs">
+      <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialBatchImport.cs">
-      <Link>Rock\BulkUpdate\FinancialBatchImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionDetailImport.cs">
-      <Link>Rock\BulkUpdate\FinancialTransactionDetailImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\FinancialTransactionImport.cs">
-      <Link>Rock\BulkUpdate\FinancialTransactionImport.cs</Link>
-    </Compile>
-    <Compile Include="SlingshotEndpointNotFoundException.cs" />
+    <Compile Include="JsonNETRestSharpSerializer.cs" />
+    <Compile Include="SlingshotExceptions.cs" />
+    <Page Include="Login.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\AttendanceImport.cs">
-      <Link>Rock\BulkUpdate\AttendanceImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\AttributeValueImport.cs">
-      <Link>Rock\BulkUpdate\AttributeValueImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupImport.cs">
-      <Link>Rock\BulkUpdate\GroupImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\GroupMemberImport.cs">
-      <Link>Rock\BulkUpdate\GroupMemberImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\LocationImport.cs">
-      <Link>Rock\BulkUpdate\LocationImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonAddressImport.cs">
-      <Link>Rock\BulkUpdate\PersonAddressImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PersonImport.cs">
-      <Link>Rock\BulkUpdate\PersonImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\PhoneNumberImport.cs">
-      <Link>Rock\BulkUpdate\PhoneNumberImport.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Rock\Rock\BulkUpdate\ScheduleImport.cs">
-      <Link>Rock\BulkUpdate\ScheduleImport.cs</Link>
-    </Compile>
     <Compile Include="..\..\Rock\Rock\Utility\ExtensionMethods\BooleanExtensions.cs">
       <Link>Rock\Extensions\BooleanExtensions.cs</Link>
     </Compile>
@@ -166,14 +141,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Rock\Rock.Client\Rock.Client.csproj">
-      <Project>{6ea64bb9-9740-453a-939b-df43ad9ac164}</Project>
-      <Name>Rock.Client</Name>
+    <ProjectReference Include="..\..\Rock\Rock.Slingshot.Model\Rock.Slingshot.Model.csproj">
+      <Project>{962944de-8bf4-4175-b55a-e75cf7918272}</Project>
+      <Name>Rock.Slingshot.Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\Slingshot.Core\Slingshot.Core\Slingshot.Core.csproj">
       <Project>{B6072804-DC94-473F-A7E9-E175DB03CAD4}</Project>
       <Name>Slingshot.Core</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
