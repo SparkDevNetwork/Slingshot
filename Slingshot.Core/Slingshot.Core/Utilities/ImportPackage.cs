@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +19,7 @@ namespace Slingshot.Core.Utilities
     {
         static string _appDirectory = AppDomain.CurrentDomain.BaseDirectory;
         static string _packageDirectory = _appDirectory + "Package";
+        static string _imageDirectory = _appDirectory + "Images";
 
         static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
         static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
@@ -28,6 +29,14 @@ namespace Slingshot.Core.Utilities
             get
             {
                 return _packageDirectory;
+            }
+        }
+
+        public static string ImageDirectory
+        {
+            get
+            {
+                return _imageDirectory;
             }
         }
 
@@ -44,6 +53,7 @@ namespace Slingshot.Core.Utilities
         /// </summary>
         public static void InitalizePackageFolder()
         {
+            // CSVs
             // delete existing package directory
             if ( Directory.Exists( _packageDirectory ) )
             {
@@ -52,6 +62,16 @@ namespace Slingshot.Core.Utilities
 
             // create fresh package directory
             Directory.CreateDirectory( _packageDirectory );
+
+            // images
+            // delete existing package directory
+            if ( Directory.Exists( _imageDirectory ) )
+            {
+                Directory.Delete( _imageDirectory, true );
+            }
+
+            // create fresh package directory
+            Directory.CreateDirectory( _imageDirectory );
         }
 
         /// <summary>
@@ -277,29 +297,77 @@ namespace Slingshot.Core.Utilities
             csvWriters.Clear();
             textWriters.Clear();
 
-            // zip files
-            var zipFile = _appDirectory + exportFilename;
-            if (File.Exists( zipFile ) )
+            // zip CSV files
+            if ( exportFilename.EndsWith(".slingshot", StringComparison.OrdinalIgnoreCase ) )
             {
-                File.Delete( zipFile );
+                // remove the .slingshot extenstion if it was specified, so we can get just the filename without it
+                exportFilename = exportFilename.Substring( 0, exportFilename.Length - ".slingshot".Length );
             }
 
-            using ( ZipFile zip = new ZipFile() )
-            {
-                var files = Directory.GetFiles( _packageDirectory );
+            var csvZipFile = _appDirectory + exportFilename + ".slingshot";
+            
 
-                foreach (var file in files )
+            if (File.Exists( csvZipFile ) )
+            {
+                File.Delete( csvZipFile );
+            }
+
+            using ( ZipFile csvZip = new ZipFile() )
+            {
+                var csvFiles = Directory.GetFiles( _packageDirectory );
+
+                foreach (var file in csvFiles )
                 {
-                    zip.AddFile( file, "" );
+                    csvZip.AddFile( file, "" );
                 }
 
-                zip.Save( zipFile );
+                csvZip.Save( csvZipFile );
+            }
+
+            // zip image files
+            var files = Directory.GetFiles( _imageDirectory );
+            if ( files.Any() )
+            {
+                long length = 0;
+                int fileCounter = 0;
+
+                ZipFile zip = new ZipFile();
+
+                foreach ( var file in files )
+                {
+                    // over 100MB
+                    if ( length < 104857600 )
+                    {
+                        zip.AddFile( file, "" );
+                    }
+                    else
+                    {
+                        length = 0;
+                        zip.Save( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot" );
+                        fileCounter++;
+                        zip.Dispose();
+                        zip = new ZipFile();
+                        zip.AddFile( file, "" );
+                    }
+
+                    length += new System.IO.FileInfo( file ).Length;
+                }
+
+                zip.Save( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot" );
+                zip.Dispose();
+                
             }
 
             // delete package folder
             if ( Directory.Exists( _packageDirectory ) )
             {
                 Directory.Delete( _packageDirectory, true );
+            }
+
+            // delete images folder
+            if ( Directory.Exists( _imageDirectory ) )
+            {
+                Directory.Delete( _imageDirectory, true );
             }
         }
     }
