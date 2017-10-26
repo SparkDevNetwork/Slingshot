@@ -635,9 +635,18 @@ namespace Slingshot.CCB.Utilities
 
             if ( response.StatusCode == System.Net.HttpStatusCode.OK )
             {
-                XDocument xdoc = XDocument.Parse( response.Content );
 
-                var responseData = xdoc.Element( "ccb_api" )?.Element( "response" );
+                XElement responseData = null;
+                try
+                {
+                    XDocument xdoc = XDocument.Parse( response.Content );
+
+                    responseData = xdoc.Element( "ccb_api" )?.Element( "response" );
+                }
+                catch (Exception ex)
+                {
+                    ErrorMessage = response.Content;
+                }
 
                 if ( responseData != null )
                 {
