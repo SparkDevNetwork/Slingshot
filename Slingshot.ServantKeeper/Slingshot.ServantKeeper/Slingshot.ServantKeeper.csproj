@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0B2F9C45-79DE-4520-9A88-754A9F87C4E2}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Slingshot.ACS</RootNamespace>
-    <AssemblyName>Slingshot.ACS</AssemblyName>
+    <RootNamespace>Slingshot.ServantKeeper</RootNamespace>
+    <AssemblyName>Slingshot.ServantKeeper</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -75,6 +75,7 @@
     <Compile Include="Utilities\ServantKeeperApi.cs" />
     <Compile Include="Utilities\FixedWidthFile.cs" />
     <Compile Include="Utilities\Table.cs" />
+    <Compile Include="Utilities\Translators\SKPerson.cs" />
     <Page Include="MainWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -137,8 +138,6 @@
     <Resource Include="Assets\Icon\icon-96.png" />
     <Resource Include="Assets\Icon\icon.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Utilities\Utilities\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -10,6 +10,7 @@ using Slingshot.Core.Utilities;
 using System.IO.Compression;
 using System.IO;
 using Slingshot.ServantKeeper.Models;
+using Slingshot.ServantKeeper.Utilities.Translators;
 
 namespace Slingshot.ServantKeeper.Utilities
 {
@@ -277,31 +278,24 @@ GROUP BY [Description]";
                 List<Value> values = GetTable("csreftbl.udb").Map<Value>();
                 List<Individual> individuals = GetTable("csind.udb").Map<Individual>();
 
+                // export inactive people
+                List<Individual> inactives = GetTable("csindbin.udb").Map<Individual>();
+                inactives.ForEach(p => p.RecordStatus = RecordStatus.Inactive);
+                individuals.AddRange(inactives);
+
                 // export people
                 foreach (Individual indv in individuals)
                 {
-                    ImportPackage.WriteToPackage(indv.Person);
-                    // Export the person's phone numbers
-                    foreach(PersonPhone importPhone in indv.Person.PhoneNumbers)
-                    {
-                        ImportPackage.WriteToPackage(importPhone);
-                    }
-                }
-
-                individuals = GetTable("csindbin.udb").Map<Individual>();
-
-                // export inactive people
-                foreach (Individual indv in individuals)
-                {
-                    Person person = indv.Person;
-                    person.RecordStatus = RecordStatus.Inactive;
+                    Person person = SKPerson.Translate(indv, values);
                     ImportPackage.WriteToPackage(person);
                     // Export the person's phone numbers
-                    foreach (PersonPhone importPhone in indv.Person.PhoneNumbers)
+                    foreach(PersonPhone importPhone in person.PhoneNumbers)
                     {
                         ImportPackage.WriteToPackage(importPhone);
                     }
                 }
+
+                
                 /*
                 _modifiedSince = modifiedSince;
                 _emailType = emailType;

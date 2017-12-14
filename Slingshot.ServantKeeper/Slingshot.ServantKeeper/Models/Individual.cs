@@ -26,7 +26,7 @@ namespace Slingshot.ServantKeeper.Models
         public string FirstName { get; set; }
 
         [ColumnName("MID_NAME")]
-        public string MID_NAME { get; set; }
+        public string MiddleName { get; set; }
 
         [ColumnName("LAST_NAME")]
         public string LastName { get; set; }
@@ -47,11 +47,19 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("BIRTH_DT")]
         [DateTimeParseString("yyyyMMdd")]
         public DateTime BirthDate { get; set; }
+        
+        public int Age {
+            get {
+                DateTime today = DateTime.Today;
+                int age = today.Year - BirthDate.Year;
+                if (BirthDate > today.AddYears(-age))
+                    age--;
 
-        [ColumnName("AGE")]
-        public int Age { get; set; }
+                return age;
+            }
+        }
 
-        [ColumnName("email")]
+        [ColumnName("email1")]
         public string Email { get; set; }
 
         [ColumnName("c_phone")]
@@ -66,36 +74,12 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("h_unlisted")]
         public bool HomePhoneUnlisted { get; set; }
 
-        public Person Person {
-            get{
-                Person person = new Person();
-                person.Id = Math.Abs(unchecked((int)Id));
-                person.FirstName = FirstName;
-                person.NickName = NickName;
-                person.LastName = LastName;
-                person.Birthdate = BirthDate;
-                person.Email = Email;
-                if (!String.IsNullOrEmpty(CellPhone))
-                {
-                    PersonPhone phone = new PersonPhone();
-                    phone.PhoneNumber = CellPhone;
-                    phone.PersonId = Math.Abs(unchecked((int)Id));
-                    phone.IsUnlisted = CellPhoneUnlisted;
-                    phone.PhoneType = "Cell";
-                    person.PhoneNumbers.Add(phone);
-                }
-                if (!String.IsNullOrEmpty(HomePhone))
-                {
-                    PersonPhone phone = new PersonPhone();
-                    phone.PhoneNumber = HomePhone;
-                    phone.PersonId = Math.Abs(unchecked((int)Id));
-                    phone.IsUnlisted = HomePhoneUnlisted;
-                    phone.PhoneType = "Home";
-                    person.PhoneNumbers.Add(phone);
-                }
-                return person;
+        [ColumnName("marital_cd")]
+        public long MaritalCode { get; set; }
+        
+        [ColumnName("wedding_dt")]
+        public DateTime WeddingDate { get; set; }
 
-            }
-        }
+        public RecordStatus RecordStatus { get; set; }
     }
 }
