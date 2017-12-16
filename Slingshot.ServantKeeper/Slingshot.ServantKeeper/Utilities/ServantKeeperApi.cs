@@ -11,6 +11,7 @@ using System.IO.Compression;
 using System.IO;
 using Slingshot.ServantKeeper.Models;
 using Slingshot.ServantKeeper.Utilities.Translators;
+using System.Linq;
 
 namespace Slingshot.ServantKeeper.Utilities
 {
@@ -274,6 +275,11 @@ GROUP BY [Description]";
         {
             try
             {
+                List<Label> labels = GetTable("csudflbl.sdb").Map<Label>();
+                List<Field> tableFields = GetTable("cstable.sdb").Map<Field>();
+
+                List<Family> families = GetTable("csfamily.udb").Map<Family>();
+                families.AddRange(GetTable("csfambin.udb").Map<Family>());
 
                 List<Value> values = GetTable("csreftbl.udb").Map<Value>();
                 List<Individual> individuals = GetTable("csind.udb").Map<Individual>();
@@ -286,12 +292,9 @@ GROUP BY [Description]";
                 // export people
                 foreach (Individual indv in individuals)
                 {
-                    Person person = SKPerson.Translate(indv, values);
-                    ImportPackage.WriteToPackage(person);
-                    // Export the person's phone numbers
-                    foreach(PersonPhone importPhone in person.PhoneNumbers)
-                    {
-                        ImportPackage.WriteToPackage(importPhone);
+                    Person person = SKPerson.Translate(indv, values, families, tableFields, labels);
+                    if (person.CreatedDateTime > modifiedSince || person.ModifiedDateTime > modifiedSince) { 
+                        ImportPackage.WriteToPackage(person);
                     }
                 }
 

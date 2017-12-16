@@ -13,8 +13,8 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("IND_ID")]
         public long Id { get; set; }
 
-        [ColumnName("FAMILY_ID")]
-        public string FamilyId { get; set; }
+        [ColumnName("family_id")]
+        public long FamilyId { get; set; }
 
         [ColumnName("TITLE")]
         public string Title { get; set; }
@@ -62,6 +62,9 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("email1")]
         public string Email { get; set; }
 
+        [ColumnName("email1_ind")]
+        public bool EmailIndicator { get; set; }
+
         [ColumnName("c_phone")]
         public string CellPhone { get; set; }
 
@@ -74,12 +77,33 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("h_unlisted")]
         public bool HomePhoneUnlisted { get; set; }
 
+        [ColumnName("w_phone")]
+        public string WorkPhone { get; set; }
+
+        [ColumnName("w_unlisted")]
+        public bool WorkPhoneUnlisted { get; set; }
+
         [ColumnName("marital_cd")]
         public long MaritalCode { get; set; }
         
         [ColumnName("wedding_dt")]
+        [DateTimeParseString("yyyyMMdd")]
         public DateTime WeddingDate { get; set; }
 
+        [ColumnName("mem_status")]
+        public long MemberStatus { get; set; }
+
         public RecordStatus RecordStatus { get; set; }
+
+        [ColumnName("create_ts")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime CreateDate { get; set; }
+
+        [ColumnName("update_ts")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UpdateDate { get; set; }
+
+        [ColumnName("udf11")]
+        public long UserDefinedField11 { get; set; }
     }
 }
