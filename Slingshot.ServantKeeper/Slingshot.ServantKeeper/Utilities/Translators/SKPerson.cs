@@ -13,6 +13,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
         {
             Person person = new Person();
             person.Id = Math.Abs(unchecked((int)individual.Id));
+            person.Campus = new Campus() {  CampusId = 0, CampusName = "Main Campus"};
 
             // Import the family information
             Family family = families.Where(v => v.Id == individual.FamilyId).FirstOrDefault();
@@ -92,7 +93,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.CellPhone, "");
-                phone.PersonId = Math.Abs(unchecked((int)individual.Id));
+                phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.CellPhoneUnlisted;
                 phone.PhoneType = "Cell";
                 person.PhoneNumbers.Add(phone);
@@ -101,7 +102,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.HomePhone, "");
-                phone.PersonId = Math.Abs(unchecked((int)individual.Id));
+                phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.HomePhoneUnlisted;
                 phone.PhoneType = "Home";
                 person.PhoneNumbers.Add(phone);
@@ -110,7 +111,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.WorkPhone, "");
-                phone.PersonId = Math.Abs(unchecked((int)individual.Id));
+                phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.WorkPhoneUnlisted;
                 phone.PhoneType = "Work";
                 person.PhoneNumbers.Add(phone);
@@ -118,7 +119,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
             // Now export their address
             PersonAddress address = new PersonAddress();
-            address.PersonId = Math.Abs(unchecked((int)individual.Id));
+            address.PersonId = person.Id;
             address.AddressType = AddressType.Home;
             address.Street1 = family.Address1;
             address.Street2 = family.Address2;
@@ -128,18 +129,113 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             person.Addresses.Add(address);
 
             // Handle the User Defined Fields
-            Value udf11 = values.Where(v => v.Id == individual.UserDefinedField11).FirstOrDefault();
-            if (udf11 != null)
+            var properties = individual.GetType().GetProperties();
+            foreach (var property in properties)
+            {
+                if (property.Name.ToLower().Contains("udf"))
+                {
+                    var attribute = property.CustomAttributes.Where(ca => ca.AttributeType.Name == "ColumnName").FirstOrDefault();
+                    
+                    if (attribute != null)
+                    {
+                        var fieldKey = ((string)attribute.ConstructorArguments.FirstOrDefault().Value).ToLower();
+                        var tableField = tableFields.Where(tf => tf.Name.ToLower().Contains(fieldKey)).FirstOrDefault();
+
+                        if (tableField != null)
+                        {
+                            PersonAttributeValue pav = new PersonAttributeValue();
+                            // If this is a string
+                            if (property.PropertyType == typeof(string) && !string.IsNullOrWhiteSpace((string)property.GetValue(individual)))
+                            {
+                                pav.AttributeValue = (string)property.GetValue(individual);
+                            }
+                            // If this is a long (lookup value)
+                            if (property.PropertyType == typeof(long))
+                            {
+                                pav.AttributeValue = values.Where(v => v.Id == (long)property.GetValue(individual)).Select(i => i.Description).FirstOrDefault();
+                            }
+                            // If this is a date
+                            if (property.PropertyType == typeof(DateTime) && ((DateTime)property.GetValue(individual)).Year > 1)
+                            {
+                                pav.AttributeValue = (string)property.GetValue(individual);
+                            }
+                            // If this is a boolean
+                            if (property.PropertyType == typeof(bool))
+                            {
+                                pav.AttributeValue = (bool)property.GetValue(individual) ? "True" : "False";
+                            }
+                            pav.PersonId = person.Id;
+                            // Lookup the key from the table fields
+                            pav.AttributeKey = labels.Where(l => l.LabelId == tableField.LabelId).Select(l => l.Description).DefaultIfEmpty(tableField.Description).FirstOrDefault().Replace(" ", string.Empty);
+                            person.Attributes.Add(pav);
+                        }
+                    }
+                }
+            }
+
+            person.Note = individual.Note;
+
+            if (individual.JoinDate.DayOfYear > 1)
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = udf11.Description;
-                pav.PersonId = Math.Abs(unchecked((int)individual.Id));
-                // Lookup the key from the table fields
-                int labelId = tableFields.Where(tf => tf.Key == udf11.Name).Select(tf => tf.LabelId).FirstOrDefault();
-                pav.AttributeKey = labels.Where(l => l.LabelId == labelId).Select(l => l.Description).FirstOrDefault();
+                pav.AttributeValue = individual.JoinDate.ToString();
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "JoinDate";
                 person.Attributes.Add(pav);
             }
 
+            if (individual.HowJoined > 1)
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = values.Where(v => v.Id == individual.HowJoined).Select(v => v.Description).FirstOrDefault();
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "HowJoined";
+                person.Attributes.Add(pav);
+            }
+
+            if (individual.BaptizedDate.Year > 1)
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = individual.BaptizedDate.ToString();
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "BaptizedDate";
+                person.Attributes.Add(pav);
+            }
+
+            { 
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = individual.Baptized?"True":"False";
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "Baptized";
+                person.Attributes.Add(pav);
+            }
+
+            if (individual.JobCode > 1)
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = values.Where(v => v.Id == individual.JobCode).Select(v => v.Description).FirstOrDefault();
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "Occupation";
+                person.Attributes.Add(pav);
+            }
+
+            if (!string.IsNullOrWhiteSpace(individual.Employer))
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = individual.Employer;
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "Employer";
+                person.Attributes.Add(pav);
+            }
+
+            if (!string.IsNullOrWhiteSpace(individual.SundaySchool))
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = individual.SundaySchool;
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "SundaySchool";
+                person.Attributes.Add(pav);
+            }
 
             return person;
             

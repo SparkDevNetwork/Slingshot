@@ -93,6 +93,150 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("mem_status")]
         public long MemberStatus { get; set; }
 
+        [ColumnName("note")]
+        public String Note { get; set; }
+
+        [ColumnName("join_dt")]
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime JoinDate { get; set; }
+
+        [ColumnName("how_join")]
+        public long HowJoined { get; set; }
+
+        [ColumnName("sunschool")]
+        public string SundaySchool { get; set; }
+
+        [ColumnName("baptized")]
+        public bool Baptized { get; set; }
+
+        [ColumnName("baptize_dt")]
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime BaptizedDate { get; set; }
+        
+        [ColumnName("job_cd")]
+        public long JobCode { get; set; }
+
+        [ColumnName("employer")]
+        public string Employer { get; set; }
+
+        [ColumnName("udf1")]
+        public string Udf1 { get; set; }
+
+        [ColumnName("udf2")]
+        public string Udf2 { get; set; }
+
+        [ColumnName("udf3")]
+        public string Udf3 { get; set; }
+
+        [ColumnName("udf4")]
+        public string Udf4 { get; set; }
+
+        [ColumnName("udf5")]
+        public string Udf5 { get; set; }
+
+        [ColumnName("udf6")]
+        public string Udf6 { get; set; }
+
+        [ColumnName("udf7")]
+        public string Udf7 { get; set; }
+
+        [ColumnName("udf8")]
+        public string Udf8 { get; set; }
+
+        [ColumnName("udf9")]
+        public string Udf9 { get; set; }
+
+        [ColumnName("udf10")]
+        public string Udf10 { get; set; }
+
+        [ColumnName("udf11")]
+        public long Udf11 { get; set; }
+
+        [ColumnName("udf12")]
+        public string Udf12 { get; set; }
+
+        [ColumnName("udf13")]
+        public string Udf13 { get; set; }
+
+        [ColumnName("udf14")]
+        public string Udf14 { get; set; }
+
+        [ColumnName("udf15")]
+        public string Udf15 { get; set; }
+
+        [ColumnName("udf16")]
+        public string Udf16 { get; set; }
+
+        [ColumnName("udf_dt1")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate1 { get; set; }
+
+        [ColumnName("udf_dt2")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate2 { get; set; }
+   
+        [ColumnName("udf_dt3")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate3 { get; set; }
+
+        [ColumnName("udf_dt4")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate4 { get; set; }
+
+        [ColumnName("udf_dt5")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate5 { get; set; }
+
+        [ColumnName("udf_dt6")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate6 { get; set; }
+
+        [ColumnName("udf_dt7")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate7 { get; set; }
+
+        [ColumnName("udf_dt8")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate8 { get; set; }
+
+        [ColumnName("udf_dt9")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate9 { get; set; }
+
+        [ColumnName("udf_dt10")]
+        [DateTimeParseString("yyyyMMddhhmmss")]
+        public DateTime UdfDate10 { get; set; }
+
+        [ColumnName("udf_check1")]
+        public bool UdfCheck1 { get; set; }
+
+        [ColumnName("udf_check2")]
+        public bool UdfCheck2 { get; set; }
+
+        [ColumnName("udf_check3")]
+        public bool UdfCheck3 { get; set; }
+
+        [ColumnName("udf_check4")]
+        public bool UdfCheck4 { get; set; }
+
+        [ColumnName("udf_check5")]
+        public bool UdfCheck5 { get; set; }
+
+        [ColumnName("udf_check6")]
+        public bool UdfCheck6 { get; set; }
+
+        [ColumnName("udf_check7")]
+        public bool UdfCheck7 { get; set; }
+
+        [ColumnName("udf_check8")]
+        public bool UdfCheck8 { get; set; }
+
+        [ColumnName("udf_check9")]
+        public bool UdfCheck9 { get; set; }
+
+        [ColumnName("udf_chk10")]
+        public bool UdfCheck10 { get; set; }
+
         public RecordStatus RecordStatus { get; set; }
 
         [ColumnName("create_ts")]
@@ -102,8 +246,5 @@ namespace Slingshot.ServantKeeper.Models
         [ColumnName("update_ts")]
         [DateTimeParseString("yyyyMMddhhmmss")]
         public DateTime UpdateDate { get; set; }
-
-        [ColumnName("udf11")]
-        public long UserDefinedField11 { get; set; }
     }
 }

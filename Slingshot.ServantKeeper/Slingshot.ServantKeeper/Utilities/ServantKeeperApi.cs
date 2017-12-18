@@ -276,7 +276,7 @@ GROUP BY [Description]";
             try
             {
                 List<Label> labels = GetTable("csudflbl.sdb").Map<Label>();
-                List<Field> tableFields = GetTable("cstable.sdb").Map<Field>();
+                List<Field> fields = GetTable("cstable.sdb").Map<Field>();
 
                 List<Family> families = GetTable("csfamily.udb").Map<Family>();
                 families.AddRange(GetTable("csfambin.udb").Map<Family>());
@@ -292,22 +292,22 @@ GROUP BY [Description]";
                 // export people
                 foreach (Individual indv in individuals)
                 {
-                    Person person = SKPerson.Translate(indv, values, families, tableFields, labels);
-                    if (person.CreatedDateTime > modifiedSince || person.ModifiedDateTime > modifiedSince) { 
+                    Person person = SKPerson.Translate(indv, values, families, fields, labels);
+                    if (modifiedSince.Year <= 1 || person.CreatedDateTime > modifiedSince || person.ModifiedDateTime > modifiedSince) { 
                         ImportPackage.WriteToPackage(person);
                     }
                 }
 
-                
+                //load attributes
+                LoadPersonAttributes(fields, labels);
+
+                // write out the person attributes
+                WritePersonAttributes();
+
                 /*
                 _modifiedSince = modifiedSince;
                 _emailType = emailType;
 
-                //load attributes
-                LoadPersonAttributes();
-
-                // write out the person attributes
-                WritePersonAttributes();
 
 
                 // export person notes
@@ -494,22 +494,40 @@ GROUP BY [Description]";
         /// <summary>
         /// Loads the available person attributes.
         /// </summary>
-        public static void LoadPersonAttributes()
+        public static void LoadPersonAttributes(List<Field> fields, List<Label> labels)
         {
             PersonAttributes = new Dictionary<string, string>();
 
-            var dataTable = GetTableData( SQL_PEOPLE );
-
-            foreach ( DataColumn column in dataTable.Columns )
+            // Handle the User Defined Fields
+            var properties = typeof(Individual).GetProperties();
+            foreach (var property in properties)
             {
-                string columnName = column.ColumnName;
-
-                // Person attributes always start with "Ind"
-                if ( columnName.Contains( "Ind" ) && !columnName.Contains( "Individual" ) )
+                if (property.Name.ToLower().Contains("udf"))
                 {
-                    PersonAttributes.Add( column.ColumnName, column.DataType.Name );
+                    var attribute = property.CustomAttributes.Where(ca => ca.AttributeType.Name == "ColumnName").FirstOrDefault();
+
+                    if (attribute != null)
+                    {
+                        var fieldKey = ((string)attribute.ConstructorArguments.FirstOrDefault().Value).ToLower();
+                        var field = fields.Where(tf => tf.Name.ToLower().Contains(fieldKey)).FirstOrDefault();
+
+                        if (field != null)
+                        {
+                            PersonAttributes.Add(labels.Where(l => l.LabelId == field.LabelId).Select(l => l.Description).DefaultIfEmpty(field.Description).FirstOrDefault().Replace(" ", string.Empty), property.PropertyType.Name);
+                        }
+                    }
                 }
             }
+            Individual individual = new Individual();
+            
+            PersonAttributes.Add("JoinDate", individual.JoinDate.GetType().Name);
+            PersonAttributes.Add("HowJoined", individual.HowJoined.GetType().Name);
+            PersonAttributes.Add("BaptizedDate", individual.BaptizedDate.GetType().Name);
+            PersonAttributes.Add("Baptized", individual.Baptized.GetType().Name);
+            PersonAttributes.Add("Occupation", individual.JobCode.GetType().Name);
+            PersonAttributes.Add("Employer", typeof(string).Name);
+            PersonAttributes.Add("SundaySchool", typeof(string).Name);
+            
         }
 
         /// <summary>

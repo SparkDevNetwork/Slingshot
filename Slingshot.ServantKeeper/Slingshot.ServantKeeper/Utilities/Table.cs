@@ -54,6 +54,14 @@ namespace Slingshot.ServantKeeper.Utilities
                                         property.SetValue( mappedObjects[j], this.Data[j][i] );
                                     }
                                 }
+                                
+                                if (propertyType == typeof(bool))
+                                {
+                                    for (var j = 0; j < mappedObjects.Count; j++)
+                                    {
+                                        property.SetValue(mappedObjects[j], this.Data[j][i]=="1");
+                                    }
+                                }
 
                                 if ( propertyType == typeof( int ) )
                                 {
