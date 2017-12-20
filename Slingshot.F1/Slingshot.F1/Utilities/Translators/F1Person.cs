@@ -27,7 +27,7 @@ namespace Slingshot.F1.Utilities.Translators
                 person.MiddleName = inputPerson.Element( "middleName" )?.Value;
                 person.LastName = inputPerson.Element( "lastName" )?.Value;
 
-                person.Salutation = inputPerson.Element( "salutation" )?.Value;
+                person.Salutation = inputPerson.Element( "prefix" )?.Value;
 
                 var suffix = inputPerson.Element( "suffix" )?.Value;
                 if ( suffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )
@@ -83,6 +83,28 @@ namespace Slingshot.F1.Utilities.Translators
                     {
                         person.Email = comm.Element( "communicationValue" ).Value;
                     }
+                    else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Home Email" &&
+                              comm.Element( "preferred" ).Value == "true" )
+                    {
+                        person.Email = comm.Element( "communicationValue" ).Value;
+                    }
+                    else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Infellowship Login" &&
+                              comm.Element( "preferred" ).Value == "true" )
+                    {
+                        person.Email = comm.Element( "communicationValue" ).Value;
+                    }
+                    else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Work Email" &&
+                              comm.Element( "preferred" ).Value == "true" )
+                    {
+                        person.Email = comm.Element( "communicationValue" ).Value;
+                    }
+                }
+
+                // email unsubscribe
+                var unsubscribed = inputPerson.Element( "unsubscribed" )?.Value;
+                if ( unsubscribed.IsNotNullOrWhitespace() && unsubscribed == "true" )
+                {
+                    person.EmailPreference = EmailPreference.DoNotEmail;
                 }
 
                 // addresses
@@ -116,7 +138,10 @@ namespace Slingshot.F1.Utilities.Translators
                         }
 
                         // only add the address if we have a valid address
-                        if ( importAddress.Street1.IsNotNullOrWhitespace() && importAddress.City.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace() )
+                        if ( importAddress.Street1.IsNotNullOrWhitespace() && 
+                             importAddress.City.IsNotNullOrWhitespace() && 
+                             importAddress.PostalCode.IsNotNullOrWhitespace() &&
+                             addressType != "Mail Returned / Incorrect" )
                         {
                             person.Addresses.Add( importAddress );
                         }
@@ -433,6 +458,18 @@ namespace Slingshot.F1.Utilities.Translators
                     {
                         AttributeKey = "PreviousChurch",
                         AttributeValue = formerChurch,
+                        PersonId = person.Id
+                    } );
+                }
+
+                // former Church
+                string barcode = inputPerson.Element( "barCode" ).Value;
+                if ( barcode.IsNotNullOrWhitespace() )
+                {
+                    person.Attributes.Add( new PersonAttributeValue
+                    {
+                        AttributeKey = "BarCode",
+                        AttributeValue = barcode,
                         PersonId = person.Id
                     } );
                 }

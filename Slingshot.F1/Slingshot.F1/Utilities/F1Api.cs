@@ -810,7 +810,7 @@ namespace Slingshot.F1.Utilities
                 Name = "Denomination",
                 Key = "Denomination",
                 Category = "Visit Information",
-                FieldType = "Rock.Field.Types.DefinedValueFieldType"
+                FieldType = "Rock.Field.Types.TextFieldType"
             } );
 
             ImportPackage.WriteToPackage( new PersonAttribute()
@@ -818,6 +818,14 @@ namespace Slingshot.F1.Utilities
                 Name = "PreviousChurch",
                 Key = "PreviousChurch",
                 Category = "Visit Information",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new PersonAttribute()
+            {
+                Name = "Bar Code",
+                Key = "BarCode",
+                Category = "Childhood Information",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
 
