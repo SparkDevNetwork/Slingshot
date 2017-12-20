@@ -23,6 +23,9 @@ namespace Slingshot.F1.Utilities.Translators
                 case "Saved":
                     financialBatch.Status = BatchStatus.Closed;
                     break;
+                case "Settled": // credit card batches 
+                    financialBatch.Status = BatchStatus.Closed;
+                    break;
                 default:
                     financialBatch.Status = BatchStatus.Open;
                     break;
