@@ -16,7 +16,19 @@ namespace Slingshot.F1.Utilities.Translators
             var pledge = new FinancialPledge();
 
             pledge.Id = inputPledge.Attribute( "id" ).Value.AsInteger();
-            pledge.AccountId = inputPledge.Element( "fund" ).Attribute( "id" ).Value.AsInteger();
+
+            // Creating variable to hold fund element
+            var fundElement = inputPledge.Element( "fund" );
+
+            // Checking if there is a subfund
+            if ( string.IsNullOrEmpty( fundElement.Element( "subFund" )?.Attribute( "id" ).Value ) )
+            {
+                pledge.AccountId = fundElement.Attribute( "id" ).Value.AsInteger();
+            }
+            else
+            {
+                pledge.AccountId = fundElement.Element( "subFund" ).Attribute( "id" ).Value.AsInteger();
+            }
 
             pledge.StartDate = inputPledge.Element( "startDate" )?.Value.AsDateTime();
             pledge.EndDate = inputPledge.Element( "endDate" )?.Value.AsDateTime();

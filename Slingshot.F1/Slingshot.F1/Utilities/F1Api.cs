@@ -388,7 +388,7 @@ namespace Slingshot.F1.Utilities
                     var subAccounts = xdoc.Element("subFunds");
                     foreach( var subAccountNode in subAccounts.Elements() )
                     {
-                        var importSubAccount = F1FinancialAccount.Translate(subAccountNode);
+                        var importSubAccount = F1FinancialAccount.Translate( subAccountNode, importAccount.IsTaxDeductible );
 
                         if ( importSubAccount != null)
                         {

@@ -22,19 +22,19 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Label Grid.Row="0">Church Code</Label>
-            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="cedarcreek" />
+            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="1" Content="Consumer Key"/>
-            <TextBox Name="txtApiConsumerKey" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="459" />
+            <TextBox Name="txtApiConsumerKey" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="2">Consumer Secret</Label>
-            <TextBox Name="txtApiConsumerSecret" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="80031108-4d71-4bc6-843b-3edc4a778a7a" />
+            <TextBox Name="txtApiConsumerSecret" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="3">Username</Label>
-            <TextBox Name="txtApiUsername" Grid.Row="3" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="jgibb" />
+            <TextBox Name="txtApiUsername" Grid.Row="3" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Label Grid.Row="4">Password</Label>
-            <TextBox Name="txtApiPassword" Grid.Row="4" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="BEMAF1Conv!" />
+            <TextBox Name="txtApiPassword" Grid.Row="4" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
             <Button Name="btnLogin" Grid.Row="5" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5"  >
                 <Label>Login</Label>
