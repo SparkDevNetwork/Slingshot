@@ -42,6 +42,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
             person.CreatedDateTime = individual.CreateDate > family.CreateDate ? individual.CreateDate : family.CreateDate;
             person.ModifiedDateTime = individual.UpdateDate > family.UpdateDate ? individual.UpdateDate : family.UpdateDate;
+            
 
             person.FirstName = individual.FirstName;
             person.MiddleName = individual.MiddleName;
@@ -89,7 +90,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             person.EmailPreference = individual.EmailIndicator ? EmailPreference.NoMassEmails : EmailPreference.EmailAllowed;
 
             Regex digitsOnly = new Regex(@"[^\d]");
-            if (!String.IsNullOrEmpty(individual.CellPhone))
+            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.CellPhone, "")) && digitsOnly.Replace(individual.CellPhone, "").Length >= 7)
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.CellPhone, "");
@@ -98,7 +99,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                 phone.PhoneType = "Cell";
                 person.PhoneNumbers.Add(phone);
             }
-            if (!String.IsNullOrEmpty(individual.HomePhone))
+            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.HomePhone, "")) && digitsOnly.Replace(individual.HomePhone, "").Length >= 7)
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.HomePhone, "");
@@ -107,7 +108,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                 phone.PhoneType = "Home";
                 person.PhoneNumbers.Add(phone);
             }
-            if (!String.IsNullOrEmpty(individual.WorkPhone))
+            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.WorkPhone, "")) && digitsOnly.Replace(individual.WorkPhone, "").Length >= 7)
             {
                 PersonPhone phone = new PersonPhone();
                 phone.PhoneNumber = digitsOnly.Replace(individual.WorkPhone, "");
@@ -135,7 +136,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                 if (property.Name.ToLower().Contains("udf"))
                 {
                     var attribute = property.CustomAttributes.Where(ca => ca.AttributeType.Name == "ColumnName").FirstOrDefault();
-                    
+
                     if (attribute != null)
                     {
                         var fieldKey = ((string)attribute.ConstructorArguments.FirstOrDefault().Value).ToLower();
@@ -150,19 +151,25 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                                 pav.AttributeValue = (string)property.GetValue(individual);
                             }
                             // If this is a long (lookup value)
-                            if (property.PropertyType == typeof(long))
+                            else if (property.PropertyType == typeof(long))
                             {
                                 pav.AttributeValue = values.Where(v => v.Id == (long)property.GetValue(individual)).Select(i => i.Description).FirstOrDefault();
                             }
                             // If this is a date
-                            if (property.PropertyType == typeof(DateTime) && ((DateTime)property.GetValue(individual)).Year > 1)
+                            else if ((property.PropertyType == typeof(DateTime) && ((DateTime)property.GetValue(individual)) != DateTime.MinValue) ||
+                                     (property.PropertyType == typeof(DateTime?) && property.GetValue(individual) != null))
                             {
-                                pav.AttributeValue = (string)property.GetValue(individual);
+                                pav.AttributeValue = property.GetValue(individual).ToString();
                             }
                             // If this is a boolean
-                            if (property.PropertyType == typeof(bool))
+                            else if (property.PropertyType == typeof(bool))
                             {
                                 pav.AttributeValue = (bool)property.GetValue(individual) ? "True" : "False";
+                            }
+                            // Otherwise just continue
+                            else
+                            {
+                                continue;
                             }
                             pav.PersonId = person.Id;
                             // Lookup the key from the table fields
@@ -175,7 +182,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
             person.Note = individual.Note;
 
-            if (individual.JoinDate.DayOfYear > 1)
+            if (individual.JoinDate != DateTime.MinValue)
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.JoinDate.ToString();
@@ -193,7 +200,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                 person.Attributes.Add(pav);
             }
 
-            if (individual.BaptizedDate.Year > 1)
+            if (individual.BaptizedDate != DateTime.MinValue)
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.BaptizedDate.ToString();

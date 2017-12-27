@@ -100,19 +100,7 @@ namespace Slingshot.ServantKeeper
                     exportWorker.ReportProgress( 33, $"Error exporting contributions: {ServantKeeperApi.ErrorMessage}" );
                 }
             }
-
-            // export groups
-            if ( exportSettings.ExportGroups )
-            {
-                exportWorker.ReportProgress( 54, $"Exporting Groups..." );
-
-                ServantKeeperApi.ExportGroups();
-
-                if ( ServantKeeperApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    exportWorker.ReportProgress( 54, $"Error exporting groups: {ServantKeeperApi.ErrorMessage}" );
-                }
-            }
+            
 
             // finalize the package
             ImportPackage.FinalizePackage( "servantkeeper-export.slingshot" );
@@ -164,10 +152,7 @@ namespace Slingshot.ServantKeeper
             {
                 ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
-                ExportIndividuals = cbIndividuals.IsChecked.Value,
-                ExportGroups = cbGroups.IsChecked.Value,
-                //ExportEmailType = ((ComboBoxItem)cblEmailTypes.SelectedItem).Text,
-                //ExportCampus = ((ComboBoxItem)cblCampus.SelectedItem).Text
+                ExportIndividuals = cbIndividuals.IsChecked.Value
             };
 
             exportWorker.RunWorkerAsync( exportSettings );

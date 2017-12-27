@@ -83,7 +83,7 @@ namespace Slingshot.ServantKeeper.Utilities
                                     }
                                 }
 
-                                if ( propertyType == typeof( DateTime ) )
+                                if ( propertyType == typeof( DateTime ) || propertyType == typeof (DateTime?))
                                 {
                                     var parseAttribute = attributes.Where( a => a.AttributeType.Name == "DateTimeParseString" ).FirstOrDefault();
                                     var parseString = "yyyy-MM-dd HH:mm:ss,fff";
@@ -102,7 +102,10 @@ namespace Slingshot.ServantKeeper.Utilities
                                                  System.Globalization.DateTimeStyles.AssumeLocal,
                                                  out value ) )
                                         {
-                                            property.SetValue( mappedObjects[j], value );
+                                            if (value != DateTime.MinValue)
+                                            {
+                                                property.SetValue(mappedObjects[j], value);
+                                            }
 
                                         }
                                     }

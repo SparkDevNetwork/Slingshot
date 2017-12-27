@@ -46,15 +46,17 @@ namespace Slingshot.ServantKeeper.Models
 
         [ColumnName("BIRTH_DT")]
         [DateTimeParseString("yyyyMMdd")]
-        public DateTime BirthDate { get; set; }
+        public DateTime? BirthDate { get; set; }
         
         public int Age {
             get {
-                DateTime today = DateTime.Today;
-                int age = today.Year - BirthDate.Year;
-                if (BirthDate > today.AddYears(-age))
-                    age--;
-
+                int age = 999;
+                if (BirthDate.HasValue) { 
+                    DateTime today = DateTime.Today;
+                    age = today.Year - BirthDate.Value.Year;
+                    if (BirthDate > today.AddYears(-age))
+                        age--;
+                }
                 return age;
             }
         }
@@ -88,7 +90,7 @@ namespace Slingshot.ServantKeeper.Models
         
         [ColumnName("wedding_dt")]
         [DateTimeParseString("yyyyMMdd")]
-        public DateTime WeddingDate { get; set; }
+        public DateTime? WeddingDate { get; set; }
 
         [ColumnName("mem_status")]
         public long MemberStatus { get; set; }
@@ -98,7 +100,7 @@ namespace Slingshot.ServantKeeper.Models
 
         [ColumnName("join_dt")]
         [DateTimeParseString("yyyyMMdd")]
-        public DateTime JoinDate { get; set; }
+        public DateTime? JoinDate { get; set; }
 
         [ColumnName("how_join")]
         public long HowJoined { get; set; }
@@ -111,7 +113,7 @@ namespace Slingshot.ServantKeeper.Models
 
         [ColumnName("baptize_dt")]
         [DateTimeParseString("yyyyMMdd")]
-        public DateTime BaptizedDate { get; set; }
+        public DateTime? BaptizedDate { get; set; }
         
         [ColumnName("job_cd")]
         public long JobCode { get; set; }
@@ -168,44 +170,44 @@ namespace Slingshot.ServantKeeper.Models
         public string Udf16 { get; set; }
 
         [ColumnName("udf_dt1")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate1 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate1 { get; set; }
 
         [ColumnName("udf_dt2")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate2 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate2 { get; set; }
    
         [ColumnName("udf_dt3")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate3 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate3 { get; set; }
 
         [ColumnName("udf_dt4")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate4 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate4 { get; set; }
 
         [ColumnName("udf_dt5")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate5 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate5 { get; set; }
 
         [ColumnName("udf_dt6")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate6 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate6 { get; set; }
 
         [ColumnName("udf_dt7")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate7 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate7 { get; set; }
 
         [ColumnName("udf_dt8")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate8 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate8 { get; set; }
 
         [ColumnName("udf_dt9")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate9 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate9 { get; set; }
 
         [ColumnName("udf_dt10")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UdfDate10 { get; set; }
+        [DateTimeParseString("yyyyMMdd")]
+        public DateTime? UdfDate10 { get; set; }
 
         [ColumnName("udf_check1")]
         public bool UdfCheck1 { get; set; }
@@ -241,10 +243,10 @@ namespace Slingshot.ServantKeeper.Models
 
         [ColumnName("create_ts")]
         [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime CreateDate { get; set; }
+        public DateTime? CreateDate { get; set; }
 
         [ColumnName("update_ts")]
         [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UpdateDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
     }
 }

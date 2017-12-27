@@ -36,10 +36,10 @@ namespace Slingshot.ServantKeeper.Models
 
         [ColumnName("create_ts")]
         [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime CreateDate { get; set; }
+        public DateTime? CreateDate { get; set; }
 
         [ColumnName("update_ts")]
         [DateTimeParseString("yyyyMMddhhmmss")]
-        public DateTime UpdateDate { get; set; }
+        public DateTime? UpdateDate { get; set; }
     }
 }

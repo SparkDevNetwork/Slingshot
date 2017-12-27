@@ -7,19 +7,12 @@ using Slingshot.ServantKeeper.Attributes;
 
 namespace Slingshot.ServantKeeper.Models
 {
-    public class Value
+    public class AccountLink
     {
-        [ColumnName("tbl_id")]
+        [ColumnName("acct_id")]
         public long Id { get; set; }
 
-        [ColumnName("tbl_name")]
-        public string Name { get; set; }
-
-        [ColumnName("desc")]
+        [ColumnName("qk_acct")]
         public string Description { get; set; }
-        
-        [ColumnName("create_ts")]
-        [DateTimeParseString( "yyyyMMddhhmmss" )]
-        public DateTime? CreatedDate { get; set; }
     }
 }

@@ -66,10 +66,15 @@
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Models\ContributionDetail.cs" />
+    <Compile Include="Models\Contribution.cs" />
+    <Compile Include="Models\Batch.cs" />
+    <Compile Include="Models\AccountLink.cs" />
     <Compile Include="Models\Label.cs" />
     <Compile Include="Models\Gender.cs" />
     <Compile Include="Models\Family.cs" />
     <Compile Include="Models\Field.cs" />
+    <Compile Include="Models\Account.cs" />
     <Compile Include="Models\Value.cs" />
     <Compile Include="Models\Individual.cs" />
     <Compile Include="Open.xaml.cs">
@@ -78,6 +83,9 @@
     <Compile Include="Utilities\ServantKeeperApi.cs" />
     <Compile Include="Utilities\FixedWidthFile.cs" />
     <Compile Include="Utilities\Table.cs" />
+    <Compile Include="Utilities\Translators\SKBatch.cs" />
+    <Compile Include="Utilities\Translators\SKContribution.cs" />
+    <Compile Include="Utilities\Translators\SKFinancialAccount.cs" />
     <Compile Include="Utilities\Translators\SKPerson.cs" />
     <Page Include="MainWindow.xaml">
       <SubType>Designer</SubType>

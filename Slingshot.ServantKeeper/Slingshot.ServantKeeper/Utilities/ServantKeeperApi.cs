@@ -51,37 +51,7 @@ namespace Slingshot.ServantKeeper.Utilities
         /// Gets or sets the person attributes
         /// </summary>
         public static Dictionary<string, string> PersonAttributes { get; set; }
-
-        #region SQL Queries
-
-        public static string SQL_GROUPS
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	SG.[GroupName]
-	,SG.[GroupSort]
-FROM SGRoster SG";
-            }
-        }
-
-        public static string SQL_GROUPMEMBERS
-        {
-            get
-            {
-                return $@"
-SELECT
-	P.[IndividualId]
-	,SG.[RosterID]
-	,SG.[GroupName]
-	,SG.[Position]
-FROM SGRoster SG
-        INNER JOIN people P 
-            ON P.[FamilyNumber] = SG.[FamilyNumber] 
-                AND P.[IndividualNumber] = SG.[IndividualNumber]";
-            }
-        }
+        
 
         public static Table GetTable(string dbFile)
         {
@@ -111,142 +81,6 @@ FROM SGRoster SG
             }
             return null;
         }
-
-
-
-        public static string SQL_PEOPLE
-        {
-            get
-            {
-                return $@"
-SELECT P.*, E.[EmailAddr]
-FROM people P
-LEFT JOIN emails E ON (P.[FamilyNumber] = E.[FamilyNumber]
-	AND P.[IndividualNumber] = E.[IndividualNumber]
-	AND E.[Description] = '{ _emailType }')
-WHERE P.[DateLastChanged] >= #{ _modifiedSince.ToShortDateString() }#";
-            }
-        }
-
-        public static string SQL_PHONES
-        {
-            get
-            {
-                return $@"
-SELECT PH.*, 
-       P.[IndividualId] 
-FROM   phones PH 
-       INNER JOIN people P 
-               ON P.[FamilyNumber] = PH.[FamilyNumber] 
-                  AND P.[IndividualNumber] = PH.[IndividualNumber]
-WHERE P.[DateLastChanged] >= #{ _modifiedSince.ToShortDateString() }#";
-            }
-        }
-
-        public static string SQL_PEOPLE_NOTES
-        {
-            get
-            {
-                return $@"
-SELECT P.[IndividualId]
-      ,IC.[ComtDate]
-      ,IC.[ComtType]
-      ,IC.[Comment]
-  FROM [IComment] IC
-          INNER JOIN people P 
-            ON P.[FamilyNumber] = IC.[FamilyNumber] 
-                AND P.[IndividualNumber] = IC.[IndividualNumber]
-GROUP BY P.[IndividualId], IC.[ComtDate], IC.[ComtType], IC.[Comment]";
-            }
-        }
-
-        public static string SQL_FAMILY_NOTES
-        {
-            get
-            {
-                return $@"
-SELECT FC.[FamilyNumber]
-    ,FC.[ComtDate]
-    ,FC.[ComtType]
-    ,FC.[Comment]
- FROM [FComment] FC
- GROUP BY FC.[FamilyNumber], FC.[ComtDate], FC.[ComtType], FC.[Comment]";
-            }
-        }
-
-        private const string SQL_FINANCIAL_ACCOUNTS = @"
-SELECT [FundDescription], 
-       [FundNumber], 
-       [FundCode] 
-FROM   cbgifts 
-GROUP  BY [FundDescription], 
-          [FundNumber], 
-          [FundCode] ";
-
-        public static string SQL_FINANCIAL_TRANSACTIONS
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT G.[TransactionID], 
-                G.[CheckNumber], 
-                G.[GiftDate], 
-                G.[PaymentType], 
-                P.[IndividualId] 
-FROM   cbgifts G 
-       INNER JOIN people P 
-               ON P.[FamilyNumber] = G.[FamilyNumber] 
-                  AND P.[IndividualNumber] = G.[IndividualNumber]
-WHERE G.[GiftDate] >= #{ _modifiedSince.ToShortDateString() }#";
-            }
-        }
-
-        public static string SQL_FINANCIAL_TRANSACTIONDETAILS
-        {
-            get
-            {
-                return $@"
-SELECT [FundNumber], 
-       [Amount], 
-       [TransactionID], 
-       [GiftDescription], 
-       [GiftDate] 
-FROM   cbgifts G 
-       INNER JOIN people P 
-               ON P.[FamilyNumber] = G.[FamilyNumber] 
-                  AND P.[IndividualNumber] = G.[IndividualNumber]
-WHERE G.[GiftDate] >= #{ _modifiedSince.ToShortDateString() }#";
-            }
-        }
-
-        private static string SQL_FINANCIAL_PLEDGES
-        {
-            get
-            {
-                return $@"
-SELECT PL.[PledgeID],
-				PL.[StartDate],
-				PL.[StopDate],
-				PL.[TotalPled],
-				PL.[Freq],
-				PL.[FundNumber],
-                PL.[EntryDate],
-                P.[IndividualId] 
-FROM   cbPledge PL 
-       INNER JOIN people P 
-               ON P.[FamilyNumber] = PL.[FamilyNumber] 
-                  AND P.[IndividualNumber] = PL.[IndividualNumber]
-WHERE PL.[EntryDate] >= #{ _modifiedSince.ToShortDateString() }#";
-            }
-        }
-
-        public const string SQL_EMAIL_TYPES = @"
-SELECT [Description]
-FROM [Emails]
-GROUP BY [Description]";
-
-        #endregion region
-
 
         /// <summary>
         /// Initializes the export.
@@ -287,7 +121,7 @@ GROUP BY [Description]";
                 // export inactive people
                 List<Individual> inactives = GetTable("csindbin.udb").Map<Individual>();
                 inactives.ForEach(p => p.RecordStatus = RecordStatus.Inactive);
-                individuals.AddRange(inactives);
+                individuals.AddRange(inactives.Where(i2 => !individuals.Select(i => i.Id).ToList().Contains(i2.Id)).ToList());
 
                 // export people
                 foreach (Individual indv in individuals)
@@ -304,40 +138,7 @@ GROUP BY [Description]";
                 // write out the person attributes
                 WritePersonAttributes();
 
-                /*
-                _modifiedSince = modifiedSince;
-                _emailType = emailType;
-
-
-
-                // export person notes
-                using ( var dtPeopleNotes = GetTableData( SQL_PEOPLE_NOTES ) )
-                {
-                    foreach ( DataRow row in dtPeopleNotes.Rows )
-                    {
-                        var importNote = AcsPersonNote.Translate( row );
-
-                        if ( importNote != null )
-                        {
-                            ImportPackage.WriteToPackage( importNote );
-                        }
-                    }
-                }
-
-                // export family notes
-                using ( var dtFamilyNotes = GetTableData( SQL_FAMILY_NOTES ) )
-                {
-                    foreach ( DataRow row in dtFamilyNotes.Rows )
-                    {
-                        var importNote = AcsFamilyNote.Translate( row );
-
-                        if ( importNote != null )
-                        {
-                            ImportPackage.WriteToPackage( importNote );
-                        }
-                    }
-                }
-                */
+                // TODO: Export Person/Family Notes
             }
             catch ( Exception ex )
             {
@@ -350,18 +151,18 @@ GROUP BY [Description]";
         /// </summary>
         public static void ExportFunds()
         {
+
+            List<Account> accounts = GetTable("csacct.udb").Map<Account>();
+            List<AccountLink> links = GetTable("csqkacct.udb").Map<AccountLink>();
             try
             {
-                using ( var dtFunds = GetTableData( SQL_FINANCIAL_ACCOUNTS ) )
+                foreach (Account account in accounts)
                 {
-                    foreach ( DataRow row in dtFunds.Rows )
-                    {
-                        /*var importAccount = AcsFinancialAccount.Translate( row );
+                    var importAccount = SKFinancialAccount.Translate(account, links);
 
-                        if ( importAccount != null )
-                        {
-                            ImportPackage.WriteToPackage( importAccount );
-                        }*/
+                    if (importAccount != null)
+                    {
+                        ImportPackage.WriteToPackage(importAccount);
                     }
                 }
             }
@@ -372,124 +173,55 @@ GROUP BY [Description]";
         }
 
         /// <summary>
-        /// Exports any contributions.  Currently, the ACS export file doesn't include
-        ///  batches.
+        /// Exports any contributions.
         /// </summary>
         public static void ExportContributions( DateTime modifiedSince )
         {
             try
             {
-                // since the ACS export doesn't include batches and Rock expects transactions
-                //  to belong to a batch, a default batch is created.
-                WriteFinancialBatch();
-
-                using ( var dtContributions = GetTableData( SQL_FINANCIAL_TRANSACTIONS ) )
+                List<Batch> batches = GetTable("csbatch.udb").Map<Batch>();
+                
+                try
                 {
-                    foreach ( DataRow row in dtContributions.Rows )
+                    foreach (Batch batch in batches)
                     {
-                        /*var importFinancialTransaction = AcsFinancialTransaction.Translate( row );
+                        var importBatch = SKBatch.Translate(batch);
 
-                        if ( importFinancialTransaction != null )
+                        if (importBatch != null)
                         {
-                            ImportPackage.WriteToPackage( importFinancialTransaction );
+                            ImportPackage.WriteToPackage(importBatch);
                         }
-                        */
                     }
                 }
-
-                using ( var dtContributionDetails = GetTableData( SQL_FINANCIAL_TRANSACTIONDETAILS ) )
+                catch (Exception ex)
                 {
-                    foreach ( DataRow row in dtContributionDetails.Rows )
-                    {
-                        /*var importFinancialTransactionDetail = AcsFinancialTransactionDetail.Translate( row );
-
-                        if ( importFinancialTransactionDetail != null )
-                        {
-                            ImportPackage.WriteToPackage( importFinancialTransactionDetail );
-                        }*/
-                    }
+                    ErrorMessage = ex.Message;
                 }
 
-                using ( var dtPledges = GetTableData( SQL_FINANCIAL_PLEDGES ) )
+                List<Contribution> contributions = GetTable("csconmst.udb").Map<Contribution>();
+                List<ContributionDetail> contributionDetails = GetTable("cscondtl.udb").Map<ContributionDetail>();
+
+                foreach ( Contribution contribution in contributions)
                 {
-                    foreach ( DataRow row in dtPledges.Rows )
-                    {
-                        /*var importFinancialPledge = AcsFinancialPledge.Translate( row );
+                    var importFinancialTransaction = SKContribution.Translate(contribution, contributionDetails);
 
-                        if ( importFinancialPledge != null )
+                    if ( importFinancialTransaction != null )
+                    {
+                        ImportPackage.WriteToPackage( importFinancialTransaction );
+
+                        foreach(var importDetail in importFinancialTransaction.FinancialTransactionDetails)
                         {
-                            ImportPackage.WriteToPackage( importFinancialPledge );
-                        }*/
+                            ImportPackage.WriteToPackage(importDetail);
+                        }
                     }
-                }
+                }   
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
         }
-
-        /// <summary>
-        /// Exports any groups found.  Currently, this export doesn't support
-        ///  group heirarchies and all groups will be imported to the
-        ///  root of the group viewer.
-        /// </summary>
-        public static void ExportGroups()
-        {
-            try
-            {
-                WriteGroupTypes();
-
-                using ( var dtGroups = GetTableData( SQL_GROUPS ) )
-                {
-                    foreach ( DataRow row in dtGroups.Rows )
-                    {
-                        /*var importGroup = AcsGroup.Translate( row );
-
-                        if ( importGroup != null )
-                        {
-                            ImportPackage.WriteToPackage( importGroup );
-                        }*/
-                    }
-                }
-
-                using ( var dtGroupMembers = GetTableData( SQL_GROUPMEMBERS ) )
-                {
-                    foreach ( DataRow row in dtGroupMembers.Rows )
-                    {
-                        /*var importGroupMember = AcsGroupMember.Translate( row );
-
-                        if ( importGroupMember != null )
-                        {
-                            ImportPackage.WriteToPackage( importGroupMember );
-                        }*/
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Gets the table data.
-        /// </summary>
-        /// <param name="command">The SQL command to run.</param>
-        /// <returns></returns>
-        public static DataTable GetTableData( string command )
-        {
-            DataSet dataSet = new DataSet();
-            DataTable dataTable = new DataTable();
-            //OleDbCommand dbCommand = new OleDbCommand( command, _dbConnection );
-            OleDbDataAdapter adapter = new OleDbDataAdapter();
-
-            //adapter.SelectCommand = dbCommand;
-            adapter.Fill( dataSet );
-            dataTable = dataSet.Tables["Table"];
-
-            return dataTable;
-        }
+        
 
         /// <summary>
         /// Loads the available person attributes.
@@ -518,49 +250,17 @@ GROUP BY [Description]";
                     }
                 }
             }
-            Individual individual = new Individual();
             
-            PersonAttributes.Add("JoinDate", individual.JoinDate.GetType().Name);
-            PersonAttributes.Add("HowJoined", individual.HowJoined.GetType().Name);
-            PersonAttributes.Add("BaptizedDate", individual.BaptizedDate.GetType().Name);
-            PersonAttributes.Add("Baptized", individual.Baptized.GetType().Name);
-            PersonAttributes.Add("Occupation", individual.JobCode.GetType().Name);
+            PersonAttributes.Add("JoinDate", typeof(DateTime).Name);
+            PersonAttributes.Add("HowJoined", typeof(string).Name);
+            PersonAttributes.Add("BaptizedDate", typeof(DateTime).Name);
+            PersonAttributes.Add("Baptized", typeof(string).Name);
+            PersonAttributes.Add("Occupation", typeof(string).Name);
             PersonAttributes.Add("Employer", typeof(string).Name);
             PersonAttributes.Add("SundaySchool", typeof(string).Name);
             
         }
-
-        /// <summary>
-        /// Loads the available person fields from the ACS export.
-        /// </summary>
-        /// <returns></returns>
-        public static List<string> LoadPersonFields()
-        {
-            var personFields = new List<string>();
-
-            try
-            {
-                var dataTable = GetTableData( SQL_PEOPLE );
-
-                foreach ( DataColumn column in dataTable.Columns )
-                {
-                    string columnName = column.ColumnName;
-
-                    // Person attributes always start with "Ind"
-                    if ( ( columnName.Contains( "Ind" ) || columnName.Contains( "Fam" ) ) && 
-                           !columnName.Contains( "Individual" ) && !columnName.Contains( "Family" ) )
-                    {
-                        personFields.Add( column.ColumnName );
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-            return personFields;
-        }
+        
 
         /// <summary>
         /// Writes the person attributes.
@@ -591,57 +291,6 @@ GROUP BY [Description]";
 
                 ImportPackage.WriteToPackage( attribute );
             }
-        }
-
-        /// <summary>
-        /// Writes the group types.
-        /// </summary>
-        public static void WriteGroupTypes()
-        {
-            // hardcode a generic group type
-            ImportPackage.WriteToPackage( new GroupType()
-            {
-                Id = 9999,
-                Name = "Imported Group"
-            } );
-        }
-
-        public static void WriteFinancialBatch()
-        {
-            // hardcode a generic financial batch
-            ImportPackage.WriteToPackage( new FinancialBatch()
-            {
-                Id = 9999,
-                Name = "Imported Transactions",
-                Status = BatchStatus.Closed,
-                StartDate = DateTime.Now
-            } );
-        }
-
-        /// <summary>
-        /// Gets the email types.
-        /// </summary>
-        /// <returns>A list of email types.</returns>
-        public static List<string> GetEmailTypes()
-        {
-            List<string> emailTypes = new List<string>();
-
-            try
-            {
-                using ( var dtEmailTypes = GetTableData( SQL_EMAIL_TYPES ) )
-                {
-                    foreach ( DataRow row in dtEmailTypes.Rows )
-                    {
-                        emailTypes.Add( row.Field<string>( "Description" ) );
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-            return emailTypes;
         }
     }
 }

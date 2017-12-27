@@ -43,7 +43,7 @@ namespace Slingshot.ServantKeeper.Utilities
                     }
                 }
 
-                var name = System.Text.Encoding.ASCII.GetString(f.Skip(location).Take(take + 1).ToArray());
+                var name = Encoding.GetEncoding(Encoding.Default.CodePage).GetString(f.Skip(location).Take(take + 1).ToArray());
                 var startsAt = (f[location + 13] * 256) + f[location + 12];
                 Table.ColumnNames.Add(name.ToLower());
                 Table.ColumnStart.Add(startsAt + 1);
@@ -71,7 +71,7 @@ namespace Slingshot.ServantKeeper.Utilities
                     }
                     byte[] b = new byte[take + 1];
                     Array.Copy(slice, startsAt, b, 0, take);
-                    var text = System.Text.Encoding.ASCII.GetString(b);
+                    var text = Encoding.GetEncoding(Encoding.Default.CodePage).GetString(b);
                     row.Add(text.Replace("\0", "").Trim());
                 }
                 Table.Data.Add(row);
