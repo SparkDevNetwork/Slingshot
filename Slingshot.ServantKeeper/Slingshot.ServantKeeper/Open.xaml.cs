@@ -36,7 +36,7 @@ namespace Slingshot.ServantKeeper
             {
                 ServantKeeperApi.OpenConnection( txtFilename.Text );
 
-                if (ServantKeeperApi.IsConnected )
+                if ( ServantKeeperApi.IsConnected )
                 {
                     MainWindow mainWindow = new MainWindow();
                     mainWindow.Show();

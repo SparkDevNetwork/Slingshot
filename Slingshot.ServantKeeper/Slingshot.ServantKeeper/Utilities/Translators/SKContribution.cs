@@ -28,26 +28,26 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
         public static HashSet<int> UsedIds = new HashSet<int>();
         public static Dictionary<long, int> IdMap = new Dictionary<long, int>();
 
-        public static FinancialTransaction Translate(Contribution contribution, List<ContributionDetail> details)
+        public static FinancialTransaction Translate( Contribution contribution, List<ContributionDetail> details )
         {
             // The ID for a batch is a combination of the ID and the date
             long batchId = contribution.BatchId + contribution.BatchDate.Value.Ticks;
 
             FinancialTransaction financialTransaction = new FinancialTransaction();
-            financialTransaction.Id = Math.Abs(unchecked((int)contribution.Id));
+            financialTransaction.Id = Math.Abs( unchecked(( int ) contribution.Id) );
 
             // Increment the id until we find one that is unqiue.
-            while (!UsedIds.Add(financialTransaction.Id))
+            while ( !UsedIds.Add( financialTransaction.Id ) )
             {
                 financialTransaction.Id++;
             }
-            IdMap.Add(contribution.Id, financialTransaction.Id);
+            IdMap.Add( contribution.Id, financialTransaction.Id );
 
-            financialTransaction.BatchId = Math.Abs(unchecked((int)batchId));
-            financialTransaction.AuthorizedPersonId = Math.Abs(unchecked((int)contribution.IndividualId));
+            financialTransaction.BatchId = Math.Abs( unchecked(( int ) batchId) );
+            financialTransaction.AuthorizedPersonId = Math.Abs( unchecked(( int ) contribution.IndividualId) );
 
             // TODO: Add all the payment types here
-            switch (contribution.PaymentType)
+            switch ( contribution.PaymentType )
             {
                 case "C":
                     financialTransaction.CurrencyType = CurrencyType.Check;
@@ -68,10 +68,11 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             financialTransaction.TransactionCode = contribution.CheckNumber;
 
             // If this is a split transaction or a special type of transaction, there will be details
-            if (details.Where(d => d.ContributionId == contribution.Id).Any()) { 
-                foreach(ContributionDetail detail in details.Where(d=>d.ContributionId == contribution.Id))
+            if ( details.Where( d => d.ContributionId == contribution.Id ).Any() )
+            {
+                foreach ( ContributionDetail detail in details.Where( d => d.ContributionId == contribution.Id ) )
                 {
-                    financialTransaction.FinancialTransactionDetails.Add(Translate(detail));
+                    financialTransaction.FinancialTransactionDetails.Add( Translate( detail ) );
                 }
             }
             else
@@ -85,7 +86,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                 contributionDetail.CreatedDate = contribution.CreatedDate;
                 contributionDetail.UpdatedDate = contribution.UpdatedDate;
 
-                financialTransaction.FinancialTransactionDetails.Add(Translate(contributionDetail));
+                financialTransaction.FinancialTransactionDetails.Add( Translate( contributionDetail ) );
             }
             return financialTransaction;
 
@@ -94,13 +95,13 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
         public static HashSet<int> UsedDetailIds = new HashSet<int>();
 
-        public static FinancialTransactionDetail Translate(ContributionDetail contributionDetail)
+        public static FinancialTransactionDetail Translate( ContributionDetail contributionDetail )
         {
             FinancialTransactionDetail detail = new FinancialTransactionDetail();
-            detail.Id = Math.Abs(unchecked((int)contributionDetail.Id));
+            detail.Id = Math.Abs( unchecked(( int ) contributionDetail.Id) );
 
             // Increment the id until we find one that is unqiue.
-            while (!UsedDetailIds.Add(detail.Id))
+            while ( !UsedDetailIds.Add( detail.Id ) )
             {
                 detail.Id++;
             }
@@ -108,19 +109,19 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             detail.TransactionId = IdMap[contributionDetail.ContributionId];
             detail.CreatedDateTime = contributionDetail.CreatedDate;
             detail.ModifiedDateTime = contributionDetail.UpdatedDate;
-            detail.AccountId = Math.Abs(unchecked((int)contributionDetail.AccountId));
-            if (contributionDetail.Amount == 0)
+            detail.AccountId = Math.Abs( unchecked(( int ) contributionDetail.AccountId) );
+            if ( contributionDetail.Amount == 0 )
             {
                 string amount = contributionDetail.EncodedAmount;
-                foreach (var trans in AmountTranslation)
+                foreach ( var trans in AmountTranslation )
                 {
-                    amount = amount.Replace(trans.Value, trans.Key);
+                    amount = amount.Replace( trans.Value, trans.Key );
                 }
                 try
                 {
-                    detail.Amount = Decimal.Parse(amount);
+                    detail.Amount = Decimal.Parse( amount );
                 }
-                catch (Exception e)
+                catch ( Exception e )
                 {
                     throw e;
                 }

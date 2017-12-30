@@ -54,12 +54,12 @@ namespace Slingshot.ServantKeeper.Utilities
                                         property.SetValue( mappedObjects[j], this.Data[j][i] );
                                     }
                                 }
-                                
-                                if (propertyType == typeof(bool))
+
+                                if ( propertyType == typeof( bool ) )
                                 {
-                                    for (var j = 0; j < mappedObjects.Count; j++)
+                                    for ( var j = 0; j < mappedObjects.Count; j++ )
                                     {
-                                        property.SetValue(mappedObjects[j], this.Data[j][i]=="1");
+                                        property.SetValue( mappedObjects[j], this.Data[j][i] == "1" );
                                     }
                                 }
 
@@ -83,7 +83,7 @@ namespace Slingshot.ServantKeeper.Utilities
                                     }
                                 }
 
-                                if ( propertyType == typeof( DateTime ) || propertyType == typeof (DateTime?))
+                                if ( propertyType == typeof( DateTime ) || propertyType == typeof( DateTime? ) )
                                 {
                                     var parseAttribute = attributes.Where( a => a.AttributeType.Name == "DateTimeParseString" ).FirstOrDefault();
                                     var parseString = "yyyy-MM-dd HH:mm:ss,fff";
@@ -102,9 +102,9 @@ namespace Slingshot.ServantKeeper.Utilities
                                                  System.Globalization.DateTimeStyles.AssumeLocal,
                                                  out value ) )
                                         {
-                                            if (value != DateTime.MinValue)
+                                            if ( value != DateTime.MinValue )
                                             {
-                                                property.SetValue(mappedObjects[j], value);
+                                                property.SetValue( mappedObjects[j], value );
                                             }
 
                                         }

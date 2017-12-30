@@ -9,26 +9,26 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 {
     class SKPerson
     {
-        public static Person Translate(Individual individual, List<Value> values, List<Family> families, List<Field> tableFields, List<Label> labels)
+        public static Person Translate( Individual individual, List<Value> values, List<Family> families, List<Field> tableFields, List<Label> labels )
         {
             Person person = new Person();
-            person.Id = Math.Abs(unchecked((int)individual.Id));
-            person.Campus = new Campus() {  CampusId = 0, CampusName = "Main Campus"};
+            person.Id = Math.Abs( unchecked(( int ) individual.Id) );
+            person.Campus = new Campus() { CampusId = 0, CampusName = "Main Campus" };
 
             // Import the family information
-            Family family = families.Where(v => v.Id == individual.FamilyId).FirstOrDefault();
-            person.FamilyId = Math.Abs(unchecked((int)individual.FamilyId));
+            Family family = families.Where( v => v.Id == individual.FamilyId ).FirstOrDefault();
+            person.FamilyId = Math.Abs( unchecked(( int ) individual.FamilyId) );
             person.FamilyName = family.FamilyName;
             person.FamilyRole = individual.Age < 18 ? FamilyRole.Child : FamilyRole.Adult;
 
             // Import the basic stuff
-            person.Gender = (Core.Model.Gender)individual.Gender;
+            person.Gender = ( Core.Model.Gender ) individual.Gender;
             person.RecordStatus = individual.RecordStatus;
-            Value memberStatus = values.Where(v => v.Id == individual.MemberStatus).FirstOrDefault();
-            if (memberStatus != null)
+            Value memberStatus = values.Where( v => v.Id == individual.MemberStatus ).FirstOrDefault();
+            if ( memberStatus != null )
             {
                 person.ConnectionStatus = memberStatus.Description;
-                if (memberStatus.Description == "Deceased")
+                if ( memberStatus.Description == "Deceased" )
                 {
                     person.IsDeceased = true;
                     person.RecordStatus = RecordStatus.Inactive;
@@ -42,7 +42,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
             person.CreatedDateTime = individual.CreateDate > family.CreateDate ? individual.CreateDate : family.CreateDate;
             person.ModifiedDateTime = individual.UpdateDate > family.UpdateDate ? individual.UpdateDate : family.UpdateDate;
-            
+
 
             person.FirstName = individual.FirstName;
             person.MiddleName = individual.MiddleName;
@@ -54,9 +54,9 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             person.Birthdate = individual.BirthDate;
             person.AnniversaryDate = individual.WeddingDate;
 
-            if (individual.MaritalCode > 0)
+            if ( individual.MaritalCode > 0 )
             {
-                switch(values.Where(v => v.Id == individual.MaritalCode).Select(v => v.Description).FirstOrDefault())
+                switch ( values.Where( v => v.Id == individual.MaritalCode ).Select( v => v.Description ).FirstOrDefault() )
                 {
                     case "Married":
                         person.MaritalStatus = MaritalStatus.Married;
@@ -73,9 +73,10 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                         person.MaritalStatus = MaritalStatus.Unknown;
                         break;
                 }
-            } else
+            }
+            else
             {
-                if (individual.Age < 18)
+                if ( individual.Age < 18 )
                 {
                     person.MaritalStatus = MaritalStatus.Single;
                 }
@@ -89,33 +90,33 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             person.Email = individual.Email;
             person.EmailPreference = individual.EmailIndicator ? EmailPreference.NoMassEmails : EmailPreference.EmailAllowed;
 
-            Regex digitsOnly = new Regex(@"[^\d]");
-            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.CellPhone, "")) && digitsOnly.Replace(individual.CellPhone, "").Length >= 7)
+            Regex digitsOnly = new Regex( @"[^\d]" );
+            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.CellPhone, "" ) ) && digitsOnly.Replace( individual.CellPhone, "" ).Length >= 7 )
             {
                 PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace(individual.CellPhone, "");
+                phone.PhoneNumber = digitsOnly.Replace( individual.CellPhone, "" );
                 phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.CellPhoneUnlisted;
                 phone.PhoneType = "Cell";
-                person.PhoneNumbers.Add(phone);
+                person.PhoneNumbers.Add( phone );
             }
-            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.HomePhone, "")) && digitsOnly.Replace(individual.HomePhone, "").Length >= 7)
+            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.HomePhone, "" ) ) && digitsOnly.Replace( individual.HomePhone, "" ).Length >= 7 )
             {
                 PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace(individual.HomePhone, "");
+                phone.PhoneNumber = digitsOnly.Replace( individual.HomePhone, "" );
                 phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.HomePhoneUnlisted;
                 phone.PhoneType = "Home";
-                person.PhoneNumbers.Add(phone);
+                person.PhoneNumbers.Add( phone );
             }
-            if (!string.IsNullOrWhiteSpace(digitsOnly.Replace(individual.WorkPhone, "")) && digitsOnly.Replace(individual.WorkPhone, "").Length >= 7)
+            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.WorkPhone, "" ) ) && digitsOnly.Replace( individual.WorkPhone, "" ).Length >= 7 )
             {
                 PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace(individual.WorkPhone, "");
+                phone.PhoneNumber = digitsOnly.Replace( individual.WorkPhone, "" );
                 phone.PersonId = person.Id;
                 phone.IsUnlisted = individual.WorkPhoneUnlisted;
                 phone.PhoneType = "Work";
-                person.PhoneNumbers.Add(phone);
+                person.PhoneNumbers.Add( phone );
             }
 
             // Now export their address
@@ -127,44 +128,44 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             address.City = family.City;
             address.State = family.State;
             address.PostalCode = family.Zip;
-            person.Addresses.Add(address);
+            person.Addresses.Add( address );
 
             // Handle the User Defined Fields
             var properties = individual.GetType().GetProperties();
-            foreach (var property in properties)
+            foreach ( var property in properties )
             {
-                if (property.Name.ToLower().Contains("udf"))
+                if ( property.Name.ToLower().Contains( "udf" ) )
                 {
-                    var attribute = property.CustomAttributes.Where(ca => ca.AttributeType.Name == "ColumnName").FirstOrDefault();
+                    var attribute = property.CustomAttributes.Where( ca => ca.AttributeType.Name == "ColumnName" ).FirstOrDefault();
 
-                    if (attribute != null)
+                    if ( attribute != null )
                     {
-                        var fieldKey = ((string)attribute.ConstructorArguments.FirstOrDefault().Value).ToLower();
-                        var tableField = tableFields.Where(tf => tf.Name.ToLower().Contains(fieldKey)).FirstOrDefault();
+                        var fieldKey = ( ( string ) attribute.ConstructorArguments.FirstOrDefault().Value ).ToLower();
+                        var tableField = tableFields.Where( tf => tf.Name.ToLower().Contains( fieldKey ) ).FirstOrDefault();
 
-                        if (tableField != null)
+                        if ( tableField != null )
                         {
                             PersonAttributeValue pav = new PersonAttributeValue();
                             // If this is a string
-                            if (property.PropertyType == typeof(string) && !string.IsNullOrWhiteSpace((string)property.GetValue(individual)))
+                            if ( property.PropertyType == typeof( string ) && !string.IsNullOrWhiteSpace( ( string ) property.GetValue( individual ) ) )
                             {
-                                pav.AttributeValue = (string)property.GetValue(individual);
+                                pav.AttributeValue = ( string ) property.GetValue( individual );
                             }
                             // If this is a long (lookup value)
-                            else if (property.PropertyType == typeof(long))
+                            else if ( property.PropertyType == typeof( long ) )
                             {
-                                pav.AttributeValue = values.Where(v => v.Id == (long)property.GetValue(individual)).Select(i => i.Description).FirstOrDefault();
+                                pav.AttributeValue = values.Where( v => v.Id == ( long ) property.GetValue( individual ) ).Select( i => i.Description ).FirstOrDefault();
                             }
                             // If this is a date
-                            else if ((property.PropertyType == typeof(DateTime) && ((DateTime)property.GetValue(individual)) != DateTime.MinValue) ||
-                                     (property.PropertyType == typeof(DateTime?) && property.GetValue(individual) != null))
+                            else if ( ( property.PropertyType == typeof( DateTime ) && ( ( DateTime ) property.GetValue( individual ) ) != DateTime.MinValue ) ||
+                                     ( property.PropertyType == typeof( DateTime? ) && property.GetValue( individual ) != null ) )
                             {
-                                pav.AttributeValue = property.GetValue(individual).ToString();
+                                pav.AttributeValue = property.GetValue( individual ).ToString();
                             }
                             // If this is a boolean
-                            else if (property.PropertyType == typeof(bool))
+                            else if ( property.PropertyType == typeof( bool ) )
                             {
-                                pav.AttributeValue = (bool)property.GetValue(individual) ? "True" : "False";
+                                pav.AttributeValue = ( bool ) property.GetValue( individual ) ? "True" : "False";
                             }
                             // Otherwise just continue
                             else
@@ -173,8 +174,8 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
                             }
                             pav.PersonId = person.Id;
                             // Lookup the key from the table fields
-                            pav.AttributeKey = labels.Where(l => l.LabelId == tableField.LabelId).Select(l => l.Description).DefaultIfEmpty(tableField.Description).FirstOrDefault().Replace(" ", string.Empty);
-                            person.Attributes.Add(pav);
+                            pav.AttributeKey = labels.Where( l => l.LabelId == tableField.LabelId ).Select( l => l.Description ).DefaultIfEmpty( tableField.Description ).FirstOrDefault().Replace( " ", string.Empty );
+                            person.Attributes.Add( pav );
                         }
                     }
                 }
@@ -182,70 +183,70 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
 
             person.Note = individual.Note;
 
-            if (individual.JoinDate != DateTime.MinValue)
+            if ( individual.JoinDate != DateTime.MinValue )
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.JoinDate.ToString();
                 pav.PersonId = person.Id;
                 pav.AttributeKey = "JoinDate";
-                person.Attributes.Add(pav);
+                person.Attributes.Add( pav );
             }
 
-            if (individual.HowJoined > 1)
+            if ( individual.HowJoined > 1 )
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = values.Where(v => v.Id == individual.HowJoined).Select(v => v.Description).FirstOrDefault();
+                pav.AttributeValue = values.Where( v => v.Id == individual.HowJoined ).Select( v => v.Description ).FirstOrDefault();
                 pav.PersonId = person.Id;
                 pav.AttributeKey = "HowJoined";
-                person.Attributes.Add(pav);
+                person.Attributes.Add( pav );
             }
 
-            if (individual.BaptizedDate != DateTime.MinValue)
+            if ( individual.BaptizedDate != DateTime.MinValue )
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.BaptizedDate.ToString();
                 pav.PersonId = person.Id;
                 pav.AttributeKey = "BaptizedDate";
-                person.Attributes.Add(pav);
+                person.Attributes.Add( pav );
             }
 
-            { 
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.Baptized?"True":"False";
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "Baptized";
-                person.Attributes.Add(pav);
-            }
-
-            if (individual.JobCode > 1)
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = values.Where(v => v.Id == individual.JobCode).Select(v => v.Description).FirstOrDefault();
+                pav.AttributeValue = individual.Baptized ? "True" : "False";
                 pav.PersonId = person.Id;
-                pav.AttributeKey = "Occupation";
-                person.Attributes.Add(pav);
+                pav.AttributeKey = "Baptized";
+                person.Attributes.Add( pav );
             }
 
-            if (!string.IsNullOrWhiteSpace(individual.Employer))
+            if ( individual.JobCode > 1 )
+            {
+                PersonAttributeValue pav = new PersonAttributeValue();
+                pav.AttributeValue = values.Where( v => v.Id == individual.JobCode ).Select( v => v.Description ).FirstOrDefault();
+                pav.PersonId = person.Id;
+                pav.AttributeKey = "Occupation";
+                person.Attributes.Add( pav );
+            }
+
+            if ( !string.IsNullOrWhiteSpace( individual.Employer ) )
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.Employer;
                 pav.PersonId = person.Id;
                 pav.AttributeKey = "Employer";
-                person.Attributes.Add(pav);
+                person.Attributes.Add( pav );
             }
 
-            if (!string.IsNullOrWhiteSpace(individual.SundaySchool))
+            if ( !string.IsNullOrWhiteSpace( individual.SundaySchool ) )
             {
                 PersonAttributeValue pav = new PersonAttributeValue();
                 pav.AttributeValue = individual.SundaySchool;
                 pav.PersonId = person.Id;
                 pav.AttributeKey = "SundaySchool";
-                person.Attributes.Add(pav);
+                person.Attributes.Add( pav );
             }
 
             return person;
-            
+
         }
     }
 }

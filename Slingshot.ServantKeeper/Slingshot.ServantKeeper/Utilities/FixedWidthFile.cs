@@ -10,30 +10,30 @@ namespace Slingshot.ServantKeeper.Utilities
 {
     class FixedWidthFile
     {
-        public static Table Convert(string fileName)
+        public static Table Convert( string fileName )
         {
-            var f = File.ReadAllBytes(fileName);
-            return Convert(f);
+            var f = File.ReadAllBytes( fileName );
+            return Convert( f );
         }
 
-        public static Table Convert(byte[] f)
+        public static Table Convert( byte[] f )
         {
             var Table = new Table();
 
             int location = 32;
 
             //Getting header information
-            while (true)
+            while ( true )
             {
-                if (f[location] == 13 && f[location + 1] == 32)
+                if ( f[location] == 13 && f[location + 1] == 32 )
                 {
                     break;
                 }
 
                 var take = 0;
-                for (var i = 0; i < 10; i++)
+                for ( var i = 0; i < 10; i++ )
                 {
-                    if (f[location + i] != 0)
+                    if ( f[location + i] != 0 )
                     {
                         take = i;
                     }
@@ -43,38 +43,38 @@ namespace Slingshot.ServantKeeper.Utilities
                     }
                 }
 
-                var name = Encoding.GetEncoding(Encoding.Default.CodePage).GetString(f.Skip(location).Take(take + 1).ToArray());
-                var startsAt = (f[location + 13] * 256) + f[location + 12];
-                Table.ColumnNames.Add(name.ToLower());
-                Table.ColumnStart.Add(startsAt + 1);
+                var name = Encoding.GetEncoding( Encoding.Default.CodePage ).GetString( f.Skip( location ).Take( take + 1 ).ToArray() );
+                var startsAt = ( f[location + 13] * 256 ) + f[location + 12];
+                Table.ColumnNames.Add( name.ToLower() );
+                Table.ColumnStart.Add( startsAt + 1 );
                 location += 32;
             }
-            var columnWidth = (f[11] * 256 + f[10]);
+            var columnWidth = ( f[11] * 256 + f[10] );
 
             //filling out the rows
-            while (true)
+            while ( true )
             {
-                if (location + columnWidth > f.Length)
+                if ( location + columnWidth > f.Length )
                 {
                     break;
                 }
-                var slice = f.Skip(location).Take(columnWidth).ToArray();
+                var slice = f.Skip( location ).Take( columnWidth ).ToArray();
                 var row = new List<string>();
 
-                for (var i = 0; i < Table.ColumnStart.Count; i++)
+                for ( var i = 0; i < Table.ColumnStart.Count; i++ )
                 {
                     var startsAt = Table.ColumnStart[i];
                     var take = columnWidth - startsAt;
-                    if (Table.ColumnStart.Count - 1 != i)
+                    if ( Table.ColumnStart.Count - 1 != i )
                     {
                         take = Table.ColumnStart[i + 1] - startsAt;
                     }
                     byte[] b = new byte[take + 1];
-                    Array.Copy(slice, startsAt, b, 0, take);
-                    var text = Encoding.GetEncoding(Encoding.Default.CodePage).GetString(b);
-                    row.Add(text.Replace("\0", "").Trim());
+                    Array.Copy( slice, startsAt, b, 0, take );
+                    var text = Encoding.GetEncoding( Encoding.Default.CodePage ).GetString( b );
+                    row.Add( text.Replace( "\0", "" ).Trim() );
                 }
-                Table.Data.Add(row);
+                Table.Data.Add( row );
                 location += columnWidth;
             }
             return Table;

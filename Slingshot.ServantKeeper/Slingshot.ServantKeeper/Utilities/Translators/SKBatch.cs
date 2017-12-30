@@ -10,13 +10,13 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
     class SKBatch
     {
 
-        public static FinancialBatch Translate(Batch batch)
+        public static FinancialBatch Translate( Batch batch )
         {
             // The ID for a batch is a combination of the ID and the date
             long id = batch.Id + batch.Date.Value.Ticks;
 
             FinancialBatch financialBatch = new FinancialBatch();
-            financialBatch.Id = Math.Abs(unchecked((int)id));
+            financialBatch.Id = Math.Abs( unchecked(( int ) id) );
 
             financialBatch.Name = batch.Name + ": " + batch.Notes;
             financialBatch.CreatedDateTime = batch.CreatedDate;
@@ -24,7 +24,7 @@ namespace Slingshot.ServantKeeper.Utilities.Translators
             financialBatch.Status = BatchStatus.Closed;
 
             return financialBatch;
-            
+
         }
     }
 }

@@ -9,10 +9,10 @@ namespace Slingshot.ServantKeeper.Models
 {
     public class Label
     {
-        [ColumnName("label_id")]
+        [ColumnName( "label_id" )]
         public int LabelId { get; set; }
-        
-        [ColumnName("desc")]
+
+        [ColumnName( "desc" )]
         public string Description { get; set; }
     }
 }

@@ -100,7 +100,7 @@ namespace Slingshot.ServantKeeper
                     exportWorker.ReportProgress( 33, $"Error exporting contributions: {ServantKeeperApi.ErrorMessage}" );
                 }
             }
-            
+
 
             // finalize the package
             ImportPackage.FinalizePackage( "servantkeeper-export.slingshot" );
@@ -130,12 +130,12 @@ namespace Slingshot.ServantKeeper
         private void Window_Loaded( object sender, RoutedEventArgs e )
         {
             // populate email types combobox
-            EmailTypesComboBoxItems.Add(new ComboBoxItem { Text = "Primary Email" });
+            EmailTypesComboBoxItems.Add( new ComboBoxItem { Text = "Primary Email" } );
 
             // populate campus fields combobox
 
             ExportCampusComboBoxItems.Add( new ComboBoxItem { Text = "Main Campus" } );
-            
+
 
             txtImportCutOff.Text = DateTime.Now.ToShortDateString();
         }
@@ -162,7 +162,7 @@ namespace Slingshot.ServantKeeper
 
         private void cbIndividuals_Checked( object sender, RoutedEventArgs e )
         {
-            if( cbIndividuals.IsChecked.Value )
+            if ( cbIndividuals.IsChecked.Value )
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
             }
@@ -177,7 +177,7 @@ namespace Slingshot.ServantKeeper
 
     public class ExportSettings
     {
-        public DateTime ModifiedSince { get; set; } = DateTime.Now; 
+        public DateTime ModifiedSince { get; set; } = DateTime.Now;
 
         public bool ExportIndividuals { get; set; } = true;
 

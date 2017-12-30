@@ -9,41 +9,41 @@ namespace Slingshot.ServantKeeper.Models
 {
     public class Account
     {
-        [ColumnName("acct_id")]
+        [ColumnName( "acct_id" )]
         public long Id { get; set; }
 
-        [ColumnName("acct_cd")]
+        [ColumnName( "acct_cd" )]
         public string Code { get; set; }
 
-        [ColumnName("acct_name")]
+        [ColumnName( "acct_name" )]
         public string Name { get; set; }
 
-        [ColumnName("active_ind")]
+        [ColumnName( "active_ind" )]
         public bool IsActive { get; set; }
-        
-        [ColumnName("tax_ind")]
+
+        [ColumnName( "tax_ind" )]
         public bool IsTaxDeductible { get; set; }
 
-        [ColumnName("linkto")]
+        [ColumnName( "linkto" )]
         public string LinkTo { get; set; }
 
-        [ColumnName("linkfrom")]
+        [ColumnName( "linkfrom" )]
         public string LinkFrom { get; set; }
 
-        [ColumnName("eff_dt")]
-        [DateTimeParseString("yyyyMMdd")]
+        [ColumnName( "eff_dt" )]
+        [DateTimeParseString( "yyyyMMdd" )]
         public DateTime? EffectiveDate { get; set; }
 
-        [ColumnName("end_dt")]
-        [DateTimeParseString("yyyyMMdd")]
+        [ColumnName( "end_dt" )]
+        [DateTimeParseString( "yyyyMMdd" )]
         public DateTime? EndDate { get; set; }
 
-        [ColumnName("create_ts")]
+        [ColumnName( "create_ts" )]
         [DateTimeParseString( "yyyyMMddhhmmss" )]
         public DateTime? CreatedDate { get; set; }
 
-        [ColumnName("update_ts")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
+        [ColumnName( "update_ts" )]
+        [DateTimeParseString( "yyyyMMddhhmmss" )]
         public DateTime? UpdatedDate { get; set; }
     }
 }

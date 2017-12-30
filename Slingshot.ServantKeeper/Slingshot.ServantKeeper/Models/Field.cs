@@ -9,16 +9,16 @@ namespace Slingshot.ServantKeeper.Models
 {
     public class Field
     {
-        [ColumnName("lk_key")]
+        [ColumnName( "lk_key" )]
         public string Key { get; set; }
 
-        [ColumnName("lbl_id")]
+        [ColumnName( "lbl_id" )]
         public int LabelId { get; set; }
 
-        [ColumnName("field_name")]
+        [ColumnName( "field_name" )]
         public string Name { get; set; }
 
-        [ColumnName("desc")]
+        [ColumnName( "desc" )]
         public string Description { get; set; }
     }
 }

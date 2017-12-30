@@ -34,11 +34,12 @@ namespace Slingshot.ServantKeeper.Utilities
         /// <value>
         /// The error message.
         /// </value>
-        public static string ErrorMessage {
+        public static string ErrorMessage
+        {
             get;
             set;
         }
-        
+
         /// <summary>
         /// Gets a value indicating whether this instance is connected.
         /// </summary>
@@ -51,29 +52,29 @@ namespace Slingshot.ServantKeeper.Utilities
         /// Gets or sets the person attributes
         /// </summary>
         public static Dictionary<string, string> PersonAttributes { get; set; }
-        
 
-        public static Table GetTable(string dbFile)
+
+        public static Table GetTable( string dbFile )
         {
 
-            using (var file = File.OpenRead(FileName))
-            using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
+            using ( var file = File.OpenRead( FileName ) )
+            using ( var zip = new ZipArchive( file, ZipArchiveMode.Read ) )
             {
-                foreach (var entry in zip.Entries)
+                foreach ( var entry in zip.Entries )
                 {
-                    if (entry.FullName.ToLower().EndsWith(dbFile))
+                    if ( entry.FullName.ToLower().EndsWith( dbFile ) )
                     {
-                        using (var stream = entry.Open())
+                        using ( var stream = entry.Open() )
                         {
                             byte[] buffer = new byte[16 * 1024];
-                            using (MemoryStream ms = new MemoryStream())
+                            using ( MemoryStream ms = new MemoryStream() )
                             {
                                 int read;
-                                while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                                while ( ( read = stream.Read( buffer, 0, buffer.Length ) ) > 0 )
                                 {
-                                    ms.Write(buffer, 0, read);
+                                    ms.Write( buffer, 0, read );
                                 }
-                                return FixedWidthFile.Convert(ms.ToArray());
+                                return FixedWidthFile.Convert( ms.ToArray() );
                             }
                         }
                     }
@@ -109,31 +110,32 @@ namespace Slingshot.ServantKeeper.Utilities
         {
             try
             {
-                List<Label> labels = GetTable("csudflbl.sdb").Map<Label>();
-                List<Field> fields = GetTable("cstable.sdb").Map<Field>();
+                List<Label> labels = GetTable( "csudflbl.sdb" ).Map<Label>();
+                List<Field> fields = GetTable( "cstable.sdb" ).Map<Field>();
 
-                List<Family> families = GetTable("csfamily.udb").Map<Family>();
-                families.AddRange(GetTable("csfambin.udb").Map<Family>());
+                List<Family> families = GetTable( "csfamily.udb" ).Map<Family>();
+                families.AddRange( GetTable( "csfambin.udb" ).Map<Family>() );
 
-                List<Value> values = GetTable("csreftbl.udb").Map<Value>();
-                List<Individual> individuals = GetTable("csind.udb").Map<Individual>();
+                List<Value> values = GetTable( "csreftbl.udb" ).Map<Value>();
+                List<Individual> individuals = GetTable( "csind.udb" ).Map<Individual>();
 
                 // export inactive people
-                List<Individual> inactives = GetTable("csindbin.udb").Map<Individual>();
-                inactives.ForEach(p => p.RecordStatus = RecordStatus.Inactive);
-                individuals.AddRange(inactives.Where(i2 => !individuals.Select(i => i.Id).ToList().Contains(i2.Id)).ToList());
+                List<Individual> inactives = GetTable( "csindbin.udb" ).Map<Individual>();
+                inactives.ForEach( p => p.RecordStatus = RecordStatus.Inactive );
+                individuals.AddRange( inactives.Where( i2 => !individuals.Select( i => i.Id ).ToList().Contains( i2.Id ) ).ToList() );
 
                 // export people
-                foreach (Individual indv in individuals)
+                foreach ( Individual indv in individuals )
                 {
-                    Person person = SKPerson.Translate(indv, values, families, fields, labels);
-                    if (modifiedSince.Year <= 1 || person.CreatedDateTime > modifiedSince || person.ModifiedDateTime > modifiedSince) { 
-                        ImportPackage.WriteToPackage(person);
+                    Person person = SKPerson.Translate( indv, values, families, fields, labels );
+                    if ( modifiedSince.Year <= 1 || person.CreatedDateTime > modifiedSince || person.ModifiedDateTime > modifiedSince )
+                    {
+                        ImportPackage.WriteToPackage( person );
                     }
                 }
 
                 //load attributes
-                LoadPersonAttributes(fields, labels);
+                LoadPersonAttributes( fields, labels );
 
                 // write out the person attributes
                 WritePersonAttributes();
@@ -145,24 +147,24 @@ namespace Slingshot.ServantKeeper.Utilities
                 ErrorMessage = ex.Message;
             }
         }
-        
+
         /// <summary>
         /// Exports the funds.
         /// </summary>
         public static void ExportFunds()
         {
 
-            List<Account> accounts = GetTable("csacct.udb").Map<Account>();
-            List<AccountLink> links = GetTable("csqkacct.udb").Map<AccountLink>();
+            List<Account> accounts = GetTable( "csacct.udb" ).Map<Account>();
+            List<AccountLink> links = GetTable( "csqkacct.udb" ).Map<AccountLink>();
             try
             {
-                foreach (Account account in accounts)
+                foreach ( Account account in accounts )
                 {
-                    var importAccount = SKFinancialAccount.Translate(account, links);
+                    var importAccount = SKFinancialAccount.Translate( account, links );
 
-                    if (importAccount != null)
+                    if ( importAccount != null )
                     {
-                        ImportPackage.WriteToPackage(importAccount);
+                        ImportPackage.WriteToPackage( importAccount );
                     }
                 }
             }
@@ -179,88 +181,88 @@ namespace Slingshot.ServantKeeper.Utilities
         {
             try
             {
-                List<Batch> batches = GetTable("csbatch.udb").Map<Batch>();
-                
+                List<Batch> batches = GetTable( "csbatch.udb" ).Map<Batch>();
+
                 try
                 {
-                    foreach (Batch batch in batches)
+                    foreach ( Batch batch in batches )
                     {
-                        var importBatch = SKBatch.Translate(batch);
-
-                        if (importBatch != null)
+                        var importBatch = SKBatch.Translate( batch );
+                        if ( modifiedSince.Year <= 1 || importBatch.CreatedDateTime > modifiedSince || importBatch.ModifiedDateTime > modifiedSince )
                         {
-                            ImportPackage.WriteToPackage(importBatch);
+                            ImportPackage.WriteToPackage( importBatch );
                         }
                     }
                 }
-                catch (Exception ex)
+                catch ( Exception ex )
                 {
                     ErrorMessage = ex.Message;
                 }
 
-                List<Contribution> contributions = GetTable("csconmst.udb").Map<Contribution>();
-                List<ContributionDetail> contributionDetails = GetTable("cscondtl.udb").Map<ContributionDetail>();
+                List<Contribution> contributions = GetTable( "csconmst.udb" ).Map<Contribution>();
+                List<ContributionDetail> contributionDetails = GetTable( "cscondtl.udb" ).Map<ContributionDetail>();
 
-                foreach ( Contribution contribution in contributions)
+                foreach ( Contribution contribution in contributions )
                 {
-                    var importFinancialTransaction = SKContribution.Translate(contribution, contributionDetails);
+                    var importFinancialTransaction = SKContribution.Translate( contribution, contributionDetails );
+                    
 
-                    if ( importFinancialTransaction != null )
+                    if ( modifiedSince.Year <= 1 || importFinancialTransaction.CreatedDateTime > modifiedSince || importFinancialTransaction.ModifiedDateTime > modifiedSince )
                     {
                         ImportPackage.WriteToPackage( importFinancialTransaction );
 
-                        foreach(var importDetail in importFinancialTransaction.FinancialTransactionDetails)
+                        foreach ( var importDetail in importFinancialTransaction.FinancialTransactionDetails )
                         {
-                            ImportPackage.WriteToPackage(importDetail);
+                            ImportPackage.WriteToPackage( importDetail );
                         }
                     }
-                }   
+                }
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
         }
-        
+
 
         /// <summary>
         /// Loads the available person attributes.
         /// </summary>
-        public static void LoadPersonAttributes(List<Field> fields, List<Label> labels)
+        public static void LoadPersonAttributes( List<Field> fields, List<Label> labels )
         {
             PersonAttributes = new Dictionary<string, string>();
 
             // Handle the User Defined Fields
-            var properties = typeof(Individual).GetProperties();
-            foreach (var property in properties)
+            var properties = typeof( Individual ).GetProperties();
+            foreach ( var property in properties )
             {
-                if (property.Name.ToLower().Contains("udf"))
+                if ( property.Name.ToLower().Contains( "udf" ) )
                 {
-                    var attribute = property.CustomAttributes.Where(ca => ca.AttributeType.Name == "ColumnName").FirstOrDefault();
+                    var attribute = property.CustomAttributes.Where( ca => ca.AttributeType.Name == "ColumnName" ).FirstOrDefault();
 
-                    if (attribute != null)
+                    if ( attribute != null )
                     {
-                        var fieldKey = ((string)attribute.ConstructorArguments.FirstOrDefault().Value).ToLower();
-                        var field = fields.Where(tf => tf.Name.ToLower().Contains(fieldKey)).FirstOrDefault();
+                        var fieldKey = ( ( string ) attribute.ConstructorArguments.FirstOrDefault().Value ).ToLower();
+                        var field = fields.Where( tf => tf.Name.ToLower().Contains( fieldKey ) ).FirstOrDefault();
 
-                        if (field != null)
+                        if ( field != null )
                         {
-                            PersonAttributes.Add(labels.Where(l => l.LabelId == field.LabelId).Select(l => l.Description).DefaultIfEmpty(field.Description).FirstOrDefault().Replace(" ", string.Empty), property.PropertyType.Name);
+                            PersonAttributes.Add( labels.Where( l => l.LabelId == field.LabelId ).Select( l => l.Description ).DefaultIfEmpty( field.Description ).FirstOrDefault().Replace( " ", string.Empty ), property.PropertyType.Name );
                         }
                     }
                 }
             }
-            
-            PersonAttributes.Add("JoinDate", typeof(DateTime).Name);
-            PersonAttributes.Add("HowJoined", typeof(string).Name);
-            PersonAttributes.Add("BaptizedDate", typeof(DateTime).Name);
-            PersonAttributes.Add("Baptized", typeof(string).Name);
-            PersonAttributes.Add("Occupation", typeof(string).Name);
-            PersonAttributes.Add("Employer", typeof(string).Name);
-            PersonAttributes.Add("SundaySchool", typeof(string).Name);
-            
+
+            PersonAttributes.Add( "JoinDate", typeof( DateTime ).Name );
+            PersonAttributes.Add( "HowJoined", typeof( string ).Name );
+            PersonAttributes.Add( "BaptizedDate", typeof( DateTime ).Name );
+            PersonAttributes.Add( "Baptized", typeof( string ).Name );
+            PersonAttributes.Add( "Occupation", typeof( string ).Name );
+            PersonAttributes.Add( "Employer", typeof( string ).Name );
+            PersonAttributes.Add( "SundaySchool", typeof( string ).Name );
+
         }
-        
+
 
         /// <summary>
         /// Writes the person attributes.

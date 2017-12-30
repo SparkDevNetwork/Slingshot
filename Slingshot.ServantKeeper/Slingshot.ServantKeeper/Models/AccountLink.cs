@@ -9,10 +9,10 @@ namespace Slingshot.ServantKeeper.Models
 {
     public class AccountLink
     {
-        [ColumnName("acct_id")]
+        [ColumnName( "acct_id" )]
         public long Id { get; set; }
 
-        [ColumnName("qk_acct")]
+        [ColumnName( "qk_acct" )]
         public string Description { get; set; }
     }
 }

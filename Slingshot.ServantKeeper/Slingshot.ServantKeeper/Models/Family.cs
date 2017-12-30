@@ -9,37 +9,37 @@ namespace Slingshot.ServantKeeper.Models
 {
     public class Family
     {
-        [ColumnName("family_id")]
+        [ColumnName( "family_id" )]
         public long Id { get; set; }
 
-        [ColumnName("fam_name")]
+        [ColumnName( "fam_name" )]
         public string FamilyName { get; set; }
-        
-        [ColumnName("create_ts")]
+
+        [ColumnName( "create_ts" )]
         [DateTimeParseString( "yyyyMMddhhmmss" )]
         public DateTime CreatedDate { get; set; }
 
-        [ColumnName("addr1")]
+        [ColumnName( "addr1" )]
         public string Address1 { get; set; }
 
-        [ColumnName("addr2")]
+        [ColumnName( "addr2" )]
         public string Address2 { get; set; }
 
-        [ColumnName("city")]
+        [ColumnName( "city" )]
         public string City { get; set; }
 
-        [ColumnName("state")]
+        [ColumnName( "state" )]
         public string State { get; set; }
 
-        [ColumnName("zip")]
+        [ColumnName( "zip" )]
         public string Zip { get; set; }
 
-        [ColumnName("create_ts")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
+        [ColumnName( "create_ts" )]
+        [DateTimeParseString( "yyyyMMddhhmmss" )]
         public DateTime? CreateDate { get; set; }
 
-        [ColumnName("update_ts")]
-        [DateTimeParseString("yyyyMMddhhmmss")]
+        [ColumnName( "update_ts" )]
+        [DateTimeParseString( "yyyyMMddhhmmss" )]
         public DateTime? UpdateDate { get; set; }
     }
 }
