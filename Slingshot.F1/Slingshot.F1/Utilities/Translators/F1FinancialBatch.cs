@@ -20,10 +20,19 @@ namespace Slingshot.F1.Utilities.Translators
 
             switch ( inputBatch.Element( "batchStatus" ).Element( "name" ).Value )
             {
+                case "Authorization":
+                    financialBatch.Status = BatchStatus.Closed;
+                    break;
+                case "Data Entry":
+                    financialBatch.Status = BatchStatus.Closed;
+                    break;
+                case "Not Applicable":
+                    financialBatch.Status = BatchStatus.Closed;
+                    break;
                 case "Saved":
                     financialBatch.Status = BatchStatus.Closed;
                     break;
-                case "Settled": // credit card batches 
+                case "Settlement": // credit card batches 
                     financialBatch.Status = BatchStatus.Closed;
                     break;
                 default:
