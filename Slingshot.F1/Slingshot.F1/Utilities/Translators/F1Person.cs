@@ -352,7 +352,7 @@ namespace Slingshot.F1.Utilities.Translators
 
                 // person requirements. 
                 var requirements = inputPerson.Element( "peopleRequirements" );
-                foreach ( var requirement in requirements.Elements() )
+                foreach ( var requirement in requirements.Elements().OrderByDescending( r => r.Element( "requirementDate" ).Value.AsDateTime() ) )
                 {
                     string requirementId = requirement.Element( "requirement" ).Attribute( "id" ).Value;
 
