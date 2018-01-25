@@ -277,38 +277,6 @@ namespace Slingshot.F1.Utilities.Translators
                 {
                     if ( personAttributes.Any() )
                     {
-                        // Add the attribute value for comment (if not empty) 
-                        var commentAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
-                        string comment = attribute.Element("comment").Value;
-
-                        if (personAttributes.Where(p => commentAttributeKey.Equals(p.Key)).Any() )
-                        {
-                            usedAttributeKeys.Add(commentAttributeKey);
-
-                            if (usedAttributeKeys.Where(a => commentAttributeKey.Equals(a)).Count() <= 1)
-                            {
-                                if ( comment.IsNotNullOrWhitespace() )
-                                {
-                                    person.Attributes.Add( new PersonAttributeValue
-                                    {
-                                        AttributeKey = commentAttributeKey,
-                                        AttributeValue = comment,
-                                        PersonId = person.Id
-                                    } );
-                                }
-                                else
-                                {
-                                    person.Attributes.Add( new PersonAttributeValue
-                                    {
-                                        AttributeKey = commentAttributeKey,
-                                        AttributeValue = "True",
-                                        PersonId = person.Id
-                                    } );
-                                }
-                                
-                            }
-                        }
-
                         // Add the attribute value for start date (if not empty) 
                         var startDateAttributeKey = attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
                         DateTime? startDate = attribute.Element("startDate")?.Value.AsDateTime();
@@ -344,6 +312,40 @@ namespace Slingshot.F1.Utilities.Translators
                                     AttributeValue = endDate.Value.ToString( "o" ), // save as UTC date format
                                     PersonId = person.Id
                                 } );
+                            }
+                        }
+
+                        // Add the attribute value for comment (if not empty) 
+                        var commentAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
+                        string comment = attribute.Element( "comment" ).Value;
+
+                        if ( personAttributes.Where( p => commentAttributeKey.Equals( p.Key ) ).Any() )
+                        {
+                            usedAttributeKeys.Add( commentAttributeKey );
+
+                            if ( usedAttributeKeys.Where( a => commentAttributeKey.Equals( a ) ).Count() <= 1 )
+                            {
+                                if ( comment.IsNotNullOrWhitespace() )
+                                {
+                                    person.Attributes.Add( new PersonAttributeValue
+                                    {
+                                        AttributeKey = commentAttributeKey,
+                                        AttributeValue = comment,
+                                        PersonId = person.Id
+                                    } );
+                                }
+                                // If the attribute exists but we do not have any values assigned (comment, start date, end date)
+                                // then set the value to true so that we know the attribute exists.
+                                else if ( !comment.IsNotNullOrWhitespace() && !startDate.HasValue && !startDate.HasValue )
+                                {
+                                    person.Attributes.Add( new PersonAttributeValue
+                                    {
+                                        AttributeKey = commentAttributeKey,
+                                        AttributeValue = "True",
+                                        PersonId = person.Id
+                                    } );
+                                }
+
                             }
                         }
 
