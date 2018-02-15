@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -141,6 +142,7 @@ namespace Slingshot.CCB.Utilities
 
             _client = new RestClient( ApiUrl );
             _client.Authenticator = new HttpBasicAuthenticator( ApiUsername, ApiPassword );
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             // getting the api status sets the IsConnect flag
             UpdateApiStatus();

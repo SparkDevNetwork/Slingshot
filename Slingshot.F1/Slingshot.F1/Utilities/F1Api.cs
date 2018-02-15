@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
@@ -182,6 +183,7 @@ namespace Slingshot.F1.Utilities
             _client = new RestClient( ApiUrl );
             _client.Authenticator = OAuth1Authenticator.ForRequestToken( ApiConsumerKey, ApiConsumerSecret );
             _request = new RestRequest( API_ACCESS_TOKEN, Method.POST );
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             // hash the username/password and add it to the body of the request
             var loginBytes = System.Text.Encoding.UTF8.GetBytes( apiUsername + " " + apiPassword );
