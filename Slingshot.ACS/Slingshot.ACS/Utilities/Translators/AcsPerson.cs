@@ -174,6 +174,22 @@ namespace Slingshot.ACS.Utilities.Translators
                 }
             }
 
+            // gives individually
+            string contribRecordType = row.Field<string>( "ContribRecordType" );
+            switch ( contribRecordType )
+            {
+
+                case "Combined":
+                    person.GiveIndividually = false;
+                    break;
+                case "Individual":
+                    person.GiveIndividually = true;
+                    break;
+                default:
+                    person.GiveIndividually = true;
+                    break;
+            }         
+
             // dates
             person.Birthdate = row.Field<string>( "DateOfBirth" ).AsDateTime();
             person.CreatedDateTime = row.Field<DateTime?>( "EntryDate" );
