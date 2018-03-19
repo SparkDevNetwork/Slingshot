@@ -248,7 +248,19 @@ namespace Slingshot.ACS.Utilities.Translators
                     PersonId = person.Id
                 } );
             }
-            
+
+            // envelope number
+            var envelopeNumber = row.Field<int?>( "EnvelopeNumber" );
+            if ( envelopeNumber.HasValue )
+            {
+                person.Attributes.Add( new PersonAttributeValue
+                {
+                    AttributeKey = "core_GivingEnvelopeNumber",
+                    AttributeValue = envelopeNumber.Value.ToString(),
+                    PersonId = person.Id
+                } );
+            }
+
             // loop through any attributes found
             foreach ( var attrib in AcsApi.PersonAttributes )
             {
