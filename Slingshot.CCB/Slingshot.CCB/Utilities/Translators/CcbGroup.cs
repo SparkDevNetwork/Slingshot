@@ -27,8 +27,10 @@ namespace Slingshot.CCB.Utilities.Translators
             group.Capacity = inputGroup.Element( "group_capacity" ).Value.AsIntegerOrNull();
             group.IsActive = !inputGroup.Element( "inactive" ).Value.AsBoolean();
             group.IsPublic = inputGroup.Element( "public_search_listed" ).Value.AsBoolean();
-            group.MeetingDay = inputGroup.Element( "meeting_day" ).Attribute( "id" ).Value.AsIntegerOrNull();
-            group.MeetingTime = inputGroup.Element( "meeting_time" ).Attribute( "id" ).Value.AsIntegerOrNull();
+            group.MeetingDay = inputGroup.Element( "meeting_day" ).Value;
+            group.MeetingTime = inputGroup.Element( "meeting_time" ).Value;
+
+            ProcessBooleanAttribute( group, inputGroup.Element( "childcare_provided" ), "HasChildcare" );
 
             if ( group.GroupTypeId != 0 )
             {
@@ -103,6 +105,48 @@ namespace Slingshot.CCB.Utilities.Translators
             }
 
             return groups;
+        }
+
+        /// <summary>
+        /// Processes the string attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessStringAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.IsNotNullOrWhitespace() )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value } );
+            }
+        }
+
+        /// <summary>
+        /// Processes the boolean attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessBooleanAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.IsNotNullOrWhitespace() )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value.AsBoolean().ToString() } );
+            }
+        }
+
+        /// <summary>
+        /// Processes the datetime attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessDatetimeAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.AsDateTime().HasValue )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value.AsDateTime().ToString() } );
+            }
         }
     }
 }
