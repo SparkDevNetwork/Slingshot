@@ -73,7 +73,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The meeting day.
         /// </value>
-        public int? MeetingDay { get; set; }
+        public string MeetingDay { get; set; }
 
         /// <summary>
         /// Gets or sets the meeting time.
@@ -82,7 +82,7 @@ namespace Slingshot.Core.Model
         /// The meeting time.
         /// </value>
         ///
-        public int? MeetingTime { get; set; }
+        public string MeetingTime { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this group is active.
@@ -101,20 +101,20 @@ namespace Slingshot.Core.Model
         public bool IsPublic { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether this instance has childcare.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance has childcare; otherwise, <c>false</c>.
-        /// </value>
-        public bool HasChildcare { get; set; }
-
-        /// <summary>
         /// Gets or sets the group members.
         /// </summary>
         /// <value>
         /// The group members.
         /// </value>
         public List<GroupMember> GroupMembers { get; set; } = new List<GroupMember>();
+
+        /// <summary>
+        /// Gets or sets the attributes.
+        /// </summary>
+        /// <value>
+        /// The attributes.
+        /// </value>
+        public List<GroupAttributeValue> Attributes { get; set; } = new List<GroupAttributeValue>();
 
         /// <summary>
         /// Gets the name of the file.
