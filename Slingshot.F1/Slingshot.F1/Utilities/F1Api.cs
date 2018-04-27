@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
@@ -29,7 +30,7 @@ namespace Slingshot.F1.Utilities
         private static List<FamilyMember> familyMembers = new List<FamilyMember>();
 
         /// <summary>
-        ///  Set F1Api.DumpResponseToXmlFile to true to save all API Responses 
+        ///  Set F1Api.DumpResponseToXmlFile to true to save all API Responses
         ///   to XML files and include them in the slingshot package
         /// </summary>
         /// <value>
@@ -44,7 +45,7 @@ namespace Slingshot.F1.Utilities
         /// The last run date.
         /// </value>
         public static DateTime LastRunDate { get; set; } = DateTime.MinValue;
-       
+
         /// <summary>
         /// Gets or sets the api counter.
         /// </summary>
@@ -139,7 +140,7 @@ namespace Slingshot.F1.Utilities
         /// </value>
         public static bool IsConnected { get; private set; } = false;
 
-        #region API Call Paths 
+        #region API Call Paths
 
         private const string API_ACCESS_TOKEN = "/v1/PortalUser/AccessToken";
         private const string API_INDIVIDUAL = "/v1/People";
@@ -182,6 +183,7 @@ namespace Slingshot.F1.Utilities
             _client = new RestClient( ApiUrl );
             _client.Authenticator = OAuth1Authenticator.ForRequestToken( ApiConsumerKey, ApiConsumerSecret );
             _request = new RestRequest( API_ACCESS_TOKEN, Method.POST );
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             // hash the username/password and add it to the body of the request
             var loginBytes = System.Text.Encoding.UTF8.GetBytes( apiUsername + " " + apiPassword );
@@ -229,8 +231,8 @@ namespace Slingshot.F1.Utilities
             {
                 familyMembers = GetFamilyMembers();
             }
-            
-            // write out the person attributes 
+
+            // write out the person attributes
             var personAttributes = WritePersonAttributes();
 
             int currentPage = 1;
@@ -272,8 +274,8 @@ namespace Slingshot.F1.Utilities
                             {
                                 if ( personNode.Attribute( "id" ) != null && personNode.Attribute( "id" ).Value.AsIntegerOrNull().HasValue )
                                 {
-                                    // If a person is updated during an export, the person could be returned 
-                                    //  twice by the API.  
+                                    // If a person is updated during an export, the person could be returned
+                                    //  twice by the API.
                                     if ( !personIds.Contains( personNode.Attribute( "id" ).Value.AsInteger() ) )
                                     {
                                         var importPerson = F1Person.Translate( personNode, familyMembers, personAttributes );
@@ -318,14 +320,13 @@ namespace Slingshot.F1.Utilities
                         moreIndividualsExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    // developer safety blanket (prevents eating all the api calls for the day)
                     if ( loopCounter > loopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
-
             }
             catch ( Exception ex )
             {
@@ -372,30 +373,30 @@ namespace Slingshot.F1.Utilities
                     AccountIds.Add( importAccount.Id );
 
                     // process sub accounts of this account
-                    _client.Authenticator = OAuth1Authenticator.ForProtectedResource(ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret);
-                    _request = new RestRequest(API_ACCOUNTS + "/" + importAccount.Id.ToString() + "/subFunds" , Method.GET);
-                    _request.AddHeader("content-type", "application/xml");
-                    var subResponse = _client.Execute(_request);
+                    _client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
+                    _request = new RestRequest( API_ACCOUNTS + "/" + importAccount.Id.ToString() + "/subFunds", Method.GET );
+                    _request.AddHeader( "content-type", "application/xml" );
+                    var subResponse = _client.Execute( _request );
                     ApiCounter++;
 
-                    xdoc = XDocument.Parse(subResponse.Content);
+                    xdoc = XDocument.Parse( subResponse.Content );
 
-                    if (F1Api.DumpResponseToXmlFile)
+                    if ( F1Api.DumpResponseToXmlFile )
                     {
-                        xdoc.Save(Path.Combine(ImportPackage.PackageDirectory, $"API_FINANCIAL_ACCOUNTS_ResponseLog.xml"));
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_ACCOUNTS_ResponseLog.xml" ) );
                     }
 
-                    var subAccounts = xdoc.Element("subFunds");
-                    foreach( var subAccountNode in subAccounts.Elements() )
+                    var subAccounts = xdoc.Element( "subFunds" );
+                    foreach ( var subAccountNode in subAccounts.Elements() )
                     {
                         var importSubAccount = F1FinancialAccount.Translate( subAccountNode, importAccount.IsTaxDeductible );
 
-                        if ( importSubAccount != null)
+                        if ( importSubAccount != null )
                         {
                             ImportPackage.WriteToPackage( importSubAccount );
                         }
 
-                        AccountIds.Add( importSubAccount.Id);
+                        AccountIds.Add( importSubAccount.Id );
                     }
 
                     loopCounter++;
@@ -449,7 +450,6 @@ namespace Slingshot.F1.Utilities
             {
                 ErrorMessage = ex.Message;
             }
-            
         }
 
         /// <summary>
@@ -469,7 +469,6 @@ namespace Slingshot.F1.Utilities
 
                 XDocument xBatchTypeDoc = XDocument.Parse( batchTypeResponse.Content );
                 var batchTypes = xBatchTypeDoc.Elements( "batchTypes" );
-
 
                 // process all batches for each batch type
                 foreach ( var batchType in batchTypes.Elements() )
@@ -532,13 +531,12 @@ namespace Slingshot.F1.Utilities
                             moreBatchesExist = false;
                         }
 
-                        // developer safety blanket (prevents eating all the api calls for the day) 
+                        // developer safety blanket (prevents eating all the api calls for the day)
                         if ( batchLoopCounter > loopThreshold )
                         {
                             break;
                         }
                         batchLoopCounter++;
-
                     }
                 }
             }
@@ -562,7 +560,7 @@ namespace Slingshot.F1.Utilities
                 familyMembers = GetFamilyMembers();
             }
 
-            // we'll make an api call for each month until the modifiedSince date 
+            // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
             var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
             try
@@ -572,7 +570,7 @@ namespace Slingshot.F1.Utilities
                     DateTime referenceDate = today.AddMonths( ( ( numberOfMonths - i ) - 1 ) * -1 );
                     DateTime startDate = new DateTime( referenceDate.Year, referenceDate.Month, 1 );
                     DateTime endDate = new DateTime( referenceDate.Year, referenceDate.Month, DateTime.DaysInMonth( referenceDate.Year, referenceDate.Month ) );
-                    endDate = endDate.AddDays( 1 ); 
+                    endDate = endDate.AddDays( 1 );
 
                     // if it's the first instance set start date to the modifiedSince date
                     if ( i == 0 )
@@ -583,7 +581,7 @@ namespace Slingshot.F1.Utilities
                     // if it's the last time through set the end dat to today's date
                     if ( i == numberOfMonths - 1 )
                     {
-                        endDate = today.AddDays( 1);
+                        endDate = today.AddDays( 1 );
                     }
 
                     int transactionCurrentPage = 1;
@@ -620,7 +618,7 @@ namespace Slingshot.F1.Utilities
                             {
                                 foreach ( var sourceTransaction in sourceTransactions.Elements() )
                                 {
-                                    // If a transaction is updated during an export, the transaction could be returned 
+                                    // If a transaction is updated during an export, the transaction could be returned
                                     //  twice by the API.  Also, since there is a slight overlap in dates, this ensures
                                     //  that a transaction only gets imported once.
                                     if ( !transactionIds.Contains( sourceTransaction.Attribute( "id" ).Value.AsInteger() ) )
@@ -653,7 +651,7 @@ namespace Slingshot.F1.Utilities
                                                 var path = Path.Combine( ImportPackage.ImageDirectory, "FinancialTransaction_" + transactionId + "_0.jpg" );
                                                 File.WriteAllBytes( path, image );
                                             }
-                                        }                                    
+                                        }
 
                                         transactionIds.Add( sourceTransaction.Attribute( "id" ).Value.AsInteger() );
                                     }
@@ -674,7 +672,7 @@ namespace Slingshot.F1.Utilities
                             moreTransactionsExist = false;
                         }
 
-                        // developer safety blanket (prevents eating all the api calls for the day) 
+                        // developer safety blanket (prevents eating all the api calls for the day)
                         if ( transactionLoopCounter > loopThreshold )
                         {
                             break;
@@ -697,7 +695,7 @@ namespace Slingshot.F1.Utilities
         /// <param name="perPage">The people per page.</param>
         public static void ExportGroups( List<int> selectedGroupTypes )
         {
-            // write out the group types 
+            // write out the group types
             WriteGroupTypes( selectedGroupTypes );
 
             // get groups
@@ -758,7 +756,7 @@ namespace Slingshot.F1.Utilities
                                 ImportPackage.WriteToPackage( importGroup );
                             }
 
-                            // developer safety blanket (prevents eating all the api calls for the day) 
+                            // developer safety blanket (prevents eating all the api calls for the day)
                             if ( loopCounter > loopThreshold )
                             {
                                 break;
@@ -772,7 +770,6 @@ namespace Slingshot.F1.Utilities
             {
                 ErrorMessage = ex.Message;
             }
-
         }
 
         /// <summary>
@@ -891,7 +888,7 @@ namespace Slingshot.F1.Utilities
                 _request = new RestRequest( API_ATTRIBUTE_GROUPS, Method.GET );
                 _request.AddHeader( "content-type", "application/xml" );
 
-                Console.WriteLine(API_ATTRIBUTE_GROUPS);
+                Console.WriteLine( API_ATTRIBUTE_GROUPS );
 
                 var response = _client.Execute( _request );
                 ApiCounter++;
@@ -913,13 +910,13 @@ namespace Slingshot.F1.Utilities
                             // comment attribute
                             var personAttributeComment = new PersonAttribute()
                             {
-                                Name = attributeName+ " Comment",
+                                Name = attributeName + " Comment",
                                 Key = attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment",
                                 Category = attributeGroup,
                                 FieldType = "Rock.Field.Types.TextFieldType"
                             };
 
-                            ImportPackage.WriteToPackage(personAttributeComment);
+                            ImportPackage.WriteToPackage( personAttributeComment );
 
                             // start date attribute
                             var personAttributeStartDate = new PersonAttribute()
@@ -929,7 +926,7 @@ namespace Slingshot.F1.Utilities
                                 Category = attributeGroup,
                                 FieldType = "Rock.Field.Types.DateFieldType"
                             };
-                            
+
                             ImportPackage.WriteToPackage( personAttributeStartDate );
 
                             // end date attribute
@@ -947,7 +944,6 @@ namespace Slingshot.F1.Utilities
                             attributes.Add( personAttributeComment );
                             attributes.Add( personAttributeStartDate );
                             attributes.Add( personAttributeEndDate );
-
                         }
                     }
                 }
@@ -994,7 +990,6 @@ namespace Slingshot.F1.Utilities
                     groupType.Name = sourceGroupType.Element( "name" )?.Value;
 
                     groupTypes.Add( groupType );
-
                 }
             }
             catch ( Exception ex )
@@ -1011,7 +1006,7 @@ namespace Slingshot.F1.Utilities
         /// <param name="selectedGroupTypes">The selected group types.</param>
         public static void WriteGroupTypes( List<int> selectedGroupTypes )
         {
-            // add custom defined group types 
+            // add custom defined group types
             var groupTypes = GetGroupTypes();
             foreach ( var groupType in groupTypes.Where( t => selectedGroupTypes.Contains( t.Id ) ) )
             {
@@ -1061,7 +1056,7 @@ namespace Slingshot.F1.Utilities
                             {
                                 if ( personNode.Attribute( "id" ) != null && personNode.Attribute( "id" ).Value.AsIntegerOrNull().HasValue )
                                 {
-                                    // If a person is updated during an export, the person could be returned 
+                                    // If a person is updated during an export, the person could be returned
                                     //  twice by the API.  A check is done to ensure the person doesn't get imported twice.
                                     if ( !personIds.Contains( personNode.Attribute( "id" ).Value.AsInteger() ) )
                                     {
@@ -1112,14 +1107,13 @@ namespace Slingshot.F1.Utilities
                         moreIndividualsExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    // developer safety blanket (prevents eating all the api calls for the day)
                     if ( loopCounter > loopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
-
             }
             catch ( Exception ex )
             {
@@ -1132,7 +1126,7 @@ namespace Slingshot.F1.Utilities
 
     /// <summary>
     /// The Family Member.
-    /// 
+    ///
     /// Used to determine head of household and household campus.
     /// </summary>
     public class FamilyMember
