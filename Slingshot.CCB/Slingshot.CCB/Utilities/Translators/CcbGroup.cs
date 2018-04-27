@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbGroup
     {
-        public static List<Group> Translate(XElement inputGroup )
+        public static List<Group> Translate( XElement inputGroup )
         {
             List<Group> groups = new List<Group>();
 
@@ -19,11 +19,16 @@ namespace Slingshot.CCB.Utilities.Translators
             int? directorId = null;
 
             var group = new Group();
-            
-            group.Id = inputGroup.Attribute("id").Value.AsInteger();
+
+            group.Id = inputGroup.Attribute( "id" ).Value.AsInteger();
             group.Name = inputGroup.Element( "name" )?.Value;
             group.GroupTypeId = inputGroup.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
             group.CampusId = inputGroup.Element( "campus" ).Attribute( "id" ).Value.AsIntegerOrNull();
+            group.Capacity = inputGroup.Element( "group_capacity" ).Value.AsIntegerOrNull();
+            group.IsActive = !inputGroup.Element( "inactive" ).Value.AsBoolean();
+            group.IsPublic = inputGroup.Element( "public_search_listed" ).Value.AsBoolean();
+            group.MeetingDay = inputGroup.Element( "meeting_day" ).Attribute( "id" ).Value.AsIntegerOrNull();
+            group.MeetingTime = inputGroup.Element( "meeting_time" ).Attribute( "id" ).Value.AsIntegerOrNull();
 
             if ( group.GroupTypeId != 0 )
             {
@@ -31,7 +36,7 @@ namespace Slingshot.CCB.Utilities.Translators
             }
 
             // add the department as a group with an id of 9999 + its id to create a unique group id for it
-            if (inputGroup.Element("department") != null && inputGroup.Element( "department" ).Attribute("id") != null && inputGroup.Element("department").Attribute("id").Value.IsNotNullOrWhitespace() )
+            if ( inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
             {
                 departmentId = ( "9999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
                 var departmentName = inputGroup.Element( "department" ).Value;
@@ -64,7 +69,7 @@ namespace Slingshot.CCB.Utilities.Translators
             }
 
             // add leader
-            if ( inputGroup.Element( "main_leader" ).Attribute("id") != null && inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger() != 0 )
+            if ( inputGroup.Element( "main_leader" ).Attribute( "id" ) != null && inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger() != 0 )
             {
                 group.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger(), Role = "Leader", GroupId = group.Id } );
             }
@@ -72,7 +77,7 @@ namespace Slingshot.CCB.Utilities.Translators
             // add assistant leaders
             if ( inputGroup.Element( "leaders" ) != null )
             {
-                foreach(var leaderNode in inputGroup.Element( "leaders" ).Elements("leader" ) )
+                foreach ( var leaderNode in inputGroup.Element( "leaders" ).Elements( "leader" ) )
                 {
                     group.GroupMembers.Add( new GroupMember { PersonId = leaderNode.Attribute( "id" ).Value.AsInteger(), Role = "Assistant Leader", GroupId = group.Id } );
                 }
@@ -92,7 +97,8 @@ namespace Slingshot.CCB.Utilities.Translators
             {
                 group.ParentGroupId = directorId.Value;
             }
-            else if ( departmentId.HasValue ){
+            else if ( departmentId.HasValue )
+            {
                 group.ParentGroupId = departmentId.Value;
             }
 
