@@ -110,7 +110,7 @@ namespace Slingshot.CCB.Utilities.Translators
                             case "home":
                                 {
                                     importAddress.AddressType = AddressType.Home;
-                                    //importAddress.IsMailing = addressType.Equals( "mailing" );
+                                    importAddress.IsMailing = addressType.Equals( "mailing" );
                                     break;
                                 }
                             case "work":
@@ -120,23 +120,15 @@ namespace Slingshot.CCB.Utilities.Translators
                                 }
                             case "other":
                                 {
-                                    //importAddress.AddressType = AddressType.Other;
+                                    importAddress.AddressType = AddressType.Other;
                                     break;
                                 }
                         }
 
-                        // only add the address if we have a valid address and not a duplicate
+                        // only add the address if we have a valid address
                         if ( importAddress.Street1.IsNotNullOrWhitespace() && importAddress.City.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace() )
                         {
-                            if ( !person.Addresses.Any( a =>
-                                a.AddressType == importAddress.AddressType &&
-                                a.Street1 == importAddress.Street1 &&
-                                a.Street2 == importAddress.Street2 &&
-                                a.City == importAddress.City &&
-                                a.PostalCode == importAddress.PostalCode ) )
-                            {
-                                person.Addresses.Add( importAddress );
-                            }
+                            person.Addresses.Add( importAddress );
                         }
                     }
                 }
