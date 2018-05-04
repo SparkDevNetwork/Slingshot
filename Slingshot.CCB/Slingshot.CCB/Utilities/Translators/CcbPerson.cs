@@ -168,8 +168,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 // connection status
                 var connectionStatus = inputPerson.Element( "membership_type" )?.Value;
-
-                if ( connectionStatus.IsNotNullOrWhitespace() )
+                if ( connectionStatus.IsNullOrWhiteSpace() )
                 {
                     // default to attendee - gotta provide something...
                     connectionStatus = "Attendee";
