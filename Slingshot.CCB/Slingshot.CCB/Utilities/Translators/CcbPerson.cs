@@ -63,9 +63,10 @@ namespace Slingshot.CCB.Utilities.Translators
                                 phoneType = "Mobile";
                                 break;
 
-                            case "contact":
-                                phoneType = "Contact";
-                                break;
+                            // no longer used in CCB as of 11/31/17
+                            //case "contact":
+                            //    phoneType = "Contact";
+                            //    break;
 
                             case "work":
                                 phoneType = "Work";
