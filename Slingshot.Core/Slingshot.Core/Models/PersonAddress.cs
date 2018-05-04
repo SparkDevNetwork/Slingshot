@@ -83,6 +83,8 @@ namespace Slingshot.Core.Model
         /// </value>
         public string Longitude { get; set; }
 
+        public bool IsMailing { get; set; }
+
         public AddressType AddressType { get; set; }
 
         public string GetFileName()
@@ -95,6 +97,7 @@ namespace Slingshot.Core.Model
     {
         Home,
         Work,
-        Previous
+        Previous,
+        Other
     }
 }
