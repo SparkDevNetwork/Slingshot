@@ -46,7 +46,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 {
                     departmentName = "No Department Name";
                 }
-                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, GroupTypeId = 9999 } );
+                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, IsActive = true, GroupTypeId = 9999 } );
             }
 
             // add the director as a group with an id of 9998 + its id to create a unique group id for it
@@ -56,6 +56,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 var directorGroup = new Group();
                 directorGroup.Id = directorId.Value;
+                directorGroup.IsActive = true;
                 directorGroup.Name = inputGroup.Element( "director" ).Element( "full_name" ).Value;
                 directorGroup.GroupTypeId = 9998;
 
