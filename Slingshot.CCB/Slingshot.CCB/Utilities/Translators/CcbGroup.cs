@@ -22,6 +22,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
             group.Id = inputGroup.Attribute( "id" ).Value.AsInteger();
             group.Name = inputGroup.Element( "name" )?.Value;
+            group.Description = inputGroup.Element( "description" )?.Value;
             group.GroupTypeId = inputGroup.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
             group.CampusId = inputGroup.Element( "campus" ).Attribute( "id" ).Value.AsIntegerOrNull();
             group.Capacity = inputGroup.Element( "group_capacity" ).Value.AsIntegerOrNull();
@@ -92,6 +93,52 @@ namespace Slingshot.CCB.Utilities.Translators
                 foreach ( var participantNode in inputGroup.Element( "participants" ).Elements( "participant" ) )
                 {
                     group.GroupMembers.Add( new GroupMember { PersonId = participantNode.Attribute( "id" ).Value.AsInteger(), Role = "Member", GroupId = group.Id } );
+                }
+            }
+
+            var addressList = inputGroup.Element( "addresses" ).Elements( "address" );
+            foreach ( var address in addressList )
+            {
+                if ( address.Element( "street_address" ) != null && address.Element( "street_address" ).Value.IsNotNullOrWhitespace() )
+                {
+                    var importAddress = new GroupAddress();
+                    importAddress.GroupId = group.Id;
+                    importAddress.Street1 = address.Element( "street_address" ).Value;
+                    importAddress.City = address.Element( "city" ).Value;
+                    importAddress.State = address.Element( "state" ).Value;
+                    importAddress.PostalCode = address.Element( "zip" ).Value;
+                    importAddress.Latitude = address.Element( "latitude" )?.Value;
+                    importAddress.Longitude = address.Element( "longitude" )?.Value;
+                    importAddress.Country = address.Element( "country" )?.Value;
+
+                    var addressType = address.Attribute( "type" ).Value;
+
+                    switch ( addressType )
+                    {
+                        case "mailing":
+                        case "home":
+                            {
+                                importAddress.AddressType = AddressType.Home;
+                                importAddress.IsMailing = addressType.Equals( "mailing" );
+                                break;
+                            }
+                        case "work":
+                            {
+                                importAddress.AddressType = AddressType.Work;
+                                break;
+                            }
+                        case "other":
+                            {
+                                importAddress.AddressType = AddressType.Other;
+                                break;
+                            }
+                    }
+
+                    // only add the address if we have a valid address
+                    if ( importAddress.Street1.IsNotNullOrWhitespace() && importAddress.City.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace() )
+                    {
+                        group.Addresses.Add( importAddress );
+                    }
                 }
             }
 

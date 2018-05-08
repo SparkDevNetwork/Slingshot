@@ -51,6 +51,7 @@
     <Compile Include="Models\Attendance.cs" />
     <Compile Include="Models\GroupAttributeValue.cs" />
     <Compile Include="Models\GroupAttribute.cs" />
+    <Compile Include="Models\GroupAddress.cs" />
     <Compile Include="Models\PersonNote.cs" />
     <Compile Include="Models\FamilyNote.cs" />
     <Compile Include="Models\FamilyAttribute.cs" />

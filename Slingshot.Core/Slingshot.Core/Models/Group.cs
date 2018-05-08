@@ -28,6 +28,14 @@ namespace Slingshot.Core.Model
         public string Name { get; set; }
 
         /// <summary>
+        /// Gets or sets the description.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public string Description { get; set; }
+
+        /// <summary>
         /// Gets or sets the order.
         /// </summary>
         /// <value>
@@ -115,6 +123,14 @@ namespace Slingshot.Core.Model
         /// The attributes.
         /// </value>
         public List<GroupAttributeValue> Attributes { get; set; } = new List<GroupAttributeValue>();
+
+        /// <summary>
+        /// Gets or sets the addresses.
+        /// </summary>
+        /// <value>
+        /// The addresses.
+        /// </value>
+        public List<GroupAddress> Addresses { get; set; } = new List<GroupAddress>();
 
         /// <summary>
         /// Gets the name of the file.
