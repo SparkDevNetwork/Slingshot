@@ -199,6 +199,9 @@ namespace Slingshot.CCB.Utilities
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
 
+            // write attributes
+            WriteGroupAttributes();
+
             // write departments
             ExportDeparments();
 
@@ -623,6 +626,21 @@ namespace Slingshot.CCB.Utilities
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes the group attributes.
+        /// </summary>
+        public static void WriteGroupAttributes()
+        {
+            // export person attribute list
+            ImportPackage.WriteToPackage( new GroupAttribute()
+            {
+                Name = "Has Childcare",
+                Key = "HasChildcare",
+                Category = "Small Group",
+                FieldType = "Rock.Field.Types.BooleanFieldType"
+            } );
         }
 
         /// <summary>

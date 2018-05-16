@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonAddress
+    /// Model for GroupAddress
     /// </summary>
-    public class PersonAddress : IImportModel
+    public class GroupAddress : IImportModel
     {
         /// <summary>
         /// Gets or sets the person identifier.
@@ -17,7 +17,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The person identifier.
         /// </value>
-        public int PersonId { get; set; }
+        public int GroupId { get; set; }
 
         /// <summary>
         /// Gets or sets the street1.
@@ -89,15 +89,7 @@ namespace Slingshot.Core.Model
 
         public string GetFileName()
         {
-            return "person-address.csv";
+            return "group-address.csv";
         }
-    }
-
-    public enum AddressType
-    {
-        Home,
-        Work,
-        Previous,
-        Other
     }
 }
