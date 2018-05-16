@@ -222,7 +222,7 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="peoplePerPage">The people per page.</param>
-        public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 5000 )
+        public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
         {
             HashSet<int> personIds = new HashSet<int>();
 
