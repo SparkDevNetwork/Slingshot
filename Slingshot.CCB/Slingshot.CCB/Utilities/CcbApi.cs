@@ -318,6 +318,7 @@ namespace Slingshot.CCB.Utilities
                     group.Id = ( "9999" + sourceDepartment.Element( "id" ).Value ).AsInteger();
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
+                    group.IsActive = true;
                     group.GroupTypeId = 9999;
 
                     ImportPackage.WriteToPackage( group );
