@@ -277,8 +277,10 @@ namespace Slingshot.F1.Utilities.Translators
                 {
                     if ( personAttributes.Any() )
                     {
+                        string attributeId = attribute.Element( "attributeGroup" ).Element( "attribute" ).Attribute( "id" ).Value;
+
                         // Add the attribute value for start date (if not empty) 
-                        var startDateAttributeKey = attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
+                        var startDateAttributeKey = attributeId + "_" + attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
                         DateTime? startDate = attribute.Element("startDate")?.Value.AsDateTime();
 
                         if (personAttributes.Where(p => startDateAttributeKey.Equals(p.Key)).Any() && startDate != null)
@@ -297,7 +299,7 @@ namespace Slingshot.F1.Utilities.Translators
                         }
 
                         // Add the attribute value for end date (if not empty) 
-                        var endDateAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
+                        var endDateAttributeKey = attributeId + "_" + attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
                         DateTime? endDate = attribute.Element( "endDate" )?.Value.AsDateTime();
 
                         if ( personAttributes.Where( p => endDateAttributeKey.Equals( p.Key ) ).Any() && endDate != null )
@@ -316,7 +318,7 @@ namespace Slingshot.F1.Utilities.Translators
                         }
 
                         // Add the attribute value for comment (if not empty) 
-                        var commentAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
+                        var commentAttributeKey = attributeId + "_" + attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
                         string comment = attribute.Element( "comment" ).Value;
 
                         if ( personAttributes.Where( p => commentAttributeKey.Equals( p.Key ) ).Any() )
