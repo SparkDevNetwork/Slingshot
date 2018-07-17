@@ -264,7 +264,7 @@ namespace Slingshot.F1.Utilities.Translators
 
                 if ( headOfHousehold != null && headOfHousehold.HouseholdCampusId > 0 )
                 {
-                    campus.CampusName = headOfHousehold.HouseholdCampusName;
+                    campus.CampusName = headOfHousehold.HouseholdCampusName.Trim();
                     campus.CampusId = headOfHousehold.HouseholdCampusId.Value;
                 }                        
 
