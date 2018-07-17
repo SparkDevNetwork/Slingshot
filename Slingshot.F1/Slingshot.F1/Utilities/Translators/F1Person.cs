@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 using System.Xml.Linq;
 using Slingshot.Core;
 using Slingshot.Core.Model;
@@ -12,7 +13,7 @@ namespace Slingshot.F1.Utilities.Translators
 {
     public static class F1Person
     {
-        public static Person Translate( XElement inputPerson, List<FamilyMember> familyMembers, List<PersonAttribute> personAttributes )
+        public static Person Translate( XElement inputPerson, List<FamilyMember> familyMembers, List<PersonAttribute> personAttributes, TextInfo textInfo )
         {
             var person = new Person();
             var notes = new List<string>();
@@ -28,6 +29,11 @@ namespace Slingshot.F1.Utilities.Translators
                 person.LastName = inputPerson.Element( "lastName" )?.Value;
 
                 person.Salutation = inputPerson.Element( "prefix" )?.Value;
+
+                if ( !String.IsNullOrWhiteSpace( person.Salutation ) )
+                {
+                    person.Salutation = textInfo.ToTitleCase( person.Salutation.ToLower() );
+                }
 
                 var suffix = inputPerson.Element( "suffix" )?.Value;
                 if ( suffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -224,6 +225,8 @@ namespace Slingshot.F1.Utilities
         /// <param name="peoplePerPage">The people per page.</param>
         public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
         {
+            TextInfo textInfo = new CultureInfo( "en-US", false ).TextInfo;
+
             HashSet<int> personIds = new HashSet<int>();
 
             // if empty, build head of household lookups
@@ -278,7 +281,7 @@ namespace Slingshot.F1.Utilities
                                     //  twice by the API.
                                     if ( !personIds.Contains( personNode.Attribute( "id" ).Value.AsInteger() ) )
                                     {
-                                        var importPerson = F1Person.Translate( personNode, familyMembers, personAttributes );
+                                        var importPerson = F1Person.Translate( personNode, familyMembers, personAttributes, textInfo );
 
                                         if ( importPerson != null )
                                         {
