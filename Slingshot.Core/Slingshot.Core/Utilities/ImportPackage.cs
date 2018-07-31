@@ -134,6 +134,10 @@ namespace Slingshot.Core.Utilities
                         // group attributes
                         var groupAttributeValue = new GroupAttributeValue();
                         textWriters.Add( groupAttributeValue.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAttributeValue.GetFileName()}" ) );
+
+                        // group addresses
+                        var groupAddress = new GroupAddress();
+                        textWriters.Add( groupAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAddress.GetFileName()}" ) );
                     }
                 }
 
@@ -199,6 +203,12 @@ namespace Slingshot.Core.Utilities
                         var newGroupAttributeValueCsvWriter = new CsvWriter( textWriters[groupAttributeValue.GetType().Name] );
                         csvWriters.Add( groupAttributeValue.GetType().Name, newGroupAttributeValueCsvWriter );
                         newGroupAttributeValueCsvWriter.WriteHeader<GroupAttributeValue>();
+
+                        // group addresses
+                        var groupAddress = new GroupAddress();
+                        var newGroupAddressCsvWriter = new CsvWriter( textWriters[groupAddress.GetType().Name] );
+                        csvWriters.Add( groupAddress.GetType().Name, newGroupAddressCsvWriter );
+                        newGroupAddressCsvWriter.WriteHeader<GroupAddress>();
                     }
                 }
 
@@ -217,7 +227,7 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var attribute in ( (Person)importModel ).Attributes )
                         {
-                            csvPersonAttributeValueWriter.WriteRecord<PersonAttributeValue>( attribute );
+                            csvPersonAttributeValueWriter.WriteRecord( attribute );
                         }
                     }
 
@@ -229,7 +239,7 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var phone in ( (Person)importModel ).PhoneNumbers )
                         {
-                            csvPersonPhoneWriter.WriteRecord<PersonPhone>( phone );
+                            csvPersonPhoneWriter.WriteRecord( phone );
                         }
                     }
 
@@ -241,7 +251,7 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var address in ( (Person)importModel ).Addresses )
                         {
-                            csvPersonAddressWriter.WriteRecord<PersonAddress>( address );
+                            csvPersonAddressWriter.WriteRecord( address );
                         }
                     }
                 }
@@ -260,11 +270,11 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var transaction in ( (FinancialBatch)importModel ).FinancialTransactions )
                         {
-                            csvFinancialTransactionWriter.WriteRecord<FinancialTransaction>( transaction );
+                            csvFinancialTransactionWriter.WriteRecord( transaction );
 
                             foreach ( var transactionDetail in transaction.FinancialTransactionDetails )
                             {
-                                csvFinancialTransactionDetailWriter.WriteRecord<FinancialTransactionDetail>( transactionDetail );
+                                csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                             }
                         }
                     }
@@ -281,7 +291,7 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var groupMemberItem in ( (Group)importModel ).GroupMembers )
                         {
-                            csvGroupMemberWriter.WriteRecord<GroupMember>( groupMemberItem );
+                            csvGroupMemberWriter.WriteRecord( groupMemberItem );
                         }
                     }
 
@@ -293,7 +303,19 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var attribute in ( (Group)importModel ).Attributes )
                         {
-                            csvPersonAttributeValueWriter.WriteRecord<GroupAttributeValue>( attribute );
+                            csvPersonAttributeValueWriter.WriteRecord( attribute );
+                        }
+                    }
+
+                    // group addresses
+                    var groupAddress = new GroupAddress();
+                    var csvGroupAddressWriter = csvWriters[groupAddress.GetType().Name];
+
+                    if ( csvGroupAddressWriter != null )
+                    {
+                        foreach ( var address in ( (Group)importModel ).Addresses )
+                        {
+                            csvGroupAddressWriter.WriteRecord( address );
                         }
                     }
                 }

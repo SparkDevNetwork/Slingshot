@@ -33,10 +33,12 @@ namespace Slingshot.CCB.Utilities.Translators
 
             ProcessBooleanAttribute( group, inputGroup.Element( "childcare_provided" ), "HasChildcare" );
 
-            if ( group.GroupTypeId != 0 )
+            if ( group.GroupTypeId == 0 )
             {
-                groups.Add( group );
+                group.GroupTypeId = CcbApi.GROUPTYPE_UNKNOWN_ID;
             }
+
+            groups.Add( group );
 
             // add the department as a group with an id of 9999 + its id to create a unique group id for it
             if ( inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
