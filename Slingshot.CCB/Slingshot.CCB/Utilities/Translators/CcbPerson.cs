@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbPerson
     {
-        public static Person Translate(XElement inputPerson)
+        public static Person Translate( XElement inputPerson )
         {
             var person = new Person();
             var notes = new List<string>();
@@ -40,13 +40,14 @@ namespace Slingshot.CCB.Utilities.Translators
                 // email
                 person.Email = inputPerson.Element( "email" )?.Value;
 
-                if ( inputPerson.Element( "receive_email_from_church" )?.Value == "false" ) {
+                if ( inputPerson.Element( "receive_email_from_church" )?.Value == "false" )
+                {
                     person.EmailPreference = EmailPreference.NoMassEmails; // no mass emails
                 }
 
                 // phones
                 var phoneList = inputPerson.Element( "phones" ).Elements( "phone" );
-                foreach (var phone in phoneList )
+                foreach ( var phone in phoneList )
                 {
                     if ( phone.Value.IsNotNullOrWhitespace() )
                     {
@@ -57,15 +58,20 @@ namespace Slingshot.CCB.Utilities.Translators
                             case "home":
                                 phoneType = "Home";
                                 break;
+
                             case "mobile":
                                 phoneType = "Mobile";
                                 break;
-                            case "contact":
-                                phoneType = "Contact";
-                                break;
+
+                            // no longer used in CCB as of 11/31/17
+                            //case "contact":
+                            //    phoneType = "Contact";
+                            //    break;
+
                             case "work":
                                 phoneType = "Work";
                                 break;
+
                             case "emergency":
                                 phoneType = "Emergency";
                                 break;
@@ -82,7 +88,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 // addresses
                 var addressList = inputPerson.Element( "addresses" ).Elements( "address" );
-                foreach( var address in addressList )
+                foreach ( var address in addressList )
                 {
                     if ( address.Element( "street_address" ) != null && address.Element( "street_address" ).Value.IsNotNullOrWhitespace() )
                     {
@@ -104,11 +110,17 @@ namespace Slingshot.CCB.Utilities.Translators
                             case "home":
                                 {
                                     importAddress.AddressType = AddressType.Home;
+                                    importAddress.IsMailing = addressType.Equals( "mailing" );
                                     break;
                                 }
                             case "work":
                                 {
                                     importAddress.AddressType = AddressType.Work;
+                                    break;
+                                }
+                            case "other":
+                                {
+                                    importAddress.AddressType = AddressType.Other;
                                     break;
                                 }
                         }
@@ -124,10 +136,11 @@ namespace Slingshot.CCB.Utilities.Translators
                 // gender
                 var gender = inputPerson.Element( "gender" )?.Value;
 
-                if (gender == "M" )
+                if ( gender == "M" )
                 {
                     person.Gender = Gender.Male;
-                } else if (gender == "F" )
+                }
+                else if ( gender == "F" )
                 {
                     person.Gender = Gender.Female;
                 }
@@ -139,22 +152,23 @@ namespace Slingshot.CCB.Utilities.Translators
                     case "Married":
                         person.MaritalStatus = MaritalStatus.Married;
                         break;
+
                     case "Single":
                         person.MaritalStatus = MaritalStatus.Single;
                         break;
+
                     default:
                         person.MaritalStatus = MaritalStatus.Unknown;
                         if ( maritalStatus.IsNotNullOrWhitespace() )
                         {
-                            notes.Add( "maritial_status:" + maritalStatus );
+                            notes.Add( "marital_status:" + maritalStatus );
                         }
                         break;
                 }
 
-                // connection status 
+                // connection status
                 var connectionStatus = inputPerson.Element( "membership_type" )?.Value;
-
-                if ( connectionStatus.IsNotNullOrWhitespace() )
+                if ( connectionStatus.IsNullOrWhiteSpace() )
                 {
                     // default to attendee - gotta provide something...
                     connectionStatus = "Attendee";
@@ -163,7 +177,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 // record status
                 person.RecordStatus = RecordStatus.Active;
-                if ( inputPerson.Element( "active" )?.Value == "false")
+                if ( inputPerson.Element( "active" )?.Value == "false" )
                 {
                     person.RecordStatus = RecordStatus.Inactive;
                 }
@@ -179,7 +193,6 @@ namespace Slingshot.CCB.Utilities.Translators
                 person.AnniversaryDate = inputPerson.Element( "anniversary" )?.Value.AsDateTime();
                 person.CreatedDateTime = inputPerson.Element( "created" )?.Value.AsDateTime();
                 person.ModifiedDateTime = inputPerson.Element( "modified" )?.Value.AsDateTime();
-
 
                 // family
                 person.FamilyId = inputPerson.Element( "family" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
@@ -202,7 +215,6 @@ namespace Slingshot.CCB.Utilities.Translators
                 {
                     person.FamilyRole = FamilyRole.Child;
                 }
-                                
 
                 // photo
                 if ( inputPerson.Element( "image" ) != null && !inputPerson.Element( "image" ).Value.Contains( "profile-default.gif" ) )

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 using System.Xml.Linq;
 using Slingshot.Core;
 using Slingshot.Core.Model;
@@ -12,7 +13,7 @@ namespace Slingshot.F1.Utilities.Translators
 {
     public static class F1Person
     {
-        public static Person Translate( XElement inputPerson, List<FamilyMember> familyMembers, List<PersonAttribute> personAttributes )
+        public static Person Translate( XElement inputPerson, List<FamilyMember> familyMembers, List<PersonAttribute> personAttributes, TextInfo textInfo )
         {
             var person = new Person();
             var notes = new List<string>();
@@ -28,6 +29,11 @@ namespace Slingshot.F1.Utilities.Translators
                 person.LastName = inputPerson.Element( "lastName" )?.Value;
 
                 person.Salutation = inputPerson.Element( "prefix" )?.Value;
+
+                if ( !String.IsNullOrWhiteSpace( person.Salutation ) )
+                {
+                    person.Salutation = textInfo.ToTitleCase( person.Salutation.ToLower() );
+                }
 
                 var suffix = inputPerson.Element( "suffix" )?.Value;
                 if ( suffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )
@@ -258,7 +264,7 @@ namespace Slingshot.F1.Utilities.Translators
 
                 if ( headOfHousehold != null && headOfHousehold.HouseholdCampusId > 0 )
                 {
-                    campus.CampusName = headOfHousehold.HouseholdCampusName;
+                    campus.CampusName = headOfHousehold.HouseholdCampusName.Trim();
                     campus.CampusId = headOfHousehold.HouseholdCampusId.Value;
                 }                        
 
@@ -277,8 +283,10 @@ namespace Slingshot.F1.Utilities.Translators
                 {
                     if ( personAttributes.Any() )
                     {
+                        string attributeId = attribute.Element( "attributeGroup" ).Element( "attribute" ).Attribute( "id" ).Value;
+
                         // Add the attribute value for start date (if not empty) 
-                        var startDateAttributeKey = attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
+                        var startDateAttributeKey = attributeId + "_" + attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
                         DateTime? startDate = attribute.Element("startDate")?.Value.AsDateTime();
 
                         if (personAttributes.Where(p => startDateAttributeKey.Equals(p.Key)).Any() && startDate != null)
@@ -297,7 +305,7 @@ namespace Slingshot.F1.Utilities.Translators
                         }
 
                         // Add the attribute value for end date (if not empty) 
-                        var endDateAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
+                        var endDateAttributeKey = attributeId + "_" + attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
                         DateTime? endDate = attribute.Element( "endDate" )?.Value.AsDateTime();
 
                         if ( personAttributes.Where( p => endDateAttributeKey.Equals( p.Key ) ).Any() && endDate != null )
@@ -316,7 +324,7 @@ namespace Slingshot.F1.Utilities.Translators
                         }
 
                         // Add the attribute value for comment (if not empty) 
-                        var commentAttributeKey = attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
+                        var commentAttributeKey = attributeId + "_" + attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
                         string comment = attribute.Element( "comment" ).Value;
 
                         if ( personAttributes.Where( p => commentAttributeKey.Equals( p.Key ) ).Any() )

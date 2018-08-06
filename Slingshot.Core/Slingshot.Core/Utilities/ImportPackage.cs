@@ -17,12 +17,12 @@ namespace Slingshot.Core.Utilities
     /// </summary>
     public static class ImportPackage
     {
-        static string _appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        static string _packageDirectory = _appDirectory + "Package";
-        static string _imageDirectory = _appDirectory + "Images";
+        private static string _appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        private static string _packageDirectory = _appDirectory + "Package";
+        private static string _imageDirectory = _appDirectory + "Images";
 
-        static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
-        static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
+        private static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
+        private static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
 
         public static string PackageDirectory
         {
@@ -79,7 +79,7 @@ namespace Slingshot.Core.Utilities
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="model">The model.</param>
-        public static void WriteToPackage<T>(T model )
+        public static void WriteToPackage<T>( T model )
         {
             var typeName = model.GetType().Name;
 
@@ -122,7 +122,6 @@ namespace Slingshot.Core.Utilities
                         // financial transation details
                         var financialTransactionDetail = new FinancialTransactionDetail();
                         textWriters.Add( financialTransactionDetail.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
-
                     }
 
                     // if model is for group create related writers
@@ -130,7 +129,15 @@ namespace Slingshot.Core.Utilities
                     {
                         // group member
                         var groupMember = new GroupMember();
-                        textWriters.Add( groupMember.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{groupMember.GetFileName()}" ) );
+                        textWriters.Add( groupMember.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupMember.GetFileName()}" ) );
+
+                        // group attributes
+                        var groupAttributeValue = new GroupAttributeValue();
+                        textWriters.Add( groupAttributeValue.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAttributeValue.GetFileName()}" ) );
+
+                        // group addresses
+                        var groupAddress = new GroupAddress();
+                        textWriters.Add( groupAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAddress.GetFileName()}" ) );
                     }
                 }
 
@@ -149,7 +156,7 @@ namespace Slingshot.Core.Utilities
                     {
                         // person attributes
                         var personAttributeValue = new PersonAttributeValue();
-                        var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[ personAttributeValue.GetType().Name ] );
+                        var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[personAttributeValue.GetType().Name] );
                         csvWriters.Add( personAttributeValue.GetType().Name, newPersonAttributeValueCsvWriter );
                         newPersonAttributeValueCsvWriter.WriteHeader<PersonAttributeValue>();
 
@@ -190,6 +197,18 @@ namespace Slingshot.Core.Utilities
                         var newGroupMemberCsvWriter = new CsvWriter( textWriters[groupMember.GetType().Name] );
                         csvWriters.Add( groupMember.GetType().Name, newGroupMemberCsvWriter );
                         newGroupMemberCsvWriter.WriteHeader<GroupMember>();
+
+                        // group attributes
+                        var groupAttributeValue = new GroupAttributeValue();
+                        var newGroupAttributeValueCsvWriter = new CsvWriter( textWriters[groupAttributeValue.GetType().Name] );
+                        csvWriters.Add( groupAttributeValue.GetType().Name, newGroupAttributeValueCsvWriter );
+                        newGroupAttributeValueCsvWriter.WriteHeader<GroupAttributeValue>();
+
+                        // group addresses
+                        var groupAddress = new GroupAddress();
+                        var newGroupAddressCsvWriter = new CsvWriter( textWriters[groupAddress.GetType().Name] );
+                        csvWriters.Add( groupAddress.GetType().Name, newGroupAddressCsvWriter );
+                        newGroupAddressCsvWriter.WriteHeader<GroupAddress>();
                     }
                 }
 
@@ -206,9 +225,9 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAttributeValueWriter != null )
                     {
-                        foreach ( var attribute in ((Person)importModel).Attributes )
+                        foreach ( var attribute in ( (Person)importModel ).Attributes )
                         {
-                            csvPersonAttributeValueWriter.WriteRecord<PersonAttributeValue>( attribute );
+                            csvPersonAttributeValueWriter.WriteRecord( attribute );
                         }
                     }
 
@@ -218,9 +237,9 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonPhoneWriter != null )
                     {
-                        foreach( var phone in ((Person)importModel).PhoneNumbers )
+                        foreach ( var phone in ( (Person)importModel ).PhoneNumbers )
                         {
-                            csvPersonPhoneWriter.WriteRecord<PersonPhone>( phone );
+                            csvPersonPhoneWriter.WriteRecord( phone );
                         }
                     }
 
@@ -230,9 +249,9 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAddressWriter != null )
                     {
-                        foreach ( var address in ((Person)importModel).Addresses )
+                        foreach ( var address in ( (Person)importModel ).Addresses )
                         {
-                            csvPersonAddressWriter.WriteRecord<PersonAddress>( address );
+                            csvPersonAddressWriter.WriteRecord( address );
                         }
                     }
                 }
@@ -249,13 +268,13 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvFinancialTransactionWriter != null && csvFinancialTransactionDetailWriter != null )
                     {
-                        foreach ( var transaction in ((FinancialBatch)importModel).FinancialTransactions )
+                        foreach ( var transaction in ( (FinancialBatch)importModel ).FinancialTransactions )
                         {
-                            csvFinancialTransactionWriter.WriteRecord<FinancialTransaction>( transaction );
+                            csvFinancialTransactionWriter.WriteRecord( transaction );
 
-                            foreach( var transactionDetail in transaction.FinancialTransactionDetails )
+                            foreach ( var transactionDetail in transaction.FinancialTransactionDetails )
                             {
-                                csvFinancialTransactionDetailWriter.WriteRecord<FinancialTransactionDetail>( transactionDetail );
+                                csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                             }
                         }
                     }
@@ -270,9 +289,33 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupMemberWriter != null )
                     {
-                        foreach ( var groupMemberItem in ( ( Group ) importModel ).GroupMembers )
+                        foreach ( var groupMemberItem in ( (Group)importModel ).GroupMembers )
                         {
-                            csvGroupMemberWriter.WriteRecord<GroupMember>( groupMemberItem );
+                            csvGroupMemberWriter.WriteRecord( groupMemberItem );
+                        }
+                    }
+
+                    // group attributes
+                    var groupAttributeValue = new GroupAttributeValue();
+                    var csvPersonAttributeValueWriter = csvWriters[groupAttributeValue.GetType().Name];
+
+                    if ( csvPersonAttributeValueWriter != null )
+                    {
+                        foreach ( var attribute in ( (Group)importModel ).Attributes )
+                        {
+                            csvPersonAttributeValueWriter.WriteRecord( attribute );
+                        }
+                    }
+
+                    // group addresses
+                    var groupAddress = new GroupAddress();
+                    var csvGroupAddressWriter = csvWriters[groupAddress.GetType().Name];
+
+                    if ( csvGroupAddressWriter != null )
+                    {
+                        foreach ( var address in ( (Group)importModel ).Addresses )
+                        {
+                            csvGroupAddressWriter.WriteRecord( address );
                         }
                     }
                 }
@@ -282,13 +325,13 @@ namespace Slingshot.Core.Utilities
         public static void FinalizePackage( string exportFilename )
         {
             // close all csvWriters
-            foreach(var csvWriter in csvWriters )
+            foreach ( var csvWriter in csvWriters )
             {
                 csvWriter.Value.Dispose();
             }
 
             // close all textwriters
-            foreach(var textWriter in textWriters )
+            foreach ( var textWriter in textWriters )
             {
                 textWriter.Value.Close();
                 textWriter.Value.Dispose();
@@ -298,16 +341,15 @@ namespace Slingshot.Core.Utilities
             textWriters.Clear();
 
             // zip CSV files
-            if ( exportFilename.EndsWith(".slingshot", StringComparison.OrdinalIgnoreCase ) )
+            if ( exportFilename.EndsWith( ".slingshot", StringComparison.OrdinalIgnoreCase ) )
             {
                 // remove the .slingshot extenstion if it was specified, so we can get just the filename without it
                 exportFilename = exportFilename.Substring( 0, exportFilename.Length - ".slingshot".Length );
             }
 
             var csvZipFile = _appDirectory + exportFilename + ".slingshot";
-            
 
-            if (File.Exists( csvZipFile ) )
+            if ( File.Exists( csvZipFile ) )
             {
                 File.Delete( csvZipFile );
             }
@@ -316,7 +358,7 @@ namespace Slingshot.Core.Utilities
             {
                 var csvFiles = Directory.GetFiles( _packageDirectory );
 
-                foreach (var file in csvFiles )
+                foreach ( var file in csvFiles )
                 {
                     csvZip.AddFile( file, "" );
                 }
@@ -355,7 +397,6 @@ namespace Slingshot.Core.Utilities
 
                 zip.Save( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot" );
                 zip.Dispose();
-                
             }
 
             // delete package folder

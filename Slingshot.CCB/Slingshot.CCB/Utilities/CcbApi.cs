@@ -105,6 +105,11 @@ namespace Slingshot.CCB.Utilities
         /// </value>
         public static bool IsConnected { get; private set; } = false;
 
+        /// <summary>
+        /// The identifier to use for unknown grouptypes
+        /// </summary>
+        public const int GROUPTYPE_UNKNOWN_ID = 10000;
+
         #region API Call Paths
 
         private const string API_STATUS = "api.php?srv=api_status";
@@ -173,12 +178,13 @@ namespace Slingshot.CCB.Utilities
                 foreach ( var sourceGroupType in sourceGroupTypes )
                 {
                     var groupType = new GroupType();
-
                     groupType.Id = sourceGroupType.Element( "id" ).Value.AsInteger();
                     groupType.Name = sourceGroupType.Element( "name" )?.Value;
-
                     groupTypes.Add( groupType );
                 }
+
+                // add an unknown type to cover missing groups
+                groupTypes.Add( new GroupType { Id = GROUPTYPE_UNKNOWN_ID, Name = "Unknown" } );
             }
             catch ( Exception ex )
             {
@@ -199,8 +205,11 @@ namespace Slingshot.CCB.Utilities
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
 
+            // write attributes
+            WriteGroupAttributes();
+
             // write departments
-            ExportDeparments();
+            ExportDepartments();
 
             // get groups
             try
@@ -236,6 +245,11 @@ namespace Slingshot.CCB.Utilities
                             {
                                 // write out the group if its type was selected for export
                                 var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
+                                if ( groupTypeId == 0 )
+                                {
+                                    groupTypeId = GROUPTYPE_UNKNOWN_ID;
+                                }
+
                                 if ( selectedGroupTypes.Contains( groupTypeId ) )
                                 {
                                     var importGroups = CcbGroup.Translate( groupNode );
@@ -282,7 +296,7 @@ namespace Slingshot.CCB.Utilities
         /// <summary>
         /// Exports the deparments.
         /// </summary>
-        private static void ExportDeparments()
+        private static void ExportDepartments()
         {
             try
             {
@@ -304,6 +318,7 @@ namespace Slingshot.CCB.Utilities
                     group.Id = ( "9999" + sourceDepartment.Element( "id" ).Value ).AsInteger();
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
+                    group.IsActive = true;
                     group.GroupTypeId = 9999;
 
                     ImportPackage.WriteToPackage( group );
@@ -623,6 +638,21 @@ namespace Slingshot.CCB.Utilities
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes the group attributes.
+        /// </summary>
+        public static void WriteGroupAttributes()
+        {
+            // export person attribute list
+            ImportPackage.WriteToPackage( new GroupAttribute()
+            {
+                Name = "Has Childcare",
+                Key = "HasChildcare",
+                Category = "Small Group",
+                FieldType = "Rock.Field.Types.BooleanFieldType"
+            } );
         }
 
         /// <summary>

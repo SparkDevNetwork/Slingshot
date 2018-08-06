@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbGroup
     {
-        public static List<Group> Translate(XElement inputGroup )
+        public static List<Group> Translate( XElement inputGroup )
         {
             List<Group> groups = new List<Group>();
 
@@ -19,19 +19,29 @@ namespace Slingshot.CCB.Utilities.Translators
             int? directorId = null;
 
             var group = new Group();
-            
-            group.Id = inputGroup.Attribute("id").Value.AsInteger();
+
+            group.Id = inputGroup.Attribute( "id" ).Value.AsInteger();
             group.Name = inputGroup.Element( "name" )?.Value;
+            group.Description = inputGroup.Element( "description" )?.Value;
             group.GroupTypeId = inputGroup.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
             group.CampusId = inputGroup.Element( "campus" ).Attribute( "id" ).Value.AsIntegerOrNull();
+            group.Capacity = inputGroup.Element( "group_capacity" ).Value.AsIntegerOrNull();
+            group.IsActive = !inputGroup.Element( "inactive" ).Value.AsBoolean();
+            group.IsPublic = inputGroup.Element( "public_search_listed" ).Value.AsBoolean();
+            group.MeetingDay = inputGroup.Element( "meeting_day" ).Value;
+            group.MeetingTime = inputGroup.Element( "meeting_time" ).Value;
 
-            if ( group.GroupTypeId != 0 )
+            ProcessBooleanAttribute( group, inputGroup.Element( "childcare_provided" ), "HasChildcare" );
+
+            if ( group.GroupTypeId == 0 )
             {
-                groups.Add( group );
+                group.GroupTypeId = CcbApi.GROUPTYPE_UNKNOWN_ID;
             }
 
+            groups.Add( group );
+
             // add the department as a group with an id of 9999 + its id to create a unique group id for it
-            if (inputGroup.Element("department") != null && inputGroup.Element( "department" ).Attribute("id") != null && inputGroup.Element("department").Attribute("id").Value.IsNotNullOrWhitespace() )
+            if ( inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
             {
                 departmentId = ( "9999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
                 var departmentName = inputGroup.Element( "department" ).Value;
@@ -39,7 +49,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 {
                     departmentName = "No Department Name";
                 }
-                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, GroupTypeId = 9999 } );
+                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, IsActive = true, GroupTypeId = 9999 } );
             }
 
             // add the director as a group with an id of 9998 + its id to create a unique group id for it
@@ -49,6 +59,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
                 var directorGroup = new Group();
                 directorGroup.Id = directorId.Value;
+                directorGroup.IsActive = true;
                 directorGroup.Name = inputGroup.Element( "director" ).Element( "full_name" ).Value;
                 directorGroup.GroupTypeId = 9998;
 
@@ -64,7 +75,7 @@ namespace Slingshot.CCB.Utilities.Translators
             }
 
             // add leader
-            if ( inputGroup.Element( "main_leader" ).Attribute("id") != null && inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger() != 0 )
+            if ( inputGroup.Element( "main_leader" ).Attribute( "id" ) != null && inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger() != 0 )
             {
                 group.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "main_leader" ).Attribute( "id" ).Value.AsInteger(), Role = "Leader", GroupId = group.Id } );
             }
@@ -72,7 +83,7 @@ namespace Slingshot.CCB.Utilities.Translators
             // add assistant leaders
             if ( inputGroup.Element( "leaders" ) != null )
             {
-                foreach(var leaderNode in inputGroup.Element( "leaders" ).Elements("leader" ) )
+                foreach ( var leaderNode in inputGroup.Element( "leaders" ).Elements( "leader" ) )
                 {
                     group.GroupMembers.Add( new GroupMember { PersonId = leaderNode.Attribute( "id" ).Value.AsInteger(), Role = "Assistant Leader", GroupId = group.Id } );
                 }
@@ -87,16 +98,105 @@ namespace Slingshot.CCB.Utilities.Translators
                 }
             }
 
+            var addressList = inputGroup.Element( "addresses" ).Elements( "address" );
+            foreach ( var address in addressList )
+            {
+                if ( address.Element( "street_address" ) != null && address.Element( "street_address" ).Value.IsNotNullOrWhitespace() )
+                {
+                    var importAddress = new GroupAddress();
+                    importAddress.GroupId = group.Id;
+                    importAddress.Street1 = address.Element( "street_address" ).Value;
+                    importAddress.City = address.Element( "city" ).Value;
+                    importAddress.State = address.Element( "state" ).Value;
+                    importAddress.PostalCode = address.Element( "zip" ).Value;
+                    importAddress.Latitude = address.Element( "latitude" )?.Value;
+                    importAddress.Longitude = address.Element( "longitude" )?.Value;
+                    importAddress.Country = address.Element( "country" )?.Value;
+
+                    var addressType = address.Attribute( "type" ).Value;
+
+                    switch ( addressType )
+                    {
+                        case "mailing":
+                        case "home":
+                            {
+                                importAddress.AddressType = AddressType.Home;
+                                importAddress.IsMailing = addressType.Equals( "mailing" );
+                                break;
+                            }
+                        case "work":
+                            {
+                                importAddress.AddressType = AddressType.Work;
+                                break;
+                            }
+                        case "other":
+                            {
+                                importAddress.AddressType = AddressType.Other;
+                                break;
+                            }
+                    }
+
+                    // only add the address if we have a valid address
+                    if ( importAddress.Street1.IsNotNullOrWhitespace() && importAddress.City.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace() )
+                    {
+                        group.Addresses.Add( importAddress );
+                    }
+                }
+            }
+
             // determine the parent group
             if ( directorId.HasValue )
             {
                 group.ParentGroupId = directorId.Value;
             }
-            else if ( departmentId.HasValue ){
+            else if ( departmentId.HasValue )
+            {
                 group.ParentGroupId = departmentId.Value;
             }
 
             return groups;
+        }
+
+        /// <summary>
+        /// Processes the string attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessStringAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.IsNotNullOrWhitespace() )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value } );
+            }
+        }
+
+        /// <summary>
+        /// Processes the boolean attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessBooleanAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.IsNotNullOrWhitespace() )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value.AsBoolean().ToString() } );
+            }
+        }
+
+        /// <summary>
+        /// Processes the datetime attribute.
+        /// </summary>
+        /// <param name="group">The group.</param>
+        /// <param name="element">The element.</param>
+        /// <param name="attributeKey">The attribute key.</param>
+        private static void ProcessDatetimeAttribute( Group group, XElement element, string attributeKey )
+        {
+            if ( element != null && element.Value.AsDateTime().HasValue )
+            {
+                group.Attributes.Add( new GroupAttributeValue { GroupId = group.Id, AttributeKey = attributeKey, AttributeValue = element.Value.AsDateTime().ToString() } );
+            }
         }
     }
 }
