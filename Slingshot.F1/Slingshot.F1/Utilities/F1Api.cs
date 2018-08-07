@@ -1076,11 +1076,12 @@ namespace Slingshot.F1.Utilities
 
                                             if ( campusName.IsNotNullOrWhitespace() )
                                             {
-                                                member.HouseholdCampusName = campusName;
+                                                string campusNameTrimmed = campusName.Trim();
+                                                member.HouseholdCampusName = campusNameTrimmed;
 
                                                 // generate a unique campus id
                                                 MD5 md5Hasher = MD5.Create();
-                                                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( campusName ) );
+                                                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( campusNameTrimmed ) );
                                                 var campusId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                                                 if ( campusId > 0 )
                                                 {
