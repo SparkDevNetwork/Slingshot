@@ -7,11 +7,9 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
-
-using RestSharp;
-using RestSharp.Authenticators;
-using RestSharp.Authenticators.OAuth;
-using RestSharp.Extensions.MonoHttp;
+using OrcaMDF;
+using OrcaMDF.Core.Engine;
+using OrcaMDF.Framework;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
@@ -22,106 +20,20 @@ namespace Slingshot.F1.Utilities
     /// <summary>
     /// API F1 Status
     /// </summary>
-    public class F1Api : F1Translator
+    public class F1Mdf : F1Translator
     {
-        private static RestClient _client;
-        private static RestRequest _request;
+        /// <summary>
+        /// The local database
+        /// </summary>
+        public static Database Database { get; set; }
 
         /// <summary>
-        /// Gets or sets the api counter.
+        /// Gets or sets the error message.
         /// </summary>
         /// <value>
-        /// The api counter.
+        /// The error message.
         /// </value>
-        public static int ApiCounter { get; set; } = 0;
-
-        /// <summary>
-        /// Gets or sets the domain.
-        /// </summary>
-        /// <value>
-        /// The domain.
-        /// </value>
-        public static string Hostname { get; set; }
-
-        /// <summary>
-        /// Gets the API URL.
-        /// </summary>
-        /// <value>
-        /// The API URL.
-        /// </value>
-        public static string ApiUrl
-        {
-            get
-            {
-                return $"https://{Hostname}.fellowshiponeapi.com";
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the API consumer key.
-        /// </summary>
-        /// <value>
-        /// The API consumer key.
-        /// </value>
-        public static string ApiConsumerKey { get; set; }
-
-        /// <summary>
-        /// Gets or sets the API consumer secret.
-        /// </summary>
-        /// <value>
-        /// The API consumer secret.
-        /// </value>
-        public static string ApiConsumerSecret { get; set; }
-
-        /// <summary>
-        /// Gets or sets the API username.
-        /// </summary>
-        /// <value>
-        /// The API username.
-        /// </value>
-        public static string ApiUsername { get; set; }
-
-        /// <summary>
-        /// Gets or sets the API password.
-        /// </summary>
-        /// <value>
-        /// The API password.
-        /// </value>
-        public static string ApiPassword { get; set; }
-
-        /// <summary>
-        /// Gets or sets the oauth token.
-        /// </summary>
-        /// <value>
-        /// The oauth token.
-        /// </value>
-        public static string OAuthToken { get; set; }
-
-        /// <summary>
-        /// Gets or sets the oauth secret.
-        /// </summary>
-        /// <value>
-        /// The oauth secret.
-        /// </value>
-        public static string OAuthSecret { get; set; }
-
-        #region API Call Paths
-
-        private const string API_ACCESS_TOKEN = "/v1/PortalUser/AccessToken";
-        private const string API_INDIVIDUAL = "/v1/People";
-        private const string API_INDIVIDUALS = "/v1/People/Search";
-        private const string API_INDIVIDUALS_REQUIREMENTS = "/v1/Requirements";
-        private const string API_ATTRIBUTE_GROUPS = "/v1/people/attributegroups";
-        private const string API_ACCOUNTS = "/giving/v1/funds";
-        private const string API_BATCH_TYPES = "/giving/v1/batches/batchtypes";
-        private const string API_BATCHES = "/giving/v1/batches/search";
-        private const string API_CONTRIBUTION_RECEIPTS = "/giving/v1/contributionreceipts/search";
-        private const string API_CONTRIBUTION_RECEIPT_IMAGE = "/giving/v1/referenceimages/";
-        private const string API_GROUP_TYPES = "/groups/v1/grouptypes";
-        private const string API_GROUPS = "/groups/v1/grouptypes/";
-        private const string API_GROUP_MEMBERS = "/groups/v1/groups/";
-
-        #endregion
+        public static string ErrorMessage { get; set; }
 
         /// <summary>
         /// Connects the specified host name.
@@ -131,47 +43,6 @@ namespace Slingshot.F1.Utilities
         /// <param name="apiPassword">The API password.</param>
         public static void Connect( string hostName, string apiConsumerKey, string apiConsumerSecret, string apiUsername, string apiPassword )
         {
-            Hostname = hostName;
-            ApiConsumerKey = apiConsumerKey;
-            ApiConsumerSecret = apiConsumerSecret;
-            ApiUsername = apiUsername;
-            ApiPassword = apiPassword;
-
-            _client = new RestClient( ApiUrl );
-            _client.Authenticator = OAuth1Authenticator.ForRequestToken( ApiConsumerKey, ApiConsumerSecret );
-            _request = new RestRequest( API_ACCESS_TOKEN, Method.POST );
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-
-            // hash the username/password and add it to the body of the request
-            var loginBytes = System.Text.Encoding.UTF8.GetBytes( apiUsername + " " + apiPassword );
-            var loginHash = Convert.ToBase64String( loginBytes );
-
-            _request.AddParameter( "ec", loginHash, ParameterType.RequestBody );
-
-            // getting the api status sets the IsConnect flag
-            UpdateApiStatus();
-        }
-
-        /// <summary>
-        /// Updates the API status.
-        /// </summary>
-        public static void UpdateApiStatus()
-        {
-            // execute the request to get a oauth token and secret
-            var response = _client.Execute( _request );
-
-            var qs = HttpUtility.ParseQueryString( response.Content );
-            OAuthToken = qs["oauth_token"];
-            OAuthSecret = qs["oauth_token_secret"];
-
-            if ( response.StatusCode == System.Net.HttpStatusCode.OK )
-            {
-                IsConnected = true;
-            }
-            else
-            {
-                ErrorMessage = response.Content;
-            }
         }
 
         /// <summary>
@@ -179,7 +50,7 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="peoplePerPage">The people per page.</param>
-        public override void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
+        public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
         {
             TextInfo textInfo = new CultureInfo( "en-US", false ).TextInfo;
 
@@ -202,17 +73,6 @@ namespace Slingshot.F1.Utilities
             {
                 while ( moreIndividualsExist )
                 {
-                    _client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
-                    _request = new RestRequest( API_INDIVIDUALS, Method.GET );
-                    _request.AddQueryParameter( "lastUpdatedDate", modifiedSince.ToShortDateString() );
-                    _request.AddQueryParameter( "recordsPerPage", peoplePerPage.ToString() );
-                    _request.AddQueryParameter( "page", currentPage.ToString() );
-                    _request.AddQueryParameter( "include", "addresses,attributes,communications,requirements" );
-                    _request.AddHeader( "content-type", "application/vnd.fellowshiponeapi.com.people.people.v2+xml" );
-
-                    var response = _client.Execute( _request );
-                    ApiCounter++;
-
                     XDocument xdoc = XDocument.Parse( response.Content );
 
                     if ( F1Api.DumpResponseToXmlFile )
@@ -242,21 +102,6 @@ namespace Slingshot.F1.Utilities
                                         if ( importPerson != null )
                                         {
                                             ImportPackage.WriteToPackage( importPerson );
-                                        }
-
-                                        // save person image
-                                        var personId = personNode.Attribute( "id" ).Value;
-                                        var imageURI = personNode.Attribute( "imageURI" )?.Value;
-                                        if ( imageURI.IsNotNullOrWhitespace() )
-                                        {
-                                            // building the URI manually since the imageURI doesn't return a valid image
-                                            _request = new RestRequest( API_INDIVIDUAL + "/" + personId + "/Images", Method.GET );
-
-                                            var image = _client.DownloadData( _request );
-                                            ApiCounter++;
-
-                                            var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + personId + ".jpg" );
-                                            File.WriteAllBytes( path, image );
                                         }
 
                                         personIds.Add( personNode.Attribute( "id" ).Value.AsInteger() );
@@ -296,7 +141,7 @@ namespace Slingshot.F1.Utilities
         /// <summary>
         /// Exports the accounts.
         /// </summary>
-        public override void ExportFinancialAccounts()
+        public static void ExportFinancialAccounts()
         {
             try
             {
@@ -370,7 +215,7 @@ namespace Slingshot.F1.Utilities
         /// <summary>
         /// Exports the pledges.
         /// </summary>
-        public override void ExportFinancialPledges()
+        public static void ExportFinancialPledges()
         {
             int loopCounter = 0;
             try
@@ -415,7 +260,7 @@ namespace Slingshot.F1.Utilities
         /// Exports the batches.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        public override void ExportFinancialBatches( DateTime modifiedSince )
+        public static void ExportFinancialBatches( DateTime modifiedSince )
         {
             try
             {
@@ -509,7 +354,7 @@ namespace Slingshot.F1.Utilities
         /// Exports the contributions.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        public override void ExportContributions( DateTime modifiedSince, bool exportContribImages )
+        public static void ExportContributions( DateTime modifiedSince, bool exportContribImages )
         {
             HashSet<int> transactionIds = new HashSet<int>();
 
@@ -652,7 +497,7 @@ namespace Slingshot.F1.Utilities
         /// <param name="selectedGroupTypes">The selected group types.</param>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="perPage">The people per page.</param>
-        public override void ExportGroups( List<int> selectedGroupTypes )
+        public static void ExportGroups( List<int> selectedGroupTypes )
         {
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
@@ -734,7 +579,7 @@ namespace Slingshot.F1.Utilities
         /// <summary>
         /// Exports the person attributes.
         /// </summary>
-        public override List<PersonAttribute> WritePersonAttributes()
+        public static List<PersonAttribute> WritePersonAttributes()
         {
             // export person fields as attributes
             ImportPackage.WriteToPackage( new PersonAttribute()
@@ -920,7 +765,7 @@ namespace Slingshot.F1.Utilities
         /// Gets the group types.
         /// </summary>
         /// <returns></returns>
-        public override List<GroupType> GetGroupTypes()
+        public static List<GroupType> GetGroupTypes()
         {
             List<GroupType> groupTypes = new List<GroupType>();
 
@@ -964,7 +809,7 @@ namespace Slingshot.F1.Utilities
         /// Writes the group types.
         /// </summary>
         /// <param name="selectedGroupTypes">The selected group types.</param>
-        public override void WriteGroupTypes( List<int> selectedGroupTypes )
+        public static void WriteGroupTypes( List<int> selectedGroupTypes )
         {
             // add custom defined group types
             var groupTypes = GetGroupTypes();
@@ -978,11 +823,7 @@ namespace Slingshot.F1.Utilities
             }
         }
 
-        /// <summary>
-        /// Gets the family members.
-        /// </summary>
-        /// <returns></returns>
-        public override List<FamilyMember> GetFamilyMembers()
+        public static List<FamilyMember> GetFamilyMembers()
         {
             var headOfHouseholds = new List<FamilyMember>();
             HashSet<int> personIds = new HashSet<int>();

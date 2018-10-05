@@ -25,7 +25,11 @@ namespace Slingshot.F1
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Windows.Threading.DispatcherTimer _apiUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+        //public Translator F1Translator;
+
+        public bool DumpResponseToXmlFile = false;
+
+        private System.Windows.Threading.DispatcherTimer _apiUpdateTimer = new System.Windows.Threading.DispatcherTimer();
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
@@ -36,11 +40,11 @@ namespace Slingshot.F1
         {
             InitializeComponent();
 
-            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;          
+            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 0, 1 );
-           
-            // Set F1Api.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            F1Api.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
+
+            // Set DumpResponseToXmlFile to true to save all Responses to XML files and include them in the slingshot package
+            DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
@@ -49,6 +53,7 @@ namespace Slingshot.F1
         }
 
         #region Background Worker Events
+
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
             txtExportMessage.Text = e.UserState.ToString();
@@ -66,7 +71,7 @@ namespace Slingshot.F1
             exportWorker.ReportProgress( 0, "" );
             _apiUpdateTimer.Start();
 
-            var exportSettings = ( ExportSettings ) e.Argument;
+            var exportSettings = (ExportSettings)e.Argument;
 
             // clear filesystem directories
             F1Api.InitializeExport();
@@ -104,7 +109,6 @@ namespace Slingshot.F1
                 {
                     exportWorker.ReportProgress( 33, $"Error exporting financial pledges: {F1Api.ErrorMessage}" );
                 }
-
 
                 exportWorker.ReportProgress( 34, "Exporting Financial Batches..." );
 
@@ -152,7 +156,7 @@ namespace Slingshot.F1
         private void _apiUpdateTimer_Tick( object sender, EventArgs e )
         {
             // update the api stats
-			lblApiUsage.Text = $"API Usage: {F1Api.ApiCounter}";
+            lblApiUsage.Text = $"API Usage: {F1Api.ApiCounter}";
         }
 
         /// <summary>
@@ -162,7 +166,7 @@ namespace Slingshot.F1
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void Window_Loaded( object sender, RoutedEventArgs e )
         {
-			lblApiUsage.Text = $"API Usage: {F1Api.ApiCounter}";
+            lblApiUsage.Text = $"API Usage: {F1Api.ApiCounter}";
             // add group types
             ExportGroupTypes = F1Api.GetGroupTypes();
 
@@ -187,7 +191,7 @@ namespace Slingshot.F1
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportContributionImages = cbExportContribImages.IsChecked.Value
@@ -200,7 +204,7 @@ namespace Slingshot.F1
                 {
                     exportSettings.ExportGroupTypes.Add( selectedItem.Id );
                 }
-            }           
+            }
 
             F1Api.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
             exportWorker.RunWorkerAsync( exportSettings );
@@ -208,13 +212,11 @@ namespace Slingshot.F1
 
         #region Window Events
 
-
         private void cbGroups_Checked( object sender, RoutedEventArgs e )
         {
             if ( cbGroups.IsChecked.Value )
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
-
             }
             else
             {
@@ -235,6 +237,10 @@ namespace Slingshot.F1
         }
 
         #endregion
+
+        private void cbAttendance_Checked( object sender, RoutedEventArgs e )
+        {
+        }
     }
 
     public class ExportSettings
@@ -259,4 +265,3 @@ namespace Slingshot.F1
         public bool Checked { get; set; }
     }
 }
-
