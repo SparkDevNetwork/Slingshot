@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using RestSharp;
@@ -17,11 +18,59 @@ using Slingshot.Core.Utilities;
 namespace Slingshot.CCB.Utilities
 {
     /// <summary>
+    /// Provides a custom implementation of a rate limited Rest Client
+    /// </summary>
+    /// <seealso cref="RestSharp.RestClient" />
+    public class RateLimitedRestClient : RestClient
+    {
+        private readonly int ThrottleRate = 6;
+        private readonly DateTime EpochTime;
+        public RateLimitedRestClient( string baseUrl ) : base( baseUrl )
+        {
+            EpochTime = new DateTime( 1970, 1, 1, 0, 0, 0, DateTimeKind.Utc );
+        }
+
+        /// <summary>
+        /// Executes the specified rest request with rate limits.
+        /// </summary>
+        /// <param name="restRequest">The rest request.</param>
+        /// <see cref="http://designccb.s3.amazonaws.com/helpdesk/files/official_docs/API_Rate_Limiting_CCB.pdf"/>
+        /// <returns></returns>
+        public override IRestResponse Execute( IRestRequest restRequest )
+        {
+            var response = base.Execute( restRequest );
+            var remainingCalls = response.Headers
+                .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
+                .Select( x => ((string)x.Value).AsIntegerOrNull() )
+                .FirstOrDefault();
+            var resetTime = response.Headers
+                .Where( h => h.Name.Equals( "X-RATELIMIT-RESET", StringComparison.InvariantCultureIgnoreCase ) )
+                .Select( x => ((string)x.Value).AsDoubleOrNull() )
+                .FirstOrDefault();
+
+            // allow the server to burst up to the throttle rate
+            if ( remainingCalls.HasValue && remainingCalls < ThrottleRate && resetTime.HasValue )
+            {
+                var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
+                if ( coolDownTime.Seconds > 0)
+                {
+                    //var currentResource = restRequest.Resource.TakeWhile( c => !c.Equals('&') ).ToString().Split( '=' );
+                    //CcbApi.ErrorMessage = $"Throttling {currentResource.Last()} for {coolDownTime.Seconds}";
+                    Thread.Sleep( coolDownTime.Seconds > 0 ? coolDownTime.Seconds : 0 );
+                    //CcbApi.ErrorMessage = string.Empty;
+                }
+            }
+
+            return response;
+        }
+    }
+
+    /// <summary>
     /// API CCB Status
     /// </summary>
     public static class CcbApi
     {
-        private static RestClient _client;
+        private static RateLimitedRestClient _client;
         private static int loopThreshold = 100;
 
         // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
@@ -112,7 +161,7 @@ namespace Slingshot.CCB.Utilities
 
         #region API Call Paths
 
-        private const string API_STATUS = "api.php?srv=api_status";
+        private const string API_STATUS = "/api.php?srv=api_status";
         private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
@@ -145,7 +194,7 @@ namespace Slingshot.CCB.Utilities
             ApiUsername = apiUsername;
             ApiPassword = apiPassword;
 
-            _client = new RestClient( ApiUrl );
+            _client = new RateLimitedRestClient( ApiUrl );
             _client.Authenticator = new HttpBasicAuthenticator( ApiUsername, ApiPassword );
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 

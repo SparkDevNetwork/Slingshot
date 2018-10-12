@@ -184,6 +184,9 @@ namespace Slingshot.CCB
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            // clear result from previous export
+            txtExportMessage.Text = string.Empty;
+
             // launch our background export
             var exportSettings = new ExportSettings
             {
