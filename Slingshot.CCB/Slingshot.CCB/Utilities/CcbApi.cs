@@ -54,10 +54,9 @@ namespace Slingshot.CCB.Utilities
                 var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
                 if ( coolDownTime.Seconds > 0)
                 {
-                    //var currentResource = restRequest.Resource.TakeWhile( c => !c.Equals('&') ).ToString().Split( '=' );
-                    //CcbApi.ErrorMessage = $"Throttling {currentResource.Last()} for {coolDownTime.Seconds}";
-                    Thread.Sleep( coolDownTime.Seconds > 0 ? coolDownTime.Seconds : 0 );
-                    //CcbApi.ErrorMessage = string.Empty;
+                    CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
+                    Thread.Sleep( coolDownTime.Milliseconds > 0 ? coolDownTime.Milliseconds : 0 );
+                    CcbApi.ErrorMessage = string.Empty;
                 }
             }
 
