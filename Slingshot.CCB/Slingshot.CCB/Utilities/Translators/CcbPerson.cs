@@ -226,9 +226,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 var imageURI = inputPerson.Element( "image" )?.Value;
                 if ( imageURI.IsNotNullOrWhitespace() && !imageURI.Contains( "profile-default.gif" ) )
                 {
-                    // save as the URL on the person object
-                    //person.PersonPhotoUrl = imageURI;
-
+                    // CCB encoded key expires too quickly, so download immediately instead of setting person.PersonPhotoUrl
                     Task.Run( () => {
                         // save image locally
                         var imageResponse = WebRequest.Create( imageURI ).GetResponse();
