@@ -55,7 +55,7 @@ namespace Slingshot.CCB.Utilities
                 if ( coolDownTime.Seconds > 0)
                 {
                     CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
-                    Thread.Sleep( coolDownTime.Milliseconds > 0 ? coolDownTime.Milliseconds : 0 );
+                    Thread.Sleep( coolDownTime );
                     CcbApi.ErrorMessage = string.Empty;
                 }
             }
