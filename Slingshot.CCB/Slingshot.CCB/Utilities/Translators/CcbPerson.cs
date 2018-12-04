@@ -227,16 +227,18 @@ namespace Slingshot.CCB.Utilities.Translators
                 if ( imageURI.IsNotNullOrWhitespace() && !imageURI.Contains( "profile-default.gif" ) )
                 {
                     // save as the URL on the person object
-                    person.PersonPhotoUrl = imageURI;
+                    //person.PersonPhotoUrl = imageURI;
 
-                    // save image locally
-                    var imageResponse = WebRequest.Create( imageURI ).GetResponse();
-                    var imageStream = imageResponse.GetResponseStream();
-                    var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".jpg" );
-                    using ( FileStream output = File.OpenWrite( path ) )
-                    {
-                        imageStream.CopyTo( output );
-                    }
+                    Task.Run( () => {
+                        // save image locally
+                        var imageResponse = WebRequest.Create( imageURI ).GetResponse();
+                        var imageStream = imageResponse.GetResponseStream();
+                        var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".jpg" );
+                        using ( FileStream output = File.OpenWrite( path ) )
+                        {
+                            imageStream.CopyTo( output );
+                        }
+                    } );
                 }
 
                 // campus
