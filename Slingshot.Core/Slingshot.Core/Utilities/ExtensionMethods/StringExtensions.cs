@@ -37,15 +37,7 @@ namespace Slingshot.Core
         /// <returns></returns>
         public static string RemoveSpecialCharacters( this string str )
         {
-            StringBuilder sb = new StringBuilder();
-            foreach ( char c in str )
-            {
-                if ( ( c >= '0' && c <= '9' ) || ( c >= 'A' && c <= 'Z' ) || ( c >= 'a' && c <= 'z' ) || c == '.' || c == '_' )
-                {
-                    sb.Append( c );
-                }
-            }
-            return sb.ToString();
+            return Regex.Replace(str,"[^0-9a-zA-Z._]","");
         }
 
         /// <summary>
@@ -75,13 +67,7 @@ namespace Slingshot.Core
         /// <returns></returns>
         public static bool IsDigitsOnly( this string str )
         {
-            foreach ( char c in str )
-            {
-                if ( c < '0' || c > '9' )
-                    return false;
-            }
-
-            return true;
+            return Regex.IsMatch(str, "^[0-9]*$");
         }
 
         /// <summary>
