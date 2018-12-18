@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using RestSharp;
 using Slingshot.Core;
 using Slingshot.Core.Model;
+using Slingshot.Core.Utilities;
 
 namespace Slingshot.CCB.Utilities.Translators
 {
@@ -15,6 +19,8 @@ namespace Slingshot.CCB.Utilities.Translators
         {
             var person = new Person();
             var notes = new List<string>();
+            var _request = new RestRequest();
+            var _client = new RestClient();
 
             if ( inputPerson.Attribute( "id" ) != null && inputPerson.Attribute( "id" ).Value.AsIntegerOrNull().HasValue )
             {
@@ -217,9 +223,20 @@ namespace Slingshot.CCB.Utilities.Translators
                 }
 
                 // photo
-                if ( inputPerson.Element( "image" ) != null && !inputPerson.Element( "image" ).Value.Contains( "profile-default.gif" ) )
+                var imageURI = inputPerson.Element( "image" )?.Value;
+                if ( imageURI.IsNotNullOrWhitespace() && !imageURI.Contains( "profile-default.gif" ) )
                 {
-                    person.PersonPhotoUrl = inputPerson.Element( "image" )?.Value;
+                    // CCB encoded key expires too quickly, so download immediately instead of setting person.PersonPhotoUrl
+                    Task.Run( () => {
+                        // save image locally
+                        var imageResponse = WebRequest.Create( imageURI ).GetResponse();
+                        var imageStream = imageResponse.GetResponseStream();
+                        var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".jpg" );
+                        using ( FileStream output = File.OpenWrite( path ) )
+                        {
+                            imageStream.CopyTo( output );
+                        }
+                    } );
                 }
 
                 // campus
