@@ -106,7 +106,7 @@ namespace Slingshot.CCB.Utilities
 
         #region API Call Paths 
 
-        private const string API_STATUS = "api.php?srv=api_status";
+        private const string API_STATUS = "/api.php?srv=api_status";
         private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
@@ -215,6 +215,8 @@ namespace Slingshot.CCB.Utilities
 
                     var response = _client.Execute( request );
 
+                    var resetTime = response.Headers.Where( x => x.Name == "x-ratelimit-reset" ).FirstOrDefault();
+
                     XDocument xdoc = XDocument.Parse( response.Content );
 
                     if ( CcbApi.DumpResponseToXmlFile )
@@ -261,6 +263,14 @@ namespace Slingshot.CCB.Utilities
                     else
                     {
                         moreExist = false;
+                    }
+
+                    Int32 unixTimestamp = ( Int32 ) ( DateTime.UtcNow.Subtract( new DateTime( 1970, 1, 1 ) ) ).TotalSeconds;
+                    var delay = Int32.Parse( resetTime.Value.ToString() ) - unixTimestamp;
+
+                    if ( delay > 0 )
+                    {
+                        Task.Delay( delay * 1000 );
                     }
 
                     // developer safety blanket (prevents eating all the api calls for the day) 
