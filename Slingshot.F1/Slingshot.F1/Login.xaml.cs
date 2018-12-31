@@ -21,11 +21,21 @@ namespace Slingshot.F1
     /// </summary>
     public partial class Login : Window
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Login"/> class.
+        /// </summary>
         public Login()
         {
             InitializeComponent();
+
+            gbMDFUpload.Visibility = rbAPI.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Handles the Click event of the btnLogin control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnLogin_Click( object sender, RoutedEventArgs e )
         {
             lblMessage.Text = string.Empty;
@@ -50,6 +60,10 @@ namespace Slingshot.F1
             {
                 lblMessage.Text = "Please provide the information needed to connect.";
             }
+        }
+
+        private void btnUpload_Click( object sender, RoutedEventArgs e )
+        {
         }
     }
 }
