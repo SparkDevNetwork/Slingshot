@@ -65,6 +65,8 @@ namespace Slingshot.F1.Utilities
 
         public abstract void ExportFinancialBatches( DateTime modifiedSince );
 
+        public abstract void ExportAttendance( DateTime modifiedSince );
+
         public abstract void ExportContributions( DateTime modifiedSince, bool exportContribImages );
 
         public abstract void ExportGroups( List<int> selectedGroupTypes );

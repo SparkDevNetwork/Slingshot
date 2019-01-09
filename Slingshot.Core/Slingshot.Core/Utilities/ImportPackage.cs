@@ -113,7 +113,7 @@ namespace Slingshot.Core.Utilities
                     }
 
                     // if model is for financial batch create related writers
-                    if ( importModel is FinancialBatch )
+                    if ( importModel is FinancialBatch  )
                     {
                         // financial transactions
                         var financialTransaction = new FinancialTransaction();
@@ -122,6 +122,14 @@ namespace Slingshot.Core.Utilities
                         // financial transation details
                         var financialTransactionDetail = new FinancialTransactionDetail();
                         textWriters.Add( financialTransactionDetail.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
+                    }
+
+                    // if model is for financial transaction create related writers
+                    if ( importModel is FinancialTransaction )
+                    {
+                        // financial transation details
+                        var financialTransactionDetail = new FinancialTransactionDetail();
+                        textWriters.Add( financialTransactionDetail.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
                     }
 
                     // if model is for group create related writers
@@ -182,6 +190,16 @@ namespace Slingshot.Core.Utilities
                         csvWriters.Add( financialTransaction.GetType().Name, newFinancialTransactionCsvWriter );
                         newFinancialTransactionCsvWriter.WriteHeader<FinancialTransaction>();
 
+                        // financial transaction detail
+                        var financialTransactionDetail = new FinancialTransactionDetail();
+                        var newFinancialTransactionDetailCsvWriter = new CsvWriter( textWriters[financialTransactionDetail.GetType().Name] );
+                        csvWriters.Add( financialTransactionDetail.GetType().Name, newFinancialTransactionDetailCsvWriter );
+                        newFinancialTransactionDetailCsvWriter.WriteHeader<FinancialTransactionDetail>();
+                    }
+
+                    //if model is for financial transaction, create related writers
+                    if ( importModel is FinancialTransaction )
+                    {
                         // financial transaction detail
                         var financialTransactionDetail = new FinancialTransactionDetail();
                         var newFinancialTransactionDetailCsvWriter = new CsvWriter( textWriters[financialTransactionDetail.GetType().Name] );
@@ -276,6 +294,21 @@ namespace Slingshot.Core.Utilities
                             {
                                 csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                             }
+                        }
+                    }
+                }
+
+                // if financial Transaction model write out any related models
+                if ( importModel is FinancialTransaction )
+                {
+                    var financialTransactionDetail = new FinancialTransactionDetail();
+                    var csvFinancialTransactionDetailWriter = csvWriters[financialTransactionDetail.GetType().Name];
+
+                    if ( csvFinancialTransactionDetailWriter != null )
+                    {
+                        foreach ( var transactionDetail in ( (FinancialTransaction)importModel ).FinancialTransactionDetails )
+                        {
+                            csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                         }
                     }
                 }
