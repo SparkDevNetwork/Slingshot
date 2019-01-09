@@ -162,7 +162,7 @@ SELECT
 	a.*
 FROM
 [Attribute] a
-LEFT JOIN (
+INNER JOIN (
 SELECT
 	Individual_Id
 	, Attribute_Id
@@ -179,12 +179,23 @@ Group By Individual_Id, Attribute_Id, Attribute_Name
             {
                 return $@"
 SELECT 
-	individual_id
-	, Individual_Requirement_ID
-	, requirement_date
-	, requirement_status_name
-    , [requirement_name]
-  FROM [Requirement]";
+	r.individual_id
+	, r.Individual_Requirement_ID
+	, r.requirement_date
+	, r.requirement_status_name
+    , r.[requirement_name]
+  FROM [Requirement] r
+INNER JOIN (
+SELECT
+individual_id,
+[requirement_name]
+, Max(Individual_Requirement_ID) as Id
+ FROM [Requirement]
+Group By individual_id,
+[requirement_name]
+) b on r.Individual_Requirement_ID = b.Id
+
+";
             }
         }
 
@@ -206,14 +217,23 @@ and communication_type not like '%Phone%'";
             get
             {
                 return $@"
-SELECT DISTINCT
-	communication_type
-	, individual_id
-	, communication_value
+SELECT
+	c.communication_type
+	, c.individual_id
+	, c.communication_value
+, c.communication_Id
+FROM Communication c
+Inner Join
+( SELECT 
+communication_type
+	,individual_id
+, MAX(communication_Id) as Id
 FROM Communication
-Where not communication_type in('Mobile', 'Email')
-and communication_type not like '%Phone%'
-and individual_id is not null";
+Group By communication_type, individual_id
+) b on c.Communication_Id = b.id
+Where not c.communication_type in('Mobile', 'Email')
+and c.communication_type not like '%Phone%'
+and c.individual_id is not null";
             }
         }
 

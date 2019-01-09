@@ -26,7 +26,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 var accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( accountId > 0 )
                 {
-                    account.ParentAccountId = accountId;
+                    account.Id = accountId;
                 }
             }
             else
@@ -39,7 +39,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 var parentAccountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( parentAccountId > 0 )
                 {
-                    account.ParentAccountId = parentAccountId;
+                    account.Id = parentAccountId;
                 }
 
                 //Use Hash to create Account ID
