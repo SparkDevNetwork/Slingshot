@@ -45,6 +45,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -66,16 +67,23 @@
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Utilities\F1Mdf.cs" />
+    <Compile Include="Utilities\F1Mdb.cs" />
     <Compile Include="Utilities\F1Api.cs" />
     <Compile Include="Utilities\F1Translator.cs" />
-    <Compile Include="Utilities\Translators\F1FinancialBatch.cs" />
-    <Compile Include="Utilities\Translators\F1FinancialAccount.cs" />
-    <Compile Include="Utilities\Translators\F1FinancialPledge.cs" />
-    <Compile Include="Utilities\Translators\F1FinancialTransaction.cs" />
-    <Compile Include="Utilities\Translators\F1FinancialTransactionDetail.cs" />
-    <Compile Include="Utilities\Translators\F1Group.cs" />
-    <Compile Include="Utilities\Translators\F1Person.cs" />
+    <Compile Include="Utilities\Translators\API\F1FinancialBatch.cs" />
+    <Compile Include="Utilities\Translators\API\F1FinancialAccount.cs" />
+    <Compile Include="Utilities\Translators\API\F1FinancialPledge.cs" />
+    <Compile Include="Utilities\Translators\API\F1FinancialTransaction.cs" />
+    <Compile Include="Utilities\Translators\API\F1FinancialTransactionDetail.cs" />
+    <Compile Include="Utilities\Translators\API\F1Group.cs" />
+    <Compile Include="Utilities\Translators\API\F1Person.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1Attendance.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1FinancialTransaction.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1FinancialBatch.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1FinancialPledge.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1FinancialAccount.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1Group.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1Person.cs" />
     <Page Include="Login.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -130,10 +138,7 @@
       <Name>Slingshot.Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Utilities\Translators\API\" />
-    <Folder Include="Utilities\Translators\MDF\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Resource Include="Assets\Icon\icon-128.png" />
     <Resource Include="Assets\Icon\icon-192.png" />
