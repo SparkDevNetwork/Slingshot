@@ -279,7 +279,7 @@ namespace Slingshot.F1.Utilities.Translators.API
                 var attributes = inputPerson.Element( "attributes" );
                 var usedAttributeKeys = new List<string>();
 
-                foreach ( var attribute in attributes.Elements() )
+                foreach ( var attribute in attributes.Elements().OrderByDescending( r => r.Element( "createdDate" ).Value.AsDateTime() ) )
                 {
                     if ( personAttributes.Any() )
                     {
