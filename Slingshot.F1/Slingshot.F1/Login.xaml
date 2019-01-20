@@ -18,12 +18,12 @@
         </Grid.RowDefinitions>
         <Label Name="lblImportType" Grid.Row="0" Margin="8,0" Content="Import Type" />
         <StackPanel Name="spImportType" Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-            <RadioButton Name="rbAPI" GroupName="ImportType" IsChecked="True" Margin="5">API</RadioButton>
-            <RadioButton Name="rbMDF" GroupName="ImportType" Margin="5">MDF</RadioButton>
+            <RadioButton Name="rbAPI" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged" IsChecked="True">API</RadioButton>
+            <RadioButton Name="rbMDF" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged">MDF</RadioButton>
         </StackPanel>
 
         <!-- API Interface -->
-        <GroupBox Name="gbAPILogin" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Collapsed">
+        <GroupBox Name="gbAPILogin" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
             <Grid Margin="0,5,0,5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120" />
@@ -44,16 +44,16 @@
                 <TextBox Name="txtHostname" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
                 <Label Name="lblKey" Grid.Row="2" Content="Consumer Key" />
-                <TextBox Name="txtApiConsumerKey" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+                <TextBox Name="txtApiConsumerKey" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
                 <Label Name="lblSecret" Grid.Row="3" Content="Consumer Secret" />
-                <TextBox Name="txtApiConsumerSecret" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+                <TextBox Name="txtApiConsumerSecret" Grid.Row="3" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
                 <Label Name="lblUsername" Grid.Row="4" Content="Username" />
-                <TextBox Name="txtApiUsername" Grid.Row="3" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+                <TextBox Name="txtApiUsername" Grid.Row="4" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
                 <Label Name="lblPassword" Grid.Row="5" Content="Password" />
-                <TextBox Name="txtApiPassword" Grid.Row="4" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+                <TextBox Name="txtApiPassword" Grid.Row="5" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
 
                 <Button Name="btnLogin" Grid.Row="6" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5">
                     <Label>Login</Label>

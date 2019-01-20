@@ -36,6 +36,8 @@ namespace Slingshot.F1
         public List<GroupType> ExportGroupTypes { get; set; }
         public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
 
+        public F1Translator exporter { get; set; }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -80,7 +82,7 @@ namespace Slingshot.F1
             if ( exportSettings.ExportIndividuals )
             {
                 exportWorker.ReportProgress( 1, "Exporting Individuals..." );
-                F1Api.ExportIndividuals( exportSettings.ModifiedSince );
+                exporter.ExportIndividuals( exportSettings.ModifiedSince );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -96,7 +98,7 @@ namespace Slingshot.F1
             {
                 exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
 
-                F1Api.ExportFinancialAccounts();
+                exporter.ExportFinancialAccounts();
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {F1Api.ErrorMessage}" );
@@ -104,7 +106,7 @@ namespace Slingshot.F1
 
                 exportWorker.ReportProgress( 32, "Exporting Financial Pledges..." );
 
-                F1Api.ExportFinancialPledges();
+                exporter.ExportFinancialPledges();
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 33, $"Error exporting financial pledges: {F1Api.ErrorMessage}" );
@@ -112,7 +114,7 @@ namespace Slingshot.F1
 
                 exportWorker.ReportProgress( 34, "Exporting Financial Batches..." );
 
-                F1Api.ExportFinancialBatches( exportSettings.ModifiedSince );
+                exporter.ExportFinancialBatches( exportSettings.ModifiedSince );
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 35, $"Error exporting financial batches: {F1Api.ErrorMessage}" );
@@ -120,7 +122,7 @@ namespace Slingshot.F1
 
                 exportWorker.ReportProgress( 36, "Exporting Contribution Information..." );
 
-                F1Api.ExportContributions( exportSettings.ModifiedSince, exportSettings.ExportContributionImages );
+                exporter.ExportContributions( exportSettings.ModifiedSince, exportSettings.ExportContributionImages );
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 37, $"Error exporting financial batches: {F1Api.ErrorMessage}" );
@@ -132,13 +134,29 @@ namespace Slingshot.F1
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                F1Api.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
+                exporter.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {F1Api.ErrorMessage}" );
                 }
             }
+
+            // export attendance
+            if ( exportSettings.ExportAttendance )
+            {
+                exportWorker.ReportProgress( 1, "Exporting Attendance..." );
+                exporter.ExportAttendance( exportSettings.ModifiedSince );
+
+                if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    this.Dispatcher.Invoke( () =>
+                    {
+                        exportWorker.ReportProgress( 2, $"Error exporting attendance: {F1Api.ErrorMessage}" );
+                    } );
+                }
+            }
+
 
             // finalize the package
             ImportPackage.FinalizePackage( "f1-export.slingshot" );
@@ -168,7 +186,7 @@ namespace Slingshot.F1
         {
             lblApiUsage.Text = $"API Usage: {F1Api.ApiCounter}";
             // add group types
-            ExportGroupTypes = F1Api.GetGroupTypes();
+            ExportGroupTypes = exporter.GetGroupTypes();
 
             foreach ( var groupType in ExportGroupTypes )
             {
@@ -194,7 +212,8 @@ namespace Slingshot.F1
                 ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
-                ExportContributionImages = cbExportContribImages.IsChecked.Value
+                ExportContributionImages = cbExportContribImages.IsChecked.Value,
+                ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
@@ -254,6 +273,8 @@ namespace Slingshot.F1
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
 
         public bool ExportContributionImages { get; set; } = true;
+
+        public bool ExportAttendance { get; set; } = true;
     }
 
     public class CheckListItem

@@ -15,7 +15,7 @@ using RestSharp.Extensions.MonoHttp;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
-using Slingshot.F1.Utilities.Translators;
+using Slingshot.F1.Utilities.Translators.API;
 
 namespace Slingshot.F1.Utilities
 {
@@ -729,6 +729,11 @@ namespace Slingshot.F1.Utilities
             {
                 ErrorMessage = ex.Message;
             }
+        }
+
+        public override void ExportAttendance( DateTime modifiedSince )
+        {
+            //No implementation
         }
 
         /// <summary>

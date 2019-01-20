@@ -7,7 +7,7 @@ using System.Xml.Linq;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 
-namespace Slingshot.F1.Utilities.Translators
+namespace Slingshot.F1.Utilities.Translators.API
 {
     public static class F1FinancialTransaction
     {

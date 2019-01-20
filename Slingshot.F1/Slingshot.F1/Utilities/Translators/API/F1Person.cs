@@ -9,7 +9,7 @@ using System.Xml.Linq;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 
-namespace Slingshot.F1.Utilities.Translators
+namespace Slingshot.F1.Utilities.Translators.API
 {
     public static class F1Person
     {
@@ -279,7 +279,7 @@ namespace Slingshot.F1.Utilities.Translators
                 var attributes = inputPerson.Element( "attributes" );
                 var usedAttributeKeys = new List<string>();
 
-                foreach ( var attribute in attributes.Elements() )
+                foreach ( var attribute in attributes.Elements().OrderByDescending( r => r.Element( "createdDate" ).Value.AsDateTime() ) )
                 {
                     if ( personAttributes.Any() )
                     {
