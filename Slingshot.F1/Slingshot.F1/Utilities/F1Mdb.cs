@@ -114,6 +114,22 @@ FROM Household_Address";
             }
         }
 
+        public static string SQL_PHONE_NUMBERS
+        {
+            get
+            {
+                return $@"
+Select DISTINCT
+individual_id
+, communication_type
+, communication_value
+, listed
+FROM Communication
+Where individual_id is not null
+AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
+            }
+        }
+
         public static string SQL_COMMUNICATIONS
         {
             get
@@ -125,7 +141,8 @@ individual_id
 , communication_value
 , listed
 FROM Communication
-Where individual_id is not null";
+Where individual_id is not null
+";
             }
         }
 
@@ -564,6 +581,7 @@ and AttendanceDate is not null";
                 var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES );
                 var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES );
                 var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
+                var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
                 
 
                 // export people
@@ -572,14 +590,52 @@ and AttendanceDate is not null";
                     var headOfHouseHolds = dtPeople.Select( "household_position = 'Head' ");
                     foreach ( DataRow row in dtPeople.Rows )
                     {
-                        var importPerson = F1Person.Translate( row, dtAddress, dtCommunications, headOfHouseHolds, dtRequirementValues, dtAttributeValues, dtCommunicationValues );
+                        var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
 
                         if ( importPerson != null )
                         {
                             ImportPackage.WriteToPackage( importPerson );
                         }
                     }
+
+                    // export people addresses
+                    foreach ( DataRow row in dtAddress.Rows )
+                    {
+                        var importAddress = F1PersonAddress.Translate( row, dtPeople );
+
+                        if ( importAddress != null )
+                        {
+                            ImportPackage.WriteToPackage( importAddress );
+                        }
+                    }
+
+                    // export Attribute Values
+                    foreach ( DataRow row in dtAttributeValues.Rows )
+                    {
+                        var importAttributes = F1PersonAttributeValue.Translate( row );
+
+                        if ( importAttributes != null )
+                        {
+                            foreach ( PersonAttributeValue value in importAttributes )
+                            {
+                                ImportPackage.WriteToPackage( value );
+                            }
+                        }
+                    }
+
+                    // export Phone Numbers
+                    foreach ( DataRow row in dtPhoneNumbers.Rows )
+                    {
+                        var importNumber = F1PersonPhone.Translate( row );
+                        if ( importNumber != null )
+                        {
+                            ImportPackage.WriteToPackage( importNumber );
+                        }
+                    }
+
                 }
+
+                
             }
             catch( Exception ex )
             {

@@ -83,6 +83,9 @@
     <Compile Include="Utilities\Translators\MDF\F1FinancialPledge.cs" />
     <Compile Include="Utilities\Translators\MDF\F1FinancialAccount.cs" />
     <Compile Include="Utilities\Translators\MDF\F1Group.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1PersonPhone.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1PersonAttributeValue.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1PersonAddress.cs" />
     <Compile Include="Utilities\Translators\MDF\F1Person.cs" />
     <Page Include="Login.xaml">
       <SubType>Designer</SubType>
