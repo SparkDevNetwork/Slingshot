@@ -14,11 +14,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
     {
         public static Person Translate(
             DataRow row
-            , DataTable Addresses
             , DataTable Communications
             , DataRow[] HeadOfHouseHolds
             , DataTable dtRequirementValues
-            , DataTable dtAttributeValues 
             , DataTable dtCommunicationValues )
         {
             var person = new Person();
@@ -85,83 +83,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     person.Email = email;
                 }
 
-                var numbers = Communications.Select( "individual_id = " + person.Id + " AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )" );
-
-                if( numbers != null )
-                {
-                    foreach ( var number in numbers.ToList() )
-                    {
-                        string phoneType = number.Field<string>( "communication_type" ).Replace( "Phone", "" ).Replace( "phone", "" ).Trim();
-                        string phoneNumber = new string( number.Field<string>( "communication_value" ).Where( c => char.IsDigit( c ) ).ToArray() );
-                        if ( !string.IsNullOrWhiteSpace( phoneNumber ) )
-                        {
-                            person.PhoneNumbers.Add( new PersonPhone
-                            {
-                                PersonId = person.Id,
-                                PhoneType = phoneType,
-                                PhoneNumber = phoneNumber
-                            } );
-                        }
-                    }
-                }
-
-                var myAddresses = Addresses.Select( "household_id = " + houseHouldId + " OR individual_id = " + person.Id );
-
-                if ( myAddresses != null )
-                {
-                    foreach ( var address in myAddresses.ToList() )
-                    {
-                        var importAddress = new PersonAddress();
-                        importAddress.PersonId = person.Id;
-                        importAddress.Street1 = address.Field<string>( "address_1" );
-                        importAddress.Street2 = address.Field<string>( "address_2" );
-                        importAddress.City = address.Field<string>( "city" );
-                        importAddress.State = address.Field<string>( "state" );
-                        importAddress.PostalCode = address.Field<string>( "zip_code" );
-                        importAddress.Country = address.Field<string>( "country" );
-
-                        var addressType = address.Field<string>( "address_type" );
-                        switch ( addressType )
-                        {
-                            case "Primary":
-                                {
-                                    importAddress.AddressType = AddressType.Home;
-                                    importAddress.IsMailing = true;
-                                    break;
-                                }
-                            case "Previous":
-                                {
-                                    importAddress.AddressType = AddressType.Previous;
-                                    break;
-                                }
-                            case "Business":
-                                {
-                                    importAddress.AddressType = AddressType.Work;
-                                    break;
-                                }
-                            case "Mail Returned / Incorrect":
-                                {
-                                    notes.Add( "Mail Returned From Address: " + importAddress.Street1 );
-                                    importAddress.AddressType = AddressType.Other;
-                                    break;
-                                }
-                            default:
-                                {
-                                    importAddress.AddressType = AddressType.Other;
-                                    break;
-                                }
-                        }
-
-                        // only add the address if we have a valid address
-                        if ( importAddress.Street1.IsNotNullOrWhitespace() &&
-                                importAddress.City.IsNotNullOrWhitespace() &&
-                                importAddress.PostalCode.IsNotNullOrWhitespace() )
-                        {
-                            person.Addresses.Add( importAddress );
-
-                        }
-                    }
-                }
+               
 
                 // gender 
                 string gender = row.Field<string>( "Gender" );
@@ -303,70 +225,6 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     {
                         campus.CampusId = campusId;
                     }
-                }
-
-                // person attributes
-
-                var attributes = dtAttributeValues.Select( "individual_id = " + person.Id );
-
-                foreach ( var attribute in attributes )
-                {
-
-                    int attributeId = attribute.Field<int>( "Attribute_Id" );
-                    string attributeName = attribute.Field<string>( "Attribute_Name" );
-                    // Add the attribute value for start date (if not empty) 
-                    var startDateAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
-                    DateTime? startDate = attribute.Field<DateTime?>( "Start_Date" );
-
-                    if ( startDate.HasValue )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = startDateAttributeKey,
-                            AttributeValue = startDate.Value.ToString( "o" ), // save as UTC date format
-                            PersonId = person.Id
-                        } );
-                    }
-
-                    // Add the attribute value for end date (if not empty) 
-                    var endDateAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
-                    DateTime? endDate = attribute.Field<DateTime?>( "End_Date" );
-
-                    if ( endDate.HasValue )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = endDateAttributeKey,
-                            AttributeValue = endDate.Value.ToString( "o" ), // save as UTC date format
-                            PersonId = person.Id
-                        } );
-                    }
-
-                    // Add the attribute value for comment (if not empty) 
-                    var commentAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
-                    string comment = attribute.Field<string>( "comment" );
-
-                    if ( comment.IsNotNullOrWhitespace() )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = commentAttributeKey,
-                            AttributeValue = comment,
-                            PersonId = person.Id
-                        } );
-                    }
-                    // If the attribute exists but we do not have any values assigned (comment, start date, end date)
-                    // then set the value to true so that we know the attribute exists.
-                    else if ( !comment.IsNotNullOrWhitespace() && !startDate.HasValue && !startDate.HasValue )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = commentAttributeKey,
-                            AttributeValue = "True",
-                            PersonId = person.Id
-                        } );
-                    }
-
                 }
 
                 // person requirements. 
