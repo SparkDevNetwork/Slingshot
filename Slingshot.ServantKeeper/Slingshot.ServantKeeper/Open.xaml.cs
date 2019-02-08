@@ -32,11 +32,11 @@ namespace Slingshot.ServantKeeper
         {
             lblMessage.Text = string.Empty;
 
-            if ( txtFilename.Text != string.Empty && txtFilename.Text.ToLower().Contains( ".skb" ) )
+            if ( txtFilename.Text != string.Empty )
             {
-                ServantKeeperApi.OpenConnection( txtFilename.Text );
+                ServanrKeeperApi.OpenConnection( txtFilename.Text );
 
-                if ( ServantKeeperApi.IsConnected )
+                if ( ServanrKeeperApi.IsConnected )
                 {
                     MainWindow mainWindow = new MainWindow();
                     mainWindow.Show();
@@ -44,12 +44,12 @@ namespace Slingshot.ServantKeeper
                 }
                 else
                 {
-                    lblMessage.Text = $"Could not open the SKB backup file. {ServantKeeperApi.ErrorMessage}";
+                    lblMessage.Text = $"Could not open the MS Access database file. {ServanrKeeperApi.ErrorMessage}";
                 }
             }
             else
             {
-                lblMessage.Text = "Please choose a SKB backup file.";
+                lblMessage.Text = "Please choose a MS Access database file.";
             }
         }
 

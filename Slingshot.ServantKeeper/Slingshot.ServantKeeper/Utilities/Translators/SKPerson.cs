@@ -1,252 +1,484 @@
-﻿using Slingshot.Core.Model;
-using Slingshot.ServantKeeper.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Globalization;
+using System.Data;
 using System.Text.RegularExpressions;
+
+using Slingshot.Core;
+using Slingshot.Core.Model;
 
 namespace Slingshot.ServantKeeper.Utilities.Translators
 {
-    class SKPerson
+    public static class SkPerson
     {
-        public static Person Translate( Individual individual, List<Value> values, List<Family> families, List<Field> tableFields, List<Label> labels )
+        public static Person Translate( DataRow row )
         {
+            string field;
+            DateTime dtvalue;
             Person person = new Person();
-            person.Id = Math.Abs( unchecked(( int ) individual.Id) );
-            person.Campus = new Campus() { CampusId = 0, CampusName = "Main Campus" };
 
-            // Import the family information
-            Family family = families.Where( v => v.Id == individual.FamilyId ).FirstOrDefault();
-            person.FamilyId = Math.Abs( unchecked(( int ) individual.FamilyId) );
-            person.FamilyName = family.FamilyName;
-            person.FamilyRole = individual.Age < 18 ? FamilyRole.Child : FamilyRole.Adult;
+            // Note History
+            //var notes = new List<string>();
+            //if (notes.Count > 0)
+            //{
+            //    person.Note = string.Join(",", notes);
+            //}
 
-            // Import the basic stuff
-            person.Gender = ( Core.Model.Gender ) individual.Gender;
-            person.RecordStatus = individual.RecordStatus;
-            Value memberStatus = values.Where( v => v.Id == individual.MemberStatus ).FirstOrDefault();
-            if ( memberStatus != null )
+            // Servant Keeper Individual ID is too big to fit into a Rock Person ID.
+            // Use the Person Record ID instead. Store the old value in the Dictionary AND in an Attribute
+            field = row.Field<string>("IND_ID");
+            person.Id = row.Field<int>("PERSON_REC_ID");
+            person.Attributes.Add(new PersonAttributeValue
             {
-                person.ConnectionStatus = memberStatus.Description;
-                if ( memberStatus.Description == "Deceased" )
+                AttributeKey = "SKPersonID",  // Manually define this attribute in Rock beforehand
+                AttributeValue = field,
+                PersonId = person.Id
+            });
+
+            // Servant Keeper Family ID is too big to fit into a Rock Family ID.
+            // Use the Family Record ID instead. Store the old value in an attribute.
+            field = row.Field<string>("FAMILY_ID");
+            if (field.IsNotNullOrWhitespace())
+            {
+                person.FamilyId = row.Field<int>("FAMILY_REC_ID");
+                person.Attributes.Add(new PersonAttributeValue
                 {
-                    person.IsDeceased = true;
+                    AttributeKey = "SKFamilyID",  // Manually define this attribute in Rock beforehand
+                    AttributeValue = field,
+                    PersonId = person.Id
+                });
+            }
+
+
+            // Names of the Person
+            string fname = row.Field<string>("FIRST_NAME");
+            if (fname.IsNotNullOrWhitespace()) person.FirstName = fname;
+
+            field = row.Field<string>("PREFERNAME");
+            if (field.IsNotNullOrWhitespace() && field != fname) person.NickName = field;
+
+            field = row.Field<string>("MID_NAME");
+            if (field.IsNotNullOrWhitespace()) person.MiddleName = field;
+
+            field = row.Field<string>("LAST_NAME");
+            if (field.IsNotNullOrWhitespace()) person.LastName = field;
+
+            field = row.Field<string>("FAM_NAME");
+            if (field.IsNotNullOrWhitespace()) person.FamilyName = field;
+
+            // Suffix - This is a defined type in Rock; not a text field.
+            field = row.Field<string>("SUFFIX");
+            switch (field)
+            {
+                // Standard Values
+                case "Jr.":
+                case "Sr.":
+                case "Ph.D.":
+                case "II":
+                case "III":
+                case "IV":
+                case "V":
+                case "VI":
+                    person.Suffix = field;
+                    break;
+
+                // Corrections
+                case "Jr":
+                    person.Suffix = "Jr.";
+                    break;
+                case "Jr. M.D.":
+                    person.Suffix = "M.D.";
+                    break;
+            }
+
+            // Salutation / Title - This is a defined type in Rock; not a text field.
+            field = row.Field<string>("TITLE");
+            switch (field)
+            {
+                // Standard Values
+                case "Mr.":
+                case "Mrs.":
+                case "Ms.":
+                case "Miss":
+                case "Dr.":
+                case "Rev.":
+                    person.Salutation = field;
+                    break;
+                
+                // Corrections
+                case "mr":
+                    person.Salutation = "Mr.";
+                    break;
+            }
+
+            // Record/Connection Status Fields
+            switch (row.Field<string>("MEM_STATUS"))
+            {
+                case "Active Member":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Member";
+                    break;
+                case "Bible Study":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Participant";
+                    break;
+                case "Club182":
+                case "Club182 parent":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Club182";    // Manually define this status in Rock beforehand
+                    break;
+                case "Deceased":
                     person.RecordStatus = RecordStatus.Inactive;
-                    person.InactiveReason = memberStatus.Description;
-                }
+                    person.IsDeceased = true;
+                    person.ConnectionStatus = "Attendee";
+                    person.InactiveReason = "Deceased";
+                    break;
+                case "Inactive Attender":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Attendee";
+                    person.InactiveReason = "No Longer Attending";
+                    break;
+                case "Inactive Kids Hope":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Kids Hope";   // Manually define this status in Rock beforehand
+                    person.InactiveReason = "No Longer Attending";
+                    break;
+                case "Inactive Member":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Member";
+                    person.InactiveReason = "No Longer Attending";
+                    break;
+                case "inactive missionary":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Missionary";  // Manually define this status in Rock beforehand
+                    person.InactiveReason = "No Activity";
+                    break;
+                case "Inactive Visitor":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Visitor";
+                    person.InactiveReason = "No Longer Attending";
+                    break;
+                case "Kids Hope":
+                case "Kids Hope parent":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Kids Hope";   // Manually define this status in Rock beforehand
+                    break;
+                case "missionary":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Missionary";   // Manually define this status in Rock beforehand
+                    break;
+                case "non attending youth":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Non Attender";   // Manually define this status in Rock beforehand
+                    person.InactiveReason = "Does not attend with family";
+                    break;
+                case "Regular Attender":
+                case "PrimeTimers":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Attendee";
+                    break;
+                case "Transferred":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = row.Field<string>("HOW_JOIN").IsNotNullOrWhitespace() ? "Member" : "Attendee";
+                    person.InactiveReason = "Moved";
+                    break;
+                case "VBS":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "VBS";     // Manually define this status in Rock beforehand
+                    break;
+                case "Visitor":
+                    person.RecordStatus = RecordStatus.Active;
+                    person.ConnectionStatus = "Visitor";
+                    break;
+                case "youth parent":
+                case "fusion parent":
+                    person.RecordStatus = RecordStatus.Inactive;
+                    person.ConnectionStatus = "Non Attender";    // Manually define this status in Rock beforehand
+                    person.InactiveReason = "Does not attend with family";
+                    person.Note = "Youth Parent";
+                    break;
+                default:
+                    person.RecordStatus = row.Field<string>("ACTIVE_IND") == "1" ? RecordStatus.Inactive : RecordStatus.Active;
+                    person.ConnectionStatus = "Participant";
+                    break;
             }
-            else
+
+
+            // Dates
+            person.CreatedDateTime = row.Field<DateTime?>("CREATE_TS");
+            person.ModifiedDateTime = row.Field<DateTime?>("UPDATE_TS");
+
+            field = row.Field<string>("BIRTH_DT");
+            if (DateTime.TryParseExact(field, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue)) person.Birthdate = dtvalue;
+            field = row.Field<string>("WEDDING_DT");
+            if (DateTime.TryParseExact(field, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue)) person.AnniversaryDate = dtvalue;
+            field = row.Field<string>("JOIN_DT");
+            if (DateTime.TryParseExact(field, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue))
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "JoinedDate",    // Manually define this attribute in Rock beforehand
+                    AttributeValue = dtvalue.ToString("MM/dd/yyyy"),
+                    PersonId = person.Id
+                });
+
+            field = row.Field<string>("BAPTIZE_DT");
+            if (DateTime.TryParseExact(field, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue))
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "BaptismDate",
+                    AttributeValue = dtvalue.ToString("MM/dd/yyyy"),
+                    PersonId = person.Id
+                });
+
+            field = row.Field<string>("MEM_DT");
+            if (DateTime.TryParseExact(field, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue))
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "MembershipDate",
+                    AttributeValue = dtvalue.ToString("MM/dd/yyyy"),
+                    PersonId = person.Id
+                });
+
+            // Convert Servant Keeper relationship and/or Age to Rock role
+            string rel = row.Field<string>("RELATIONSHIP");
+            switch (rel)
             {
-                person.ConnectionStatus = "Unknown";
+                case "Head of Household":
+                case "Spouse":
+                case "Father":
+                case "Mother":
+                case "Father In-Law":
+                case "Son In-Law":
+                case "Grandfather":
+                case "Grandmother":
+                    person.FamilyRole = FamilyRole.Adult;
+                    break;
+                default:
+                    person.FamilyRole = person.Birthdate.HasValue && person.Birthdate.Age() <= 18 ? FamilyRole.Child : FamilyRole.Adult;
+                    break;
             }
 
-            person.CreatedDateTime = individual.CreateDate > family.CreateDate ? individual.CreateDate : family.CreateDate;
-            person.ModifiedDateTime = individual.UpdateDate > family.UpdateDate ? individual.UpdateDate : family.UpdateDate;
+            // Gives Individually?  1 Means person is NOT included on family statement.
+            person.GiveIndividually = row.Field<string>("STATUS") == "1" ? true : false;
 
-
-            person.FirstName = individual.FirstName;
-            person.MiddleName = individual.MiddleName;
-            person.LastName = individual.LastName;
-            person.NickName = individual.NickName;
-            person.Salutation = individual.Salutation;
-            person.Suffix = individual.Suffix;
-
-            person.Birthdate = individual.BirthDate;
-            person.AnniversaryDate = individual.WeddingDate;
-
-            if ( individual.MaritalCode > 0 )
+            // Gender
+            switch (row.Field<string>("SEX"))
             {
-                switch ( values.Where( v => v.Id == individual.MaritalCode ).Select( v => v.Description ).FirstOrDefault() )
-                {
-                    case "Married":
-                        person.MaritalStatus = MaritalStatus.Married;
-                        break;
-                    case "Single Dad":
-                    case "Single Mom":
-                    case "Single":
-                        person.MaritalStatus = MaritalStatus.Single;
-                        break;
-                    case "Divorced":
-                        person.MaritalStatus = MaritalStatus.Divorced;
-                        break;
-                    default:
-                        person.MaritalStatus = MaritalStatus.Unknown;
-                        break;
-                }
+                case "M":
+                    person.Gender = Gender.Male; break;
+                case "F":
+                    person.Gender = Gender.Female; break;
+                default:
+                    person.Gender = Gender.Unknown; break;
             }
-            else
+
+            // School Grade. Rock Bulk Import is ignoring the Grade property on Person.
+            // Convert to Graduation Year, store in custom attribute, then update real field on Person table using SQL after import.
+            string GraduateYear = null;
+            switch (row.Field<string>("GRADE"))
             {
-                if ( individual.Age < 18 )
+                case "9A":  // Preschool 1
+                    GraduateYear = "2033"; break;   // Manually add to Rock as a Grade option. Value 14.
+                case "A0":  // Preschool 2
+                    GraduateYear = "2032"; break;   // Manually add to Rock as a Grade option. Value 13.
+                case "B0":  // Kindergarten
+                    GraduateYear = "2031"; break;
+                case "C0":  // 1st Grade
+                    GraduateYear = "2030"; break;
+                case "D0":  // 2nd Grade
+                    GraduateYear = "2029"; break;
+                case "E0":  // 3rd Grade
+                    GraduateYear = "2028"; break;
+                case "F0":  // 4th Grade
+                    GraduateYear = "2027"; break;
+                case "G0":  // 5th Grade
+                    GraduateYear = "2026"; break;
+                case "H0":   // 6th Grade
+                    GraduateYear = "2025"; break;
+                case "I0":  // 7th Grade
+                    GraduateYear = "2024"; break;
+                case "J0":  // 8th Grade
+                    GraduateYear = "2023"; break;
+                case "K0":  // Freshman
+                    GraduateYear = "2022"; break;
+                case "L0":  // Sophomore
+                    GraduateYear = "2021"; break;
+                case "M0":   // Junior
+                    GraduateYear = "2020"; break;
+                case "N0":  // Senior
+                    GraduateYear = "2019"; break;
+                default:
+                    field = null; break;
+            }
+            if (GraduateYear.IsNotNullOrWhitespace())
+                person.Attributes.Add(new PersonAttributeValue
                 {
-                    person.MaritalStatus = MaritalStatus.Single;
-                }
-                else
-                {
+                    AttributeKey = "GraduateYear",        // Manually define this attribute in Rock beforehand
+                    AttributeValue = GraduateYear,
+                    PersonId = person.Id
+                });
+
+            // Marital Status.  Rock won't allow import of any custom value. Store those in custom attribute for now and update to
+            // real marital status field using SQL after import.
+            switch (row.Field<string>("MARITAL"))
+            {
+                case "Divorced":
+                    person.MaritalStatus = MaritalStatus.Divorced; break;
+                case "Married":
+                    person.MaritalStatus = MaritalStatus.Married; break;
+                case "Single":
+                    person.MaritalStatus = MaritalStatus.Single; break;
+                case "Separated":  // Manually add 'Separated' as Marital Status option to Rock beforehand
                     person.MaritalStatus = MaritalStatus.Unknown;
-
-                }
-            }
-
-            person.Email = individual.Email;
-            person.EmailPreference = individual.EmailIndicator ? EmailPreference.NoMassEmails : EmailPreference.EmailAllowed;
-
-            Regex digitsOnly = new Regex( @"[^\d]" );
-            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.CellPhone, "" ) ) && digitsOnly.Replace( individual.CellPhone, "" ).Length >= 7 )
-            {
-                PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace( individual.CellPhone, "" );
-                phone.PersonId = person.Id;
-                phone.IsUnlisted = individual.CellPhoneUnlisted;
-                phone.PhoneType = "Cell";
-                person.PhoneNumbers.Add( phone );
-            }
-            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.HomePhone, "" ) ) && digitsOnly.Replace( individual.HomePhone, "" ).Length >= 7 )
-            {
-                PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace( individual.HomePhone, "" );
-                phone.PersonId = person.Id;
-                phone.IsUnlisted = individual.HomePhoneUnlisted;
-                phone.PhoneType = "Home";
-                person.PhoneNumbers.Add( phone );
-            }
-            if ( !string.IsNullOrWhiteSpace( digitsOnly.Replace( individual.WorkPhone, "" ) ) && digitsOnly.Replace( individual.WorkPhone, "" ).Length >= 7 )
-            {
-                PersonPhone phone = new PersonPhone();
-                phone.PhoneNumber = digitsOnly.Replace( individual.WorkPhone, "" );
-                phone.PersonId = person.Id;
-                phone.IsUnlisted = individual.WorkPhoneUnlisted;
-                phone.PhoneType = "Work";
-                person.PhoneNumbers.Add( phone );
-            }
-
-            // Now export their address
-            PersonAddress address = new PersonAddress();
-            address.PersonId = person.Id;
-            address.AddressType = AddressType.Home;
-            address.Street1 = family.Address1;
-            address.Street2 = family.Address2;
-            address.City = family.City;
-            address.State = family.State;
-            address.PostalCode = family.Zip;
-            person.Addresses.Add( address );
-
-            // Handle the User Defined Fields
-            var properties = individual.GetType().GetProperties();
-            foreach ( var property in properties )
-            {
-                if ( property.Name.ToLower().Contains( "udf" ) )
-                {
-                    var attribute = property.CustomAttributes.Where( ca => ca.AttributeType.Name == "ColumnName" ).FirstOrDefault();
-
-                    if ( attribute != null )
+                    person.Attributes.Add(new PersonAttributeValue
                     {
-                        var fieldKey = ( ( string ) attribute.ConstructorArguments.FirstOrDefault().Value ).ToLower();
-                        var tableField = tableFields.Where( tf => tf.Name.ToLower().Contains( fieldKey ) ).FirstOrDefault();
+                        AttributeKey = "MaritalStatus",        // Manually define this attribute in Rock beforehand
+                        AttributeValue = "Separated",
+                        PersonId = person.Id
+                    });
+                    break;
+                case "W":
+                case "Widow":
+                case "Widowed":
+                case "Widower":  // Manually add 'Widowed' as Marital Status option to Rock beforehand
+                    person.MaritalStatus = MaritalStatus.Unknown;
+                    person.Attributes.Add(new PersonAttributeValue
+                    {
+                        AttributeKey = "MaritalStatus",        // Manually define this attribute in Rock beforehand
+                        AttributeValue = "Widowed",
+                        PersonId = person.Id
+                    });
+                    break;
 
-                        if ( tableField != null )
-                        {
-                            PersonAttributeValue pav = new PersonAttributeValue();
-                            // If this is a string
-                            if ( property.PropertyType == typeof( string ) && !string.IsNullOrWhiteSpace( ( string ) property.GetValue( individual ) ) )
-                            {
-                                pav.AttributeValue = ( string ) property.GetValue( individual );
-                            }
-                            // If this is a long (lookup value)
-                            else if ( property.PropertyType == typeof( long ) )
-                            {
-                                pav.AttributeValue = values.Where( v => v.Id == ( long ) property.GetValue( individual ) ).Select( i => i.Description ).FirstOrDefault();
-                            }
-                            // If this is a date
-                            else if ( ( property.PropertyType == typeof( DateTime ) && ( ( DateTime ) property.GetValue( individual ) ) != DateTime.MinValue ) ||
-                                     ( property.PropertyType == typeof( DateTime? ) && property.GetValue( individual ) != null ) )
-                            {
-                                pav.AttributeValue = property.GetValue( individual ).ToString();
-                            }
-                            // If this is a boolean
-                            else if ( property.PropertyType == typeof( bool ) )
-                            {
-                                pav.AttributeValue = ( bool ) property.GetValue( individual ) ? "True" : "False";
-                            }
-                            // Otherwise just continue
-                            else
-                            {
-                                continue;
-                            }
-                            pav.PersonId = person.Id;
-                            // Lookup the key from the table fields
-                            pav.AttributeKey = labels.Where( l => l.LabelId == tableField.LabelId ).Select( l => l.Description ).DefaultIfEmpty( tableField.Description ).FirstOrDefault().Replace( " ", string.Empty );
-                            person.Attributes.Add( pav );
-                        }
-                    }
-                }
+                // Manually add option to Rock
+                default:
+                    if (GraduateYear.IsNotNullOrWhitespace() || (person.Birthdate.HasValue && person.Birthdate.Age() <= 25))
+                        person.MaritalStatus = MaritalStatus.Single;
+                    else
+                        person.MaritalStatus = MaritalStatus.Unknown;
+                    break;
             }
 
-            person.Note = individual.Note;
-
-            if ( individual.JoinDate != DateTime.MinValue )
+            // Email Fields
+            field = row.Field<string>("EMAIL1");
+            if (field.IsNotNullOrWhitespace())
             {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.JoinDate.ToString();
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "JoinDate";
-                person.Attributes.Add( pav );
+                person.Email = field;
+                person.EmailPreference = row.Field<string>("EMAIL1_IND") == "1" ? EmailPreference.NoMassEmails : EmailPreference.EmailAllowed;
             }
 
-            if ( individual.HowJoined > 1 )
+            // Phone Numbers
+            field = Regex.Replace(row.Field<string>("H_PHONE") ?? "", @"[^\d]", ""); // Strip out non-digits. Replace doesn't like null.
+            if (field.Length >= 7)
+                person.PhoneNumbers.Add(new PersonPhone()
+                {
+                    PhoneNumber = field,
+                    PersonId = person.Id,
+                    IsUnlisted = row.Field<string>("H_UNLIST") == "1" ? true : false,
+                    PhoneType = "Home"
+                });
+
+            field = Regex.Replace(row.Field<string>("W_PHONE") ?? "", @"[^\d]", ""); // Strip out non-digits. Replace doesn't like null.
+            if (field.Length >= 7)
+                person.PhoneNumbers.Add(new PersonPhone()
+                {
+                    PhoneNumber = field,
+                    PersonId = person.Id,
+                    IsUnlisted = row.Field<string>("W_UNLIST") == "1" ? true : false,
+                    PhoneType = "Work"
+                });
+
+            field = Regex.Replace(row.Field<string>("C_PHONE") ?? "", @"[^\d]", ""); // Strip out non-digits. Replace doesn't like null.
+            if (field.Length >= 7)
+                person.PhoneNumbers.Add(new PersonPhone()
+                {
+                    PhoneNumber = field,
+                    PersonId = person.Id,
+                    IsUnlisted = row.Field<string>("C_UNLIST") == "1" ? true : false,
+                    PhoneType = "Mobile"
+                });
+
+
+            // Home Address
+            field = row.Field<string>("ADDR1");
+            if (field.IsNotNullOrWhitespace())
             {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = values.Where( v => v.Id == individual.HowJoined ).Select( v => v.Description ).FirstOrDefault();
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "HowJoined";
-                person.Attributes.Add( pav );
+                PersonAddress address = new PersonAddress()
+                {
+                    PersonId = person.Id,
+                    AddressType = AddressType.Home,
+                    Street1 = field,
+                    Street2 = row.Field<string>("ADDR2"),
+                    City = row.Field<string>("CITY"),
+                    State = row.Field<string>("STATE"),
+                    PostalCode = row.Field<string>("ZIP")
+                };
+
+                field = row.Field<string>("COUNTRY");
+                if (field.IsNotNullOrWhitespace()) address.Country = field;
+
+                person.Addresses.Add(address);
             }
 
-            if ( individual.BaptizedDate != DateTime.MinValue )
-            {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.BaptizedDate.ToString();
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "BaptizedDate";
-                person.Attributes.Add( pav );
-            }
 
-            {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.Baptized ? "True" : "False";
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "Baptized";
-                person.Attributes.Add( pav );
-            }
+            // Person Attributes
+            field = row.Field<string>("ENV_NO");
+            if (field.IsNotNullOrWhitespace())
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "core_GivingEnvelopeNumber",
+                    AttributeValue = field,
+                    PersonId = person.Id
+                });
 
-            if ( individual.JobCode > 1 )
-            {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = values.Where( v => v.Id == individual.JobCode ).Select( v => v.Description ).FirstOrDefault();
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "Occupation";
-                person.Attributes.Add( pav );
-            }
+            field = row.Field<string>("EMPLOYER");
+            if (field.IsNotNullOrWhitespace())
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "Employer",
+                    AttributeValue = field,
+                    PersonId = person.Id
+                });
 
-            if ( !string.IsNullOrWhiteSpace( individual.Employer ) )
-            {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.Employer;
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "Employer";
-                person.Attributes.Add( pav );
-            }
+            field = row.Field<string>("JOB");
+            if (field.IsNotNullOrWhitespace())
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "Position",
+                    AttributeValue = field,
+                    PersonId = person.Id
+                });
 
-            if ( !string.IsNullOrWhiteSpace( individual.SundaySchool ) )
-            {
-                PersonAttributeValue pav = new PersonAttributeValue();
-                pav.AttributeValue = individual.SundaySchool;
-                pav.PersonId = person.Id;
-                pav.AttributeKey = "SundaySchool";
-                person.Attributes.Add( pav );
-            }
+            field = row.Field<string>("LAYMAN");
+            if (field.IsNotNullOrWhitespace())
+                person.Attributes.Add(new PersonAttributeValue
+                {
+                    AttributeKey = "KidsHopeMentor",
+                    AttributeValue = field,
+                    PersonId = person.Id
+                });
+
+            // Person User Defined Fields. These will be different for every church since they are user defined.
+            string UDFcol;
+            if (ServanrKeeperApi._PersonUDFColumns.TryGetValue(new Tuple<string, string>("First Visited", "date"), out UDFcol))
+                if (DateTime.TryParseExact(row.Field<string>(UDFcol), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue))
+                    person.Attributes.Add(new PersonAttributeValue
+                    {
+                        AttributeKey = "FirstVisit",
+                        AttributeValue = dtvalue.ToString("MM/dd/yyyy"),
+                        PersonId = person.Id
+                    });
+
+            if (ServanrKeeperApi._PersonUDFColumns.TryGetValue(new Tuple<string, string>("Deceased Date", "date"), out UDFcol))
+                if (DateTime.TryParseExact(row.Field<string>(UDFcol), "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dtvalue))
+                    person.Attributes.Add(new PersonAttributeValue
+                    {
+                        AttributeKey = "DateofDeath",
+                        AttributeValue = dtvalue.ToString("MM/dd/yyyy"),
+                        PersonId = person.Id
+                    });
+
 
             return person;
-
         }
     }
 }

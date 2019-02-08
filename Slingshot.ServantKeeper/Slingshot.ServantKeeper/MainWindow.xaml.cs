@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 
 using Slingshot.Core;
 using Slingshot.Core.Utilities;
@@ -20,18 +21,14 @@ namespace Slingshot.ServantKeeper
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
-        public List<string> ExportEmailTypes { get; set; }
-        public List<ComboBoxItem> EmailTypesComboBoxItems { get; set; } = new List<ComboBoxItem>();
 
-        public List<string> ExportCampus { get; set; }
-        public List<ComboBoxItem> ExportCampusComboBoxItems { get; set; } = new List<ComboBoxItem>();
 
         public MainWindow()
         {
             InitializeComponent();
 
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
-            _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
+            _apiUpdateTimer.Interval = new TimeSpan(0, 2, 30);
 
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
@@ -40,70 +37,66 @@ namespace Slingshot.ServantKeeper
         }
 
         #region Background Worker Events
-        private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
+        private void ExportWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             txtExportMessage.Text = e.UserState.ToString();
             pbProgress.Value = e.ProgressPercentage;
         }
 
-        private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
+        private void ExportWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             txtExportMessage.Text = "Export Complete";
             pbProgress.Value = 100;
         }
 
-        private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
+        private void ExportWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            exportWorker.ReportProgress( 0, "" );
+            exportWorker.ReportProgress(0, "");
 
-            var exportSettings = ( ExportSettings ) e.Argument;
+            var exportSettings = (ExportSettings)e.Argument;
 
             // clear filesystem directories
-            ServantKeeperApi.InitializeExport();
+            ServanrKeeperApi.InitializeExport(exportSettings.ModifiedSince, exportSettings.NoContributionsBefore);
 
             // export individuals and phone numbers
-            if ( exportSettings.ExportIndividuals )
+            if (exportSettings.ExportIndividuals)
             {
-                exportWorker.ReportProgress( 1, "Exporting Individuals..." );
-                ServantKeeperApi.ExportIndividuals( exportSettings.ModifiedSince, exportSettings.ExportEmailType, exportSettings.ExportCampus );
+                exportWorker.ReportProgress(1, "Exporting Individuals...");
+                ServanrKeeperApi.ExportIndividuals();
 
-                if ( ServantKeeperApi.ErrorMessage.IsNotNullOrWhitespace() )
+                if (ServanrKeeperApi.ErrorMessage.IsNotNullOrWhitespace())
                 {
-                    txtMessages.Text = $"Error exporting individuals: {ServantKeeperApi.ErrorMessage}";
+                    txtMessages.Text = $"Error exporting individuals: {ServanrKeeperApi.ErrorMessage}";
                 }
-
-                /*exportWorker.ReportProgress( 1, "Exporting Phones..." );
-                ServantKeeperApi.ExportPhoneNumbers( exportSettings.ModifiedSince );
-
-                if ( ServantKeeperApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    txtMessages.Text = $"Error exporting phones: {ServantKeeperApi.ErrorMessage}";
-                }*/
             }
 
             // export contributions
-            if ( exportSettings.ExportContributions )
+            if (exportSettings.ExportContributions)
             {
-                exportWorker.ReportProgress( 30, "Exporting Funds..." );
+                exportWorker.ReportProgress(32, "Exporting Contributions...");
 
-                ServantKeeperApi.ExportFunds();
-                if ( ServantKeeperApi.ErrorMessage.IsNotNullOrWhitespace() )
+                ServanrKeeperApi.ExportContributions();
+                if (ServanrKeeperApi.ErrorMessage.IsNotNullOrWhitespace())
                 {
-                    exportWorker.ReportProgress( 31, $"Error exporting funds: {ServantKeeperApi.ErrorMessage}" );
-                }
-
-                exportWorker.ReportProgress( 32, "Exporting Contributions..." );
-
-                ServantKeeperApi.ExportContributions( exportSettings.ModifiedSince );
-                if ( ServantKeeperApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    exportWorker.ReportProgress( 33, $"Error exporting contributions: {ServantKeeperApi.ErrorMessage}" );
+                    exportWorker.ReportProgress(33, $"Error exporting contributions: {ServanrKeeperApi.ErrorMessage}");
                 }
             }
 
+            // export groups
+            if (exportSettings.ExportGroups)
+            {
+                exportWorker.ReportProgress(54, $"Exporting Groups...");
+
+                ServanrKeeperApi.ExportGroups(exportSettings.SelectedGroups);
+
+                if (ServanrKeeperApi.ErrorMessage.IsNotNullOrWhitespace())
+                {
+                    exportWorker.ReportProgress(54, $"Error exporting groups: {ServanrKeeperApi.ErrorMessage}");
+                }
+            }
 
             // finalize the package
-            ImportPackage.FinalizePackage( "servantkeeper-export.slingshot" );
+            ImportPackage.FinalizePackage("servantkeeper.slingshot");
 
             // schedule the API status to update (the status takes a few mins to update)
             _apiUpdateTimer.Start();
@@ -116,7 +109,7 @@ namespace Slingshot.ServantKeeper
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        private void _apiUpdateTimer_Tick( object sender, EventArgs e )
+        private void _apiUpdateTimer_Tick(object sender, EventArgs e)
         {
             // update the api stats
             _apiUpdateTimer.Stop();
@@ -127,17 +120,22 @@ namespace Slingshot.ServantKeeper
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
-        private void Window_Loaded( object sender, RoutedEventArgs e )
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // populate email types combobox
-            EmailTypesComboBoxItems.Add( new ComboBoxItem { Text = "Primary Email" } );
+            // Retrieve the Group Names from the database
+            Dictionary<int,string> AllGroups = ServanrKeeperApi.GetAllGroups();
 
-            // populate campus fields combobox
+            // Populate Groups listbox control with available group names
+            if (AllGroups.Any())
+            {
+                foreach (var group in AllGroups)
+                    GroupsListBox.Items.Add(new ListBoxItem() { Content = group.Value, Uid = group.Key.ToString() });
+            }
 
-            ExportCampusComboBoxItems.Add( new ComboBoxItem { Text = "Main Campus" } );
-
-
-            txtImportCutOff.Text = DateTime.Now.ToShortDateString();
+            // Initialize values
+            txtImportCutOff.Text = "1/1/1900";
+            txtContributionsCutOff.Text = "1/1/2017";
+            Groups_Checked(null, null);
         }
 
         /// <summary>
@@ -145,49 +143,48 @@ namespace Slingshot.ServantKeeper
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
-        private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
+        private void DownloadPackage_Click(object sender, RoutedEventArgs e)
         {
-            // launch our background export
-            var exportSettings = new ExportSettings
+            // Contruct the settings to be passed to the export process based on user selections
+            var Settings = new ExportSettings
             {
-                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = txtImportCutOff.Text.Length > 0 ? (DateTime)txtImportCutOff.Text.AsDateTime() : DateTime.Parse("1/1/1900"),
+                NoContributionsBefore = txtContributionsCutOff.Text.Length > 0 ? (DateTime)txtContributionsCutOff.Text.AsDateTime() : DateTime.Parse("1/1/1900"),
+                ExportIndividuals = cbIndividuals.IsChecked.Value,
+                ExportGroups = cbGroups.IsChecked.Value,
                 ExportContributions = cbContributions.IsChecked.Value,
-                ExportIndividuals = cbIndividuals.IsChecked.Value
+                SelectedGroups = ""
             };
 
-            exportWorker.RunWorkerAsync( exportSettings );
+            // Retrieve the IDs of the Group export selections
+            foreach (ListBoxItem item in GroupsListBox.SelectedItems)
+               Settings.SelectedGroups += Settings.SelectedGroups.Length > 0 ? ", " + item.Uid : item.Uid;
+
+            // Launch the background process that actually does the export
+            exportWorker.RunWorkerAsync(Settings);
         }
 
         #region Windows Events
 
-        private void cbIndividuals_Checked( object sender, RoutedEventArgs e )
+        // Expand the Groups to Export section when Groups are selected
+        private void Groups_Checked(object sender, RoutedEventArgs e)
         {
-            if ( cbIndividuals.IsChecked.Value )
-            {
-                gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
-            }
+            if (cbGroups.IsChecked.Value)
+                gridMain.RowDefinitions[5].Height = new GridLength(1, GridUnitType.Auto);
             else
-            {
-                gridMain.RowDefinitions[5].Height = new GridLength( 0 );
-            }
+                gridMain.RowDefinitions[5].Height = new GridLength(0);
         }
-
-        #endregion
+        #endregion Windows Events
     }
 
     public class ExportSettings
     {
-        public DateTime ModifiedSince { get; set; } = DateTime.Now;
-
+        public DateTime ModifiedSince { get; set; }
+        public DateTime NoContributionsBefore { get; set; }
         public bool ExportIndividuals { get; set; } = true;
-
-        public bool ExportContributions { get; set; } = true;
-
-        public bool ExportGroups { get; set; } = true;
-
-        public string ExportEmailType { get; set; }
-
-        public string ExportCampus { get; set; }
+        public bool ExportContributions { get; set; } = false;
+        public bool ExportGroups { get; set; } = false;
+        public string SelectedGroups { get; set; }
     }
 
     public class ComboBoxItem

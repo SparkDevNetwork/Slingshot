@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Slingshot.ServantKeeper"
+        xmlns:local="clr-namespace:Slingshot.ACS"
         mc:Ignorable="d"
         Title="ServantKeeper Database Import" Height="276.41" Width="525" Icon="icon.ico">
     <Grid>
@@ -19,7 +19,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Label Grid.Row="0">SKB File</Label>
+            <Label Grid.Row="0">Filename</Label>
             <TextBox Name="txtFilename" Grid.Row="0" Grid.Column="1" Margin="0,2,104,10" Padding="3" Text="" />
             <Button Content="Browse" Name="btnFileOpen" Grid.Column="1" Margin="321,2,0,0" VerticalAlignment="Top" Height="25" Click="Browse_Click"/>
 

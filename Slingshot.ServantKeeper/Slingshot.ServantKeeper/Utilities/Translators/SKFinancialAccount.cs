@@ -1,24 +1,21 @@
-﻿using Slingshot.Core.Model;
-using Slingshot.ServantKeeper.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System;
+using System.Data;
+
+using Slingshot.Core.Model;
 
 namespace Slingshot.ServantKeeper.Utilities.Translators
 {
-    class SKFinancialAccount
-    {
-        public static FinancialAccount Translate( Account account, List<AccountLink> links )
+    public static class SkFinancialAccount
+    { 
+        public static FinancialAccount Translate( DataRow row )
         {
-            FinancialAccount financialAccount = new FinancialAccount();
-            financialAccount.Id = Math.Abs( unchecked(( int ) account.Id) );
+            FinancialAccount account = new FinancialAccount();
 
-            financialAccount.Name = account.Name + ": " + links.Where( l => l.Id == account.Id ).Select( l => l.Description ).FirstOrDefault();
-            financialAccount.IsTaxDeductible = account.IsTaxDeductible;
+            account.Id = row.Field<int>("ACCOUNT_ID");
+            account.Name = row.Field<string>("ACCT_NAME");
+            account.IsTaxDeductible = row.Field<string>("TAX_IND") == "1" ? true : false;
 
-            return financialAccount;
-
+            return account;
         }
     }
 }
