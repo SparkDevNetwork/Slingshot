@@ -17,6 +17,7 @@ namespace Slingshot.F1.Utilities.Translators.API
 
             group.Id = inputGroup.Attribute( "id" ).Value.AsInteger();
             group.Name = inputGroup.Element( "name" ).Value;
+            group.IsActive = true;
 
             group.ParentGroupId = parentGroupId;
             group.GroupTypeId = inputGroup.Element( "groupType" ).Attribute( "id" ).Value.AsInteger();

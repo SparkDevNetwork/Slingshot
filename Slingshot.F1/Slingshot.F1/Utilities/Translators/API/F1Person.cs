@@ -59,30 +59,42 @@ namespace Slingshot.F1.Utilities.Translators.API
                 {
                     if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Home Phone" )
                     {
-                        person.PhoneNumbers.Add( new PersonPhone
+                        var homePhone = comm.Element( "communicationValue" ).Value.AsNumeric();
+                        if ( homePhone.IsNotNullOrWhitespace() && homePhone.Count() <= 20 )
                         {
-                            PersonId = person.Id,
-                            PhoneType = "Home",
-                            PhoneNumber = comm.Element( "communicationValue" ).Value
-                        } );
+                            person.PhoneNumbers.Add( new PersonPhone
+                            {
+                                PersonId = person.Id,
+                                PhoneType = "Home",
+                                PhoneNumber = homePhone
+                            } );
+                        }                        
                     }
                     else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Work Phone" )
                     {
-                        person.PhoneNumbers.Add( new PersonPhone
+                        var workPhone = comm.Element( "communicationValue" ).Value.AsNumeric();
+                        if ( workPhone.IsNotNullOrWhitespace() && workPhone.Count() <= 20 )
                         {
-                            PersonId = person.Id,
-                            PhoneType = "Work",
-                            PhoneNumber = comm.Element( "communicationValue" ).Value
-                        } );
+                            person.PhoneNumbers.Add( new PersonPhone
+                            {
+                                PersonId = person.Id,
+                                PhoneType = "Work",
+                                PhoneNumber = workPhone
+                            } );
+                        }
                     }
                     else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Mobile" )
                     {
-                        person.PhoneNumbers.Add( new PersonPhone
+                        var mobilePhone = comm.Element( "communicationValue" ).Value.AsNumeric();
+                        if ( mobilePhone.IsNotNullOrWhitespace() && mobilePhone.Count() <= 20 )
                         {
-                            PersonId = person.Id,
-                            PhoneType = "Mobile",
-                            PhoneNumber = comm.Element( "communicationValue" ).Value
-                        } );
+                            person.PhoneNumbers.Add( new PersonPhone
+                            {
+                                PersonId = person.Id,
+                                PhoneType = "Mobile",
+                                PhoneNumber = mobilePhone
+                            } );
+                        }
                     }
                     else if ( comm.Element( "communicationType" ).Element( "name" ).Value == "Email" &&
                               comm.Element( "preferred" ).Value == "true" )
