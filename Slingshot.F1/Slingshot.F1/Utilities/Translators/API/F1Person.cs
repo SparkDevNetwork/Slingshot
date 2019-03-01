@@ -232,6 +232,18 @@ namespace Slingshot.F1.Utilities.Translators.API
                 person.CreatedDateTime = inputPerson.Element( "createdDate" )?.Value.AsDateTime();
                 person.ModifiedDateTime = inputPerson.Element( "lastUpdatedDate" )?.Value.AsDateTime();
 
+                // First Visit
+                DateTime? firstVisit = inputPerson.Element( "firstRecord" ).Value.AsDateTime();
+                if ( firstVisit.HasValue )
+                {
+                    person.Attributes.Add( new PersonAttributeValue
+                    {
+                        AttributeKey = "FirstVisit",
+                        AttributeValue = firstVisit.Value.ToString( "o" ),
+                        PersonId = person.Id
+                    } );
+                }
+
                 // family
                 person.FamilyId = inputPerson.Attribute( "householdID" )?.Value.AsInteger();
 
@@ -496,13 +508,11 @@ namespace Slingshot.F1.Utilities.Translators.API
                     } );
                 }
 
-
                 // write out person notes
                 if ( notes.Count() > 0 )
                 {
                     person.Note = string.Join( ",", notes );
                 }
-
             }
 
             return person;
