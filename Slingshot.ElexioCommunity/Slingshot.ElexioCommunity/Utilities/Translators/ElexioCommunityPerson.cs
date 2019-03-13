@@ -310,7 +310,7 @@ namespace Slingshot.ElexioCommunity.Utilities.Translators
             }
 
             // date 6
-            string date6 = importPerson.date1;
+            string date6 = importPerson.date6;
             if ( metaData.data.dateFieldLabels.date6 != null && date6.AsDateTime().HasValue )
             {
                 person.Attributes.Add( new PersonAttributeValue()
