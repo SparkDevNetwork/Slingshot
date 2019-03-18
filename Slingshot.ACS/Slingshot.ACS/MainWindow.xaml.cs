@@ -153,6 +153,11 @@ namespace Slingshot.ACS
                 cblEmailTypes.ItemsSource = EmailTypesComboBoxItems;
                 cblEmailTypes.SelectedIndex = 0;
             }
+            else
+            {
+                btnDownloadPackage.IsEnabled = false;
+                txtMessages.Text = "ERROR:  Cannot Export Data without Email Addresses." + Environment.NewLine;
+            }
 
             // populate campus fields combobox
             ExportCampus = AcsApi.LoadPersonFields();
@@ -168,6 +173,11 @@ namespace Slingshot.ACS
 
                 cblCampus.ItemsSource = ExportCampusComboBoxItems;
                 cblCampus.SelectedIndex = 0;
+            }
+            else
+            {
+                btnDownloadPackage.IsEnabled = false;
+                txtMessages.Text += "ERROR:  Cannot Export Data without Campus data." + Environment.NewLine;
             }
 
             txtImportCutOff.Text = DateTime.Now.ToShortDateString();

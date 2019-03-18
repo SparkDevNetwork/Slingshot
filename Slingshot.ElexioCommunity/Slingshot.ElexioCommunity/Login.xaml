@@ -1,0 +1,41 @@
+﻿<Window x:Class="Slingshot.ElexioCommunity.Login"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Slingshot.ElexioCommunity"
+        mc:Ignorable="d"
+        Title="Login" Height="280" Width="450
+        ">
+    <Grid>
+        <Grid Margin="20,40,20,20" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0">Church Code</Label>
+            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+
+            <Label Grid.Row="3">Username</Label>
+            <TextBox Name="txtApiUsername" Grid.Row="3" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+
+            <Label Grid.Row="4">Password</Label>
+            <TextBox Name="txtApiPassword" Grid.Row="4" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+
+            <Button Name="btnLogin" Grid.Row="5" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5"  >
+                <Label>Login</Label>
+            </Button>
+
+            <TextBlock Name="lblMessage" Grid.Row="6" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+        </Grid>
+    </Grid>
+</Window>

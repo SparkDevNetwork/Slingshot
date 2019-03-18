@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using RestSharp;
@@ -16,16 +18,63 @@ using Slingshot.Core.Utilities;
 namespace Slingshot.CCB.Utilities
 {
     /// <summary>
+    /// Provides a custom implementation of a rate limited Rest Client
+    /// </summary>
+    /// <seealso cref="RestSharp.RestClient" />
+    public class RateLimitedRestClient : RestClient
+    {
+        private readonly int ThrottleRate = 6;
+        private readonly DateTime EpochTime;
+        public RateLimitedRestClient( string baseUrl ) : base( baseUrl )
+        {
+            EpochTime = new DateTime( 1970, 1, 1, 0, 0, 0, DateTimeKind.Utc );
+        }
+
+        /// <summary>
+        /// Executes the specified rest request with rate limits.
+        /// </summary>
+        /// <param name="restRequest">The rest request.</param>
+        /// <see cref="http://designccb.s3.amazonaws.com/helpdesk/files/official_docs/API_Rate_Limiting_CCB.pdf"/>
+        /// <returns></returns>
+        public override IRestResponse Execute( IRestRequest restRequest )
+        {
+            var response = base.Execute( restRequest );
+            var remainingCalls = response.Headers
+                .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
+                .Select( x => ((string)x.Value).AsIntegerOrNull() )
+                .FirstOrDefault();
+            var resetTime = response.Headers
+                .Where( h => h.Name.Equals( "X-RATELIMIT-RESET", StringComparison.InvariantCultureIgnoreCase ) )
+                .Select( x => ((string)x.Value).AsDoubleOrNull() )
+                .FirstOrDefault();
+
+            // allow the server to burst up to the throttle rate
+            if ( remainingCalls.HasValue && remainingCalls < ThrottleRate && resetTime.HasValue )
+            {
+                var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
+                if ( coolDownTime.Seconds > 0)
+                {
+                    CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
+                    Thread.Sleep( coolDownTime );
+                    CcbApi.ErrorMessage = string.Empty;
+                }
+            }
+
+            return response;
+        }
+    }
+
+    /// <summary>
     /// API CCB Status
     /// </summary>
     public static class CcbApi
     {
-        private static RestClient _client;
+        private static RateLimitedRestClient _client;
         private static int loopThreshold = 100;
 
         // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
         public static bool DumpResponseToXmlFile { get; set; }
-                
+
         /// <summary>
         /// Gets or sets the last run date.
         /// </summary>
@@ -104,9 +153,14 @@ namespace Slingshot.CCB.Utilities
         /// </value>
         public static bool IsConnected { get; private set; } = false;
 
-        #region API Call Paths 
+        /// <summary>
+        /// The identifier to use for unknown grouptypes
+        /// </summary>
+        public const int GROUPTYPE_UNKNOWN_ID = 10000;
 
-        private const string API_STATUS = "api.php?srv=api_status";
+        #region API Call Paths
+
+        private const string API_STATUS = "/api.php?srv=api_status";
         private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
@@ -116,7 +170,8 @@ namespace Slingshot.CCB.Utilities
         private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
         private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
         private const string API_ATTENDANCE = "/api.php?srv=attendance_profiles&start_date={startDate}&end_date={endDate}";
-        #endregion
+
+        #endregion API Call Paths
 
         /// <summary>
         /// Initializes the export.
@@ -138,8 +193,9 @@ namespace Slingshot.CCB.Utilities
             ApiUsername = apiUsername;
             ApiPassword = apiPassword;
 
-            _client = new RestClient( ApiUrl );
+            _client = new RateLimitedRestClient( ApiUrl );
             _client.Authenticator = new HttpBasicAuthenticator( ApiUsername, ApiPassword );
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
             // getting the api status sets the IsConnect flag
             UpdateApiStatus();
@@ -170,13 +226,13 @@ namespace Slingshot.CCB.Utilities
                 foreach ( var sourceGroupType in sourceGroupTypes )
                 {
                     var groupType = new GroupType();
-
                     groupType.Id = sourceGroupType.Element( "id" ).Value.AsInteger();
                     groupType.Name = sourceGroupType.Element( "name" )?.Value;
-
                     groupTypes.Add( groupType );
-
                 }
+
+                // add an unknown type to cover missing groups
+                groupTypes.Add( new GroupType { Id = GROUPTYPE_UNKNOWN_ID, Name = "Unknown" } );
             }
             catch ( Exception ex )
             {
@@ -193,12 +249,15 @@ namespace Slingshot.CCB.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="perPage">The people per page.</param>
         public static void ExportGroups( List<int> selectedGroupTypes, DateTime modifiedSince, int perPage = 500 )
-        {            
-            // write out the group types 
+        {
+            // write out the group types
             WriteGroupTypes( selectedGroupTypes );
 
+            // write attributes
+            WriteGroupAttributes();
+
             // write departments
-            ExportDeparments();
+            ExportDepartments();
 
             // get groups
             try
@@ -234,6 +293,11 @@ namespace Slingshot.CCB.Utilities
                             {
                                 // write out the group if its type was selected for export
                                 var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
+                                if ( groupTypeId == 0 )
+                                {
+                                    groupTypeId = GROUPTYPE_UNKNOWN_ID;
+                                }
+
                                 if ( selectedGroupTypes.Contains( groupTypeId ) )
                                 {
                                     var importGroups = CcbGroup.Translate( groupNode );
@@ -263,26 +327,24 @@ namespace Slingshot.CCB.Utilities
                         moreExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    // developer safety blanket (prevents eating all the api calls for the day)
                     if ( loopCounter > loopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
-
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
-
         }
 
         /// <summary>
         /// Exports the deparments.
         /// </summary>
-        private static void ExportDeparments()
+        private static void ExportDepartments()
         {
             try
             {
@@ -301,9 +363,10 @@ namespace Slingshot.CCB.Utilities
                 foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
                 {
                     var group = new Group();
-                    group.Id = ("9999" + sourceDepartment.Element( "id" ).Value).AsInteger();
+                    group.Id = ( "9999" + sourceDepartment.Element( "id" ).Value ).AsInteger();
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
+                    group.IsActive = true;
                     group.GroupTypeId = 9999;
 
                     ImportPackage.WriteToPackage( group );
@@ -322,7 +385,7 @@ namespace Slingshot.CCB.Utilities
         /// <param name="peoplePerPage">The people per page.</param>
         public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
         {
-            // write out the person attributes 
+            // write out the person attributes
             WritePersonAttributes();
 
             // write family attributes (always only the family photo)
@@ -384,18 +447,18 @@ namespace Slingshot.CCB.Utilities
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         moreIndividualsExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    // developer safety blanket (prevents eating all the api calls for the day)
                     if ( loopCounter > loopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
-
             }
             catch ( Exception ex )
             {
@@ -409,14 +472,15 @@ namespace Slingshot.CCB.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         public static void ExportContributions( DateTime modifiedSince )
         {
-            // we'll make an api call for each month until the modifiedSince date 
+            // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
-            var numberOfMonths = (((today.Year - modifiedSince.Year) * 12) + today.Month - modifiedSince.Month) + 1;
+            var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
             int loopCounter = 0;
-            try {
+            try
+            {
                 for ( int i = 0; i < numberOfMonths; i++ )
                 {
-                    DateTime referenceDate = today.AddMonths( ((numberOfMonths - i) - 1) * -1 );
+                    DateTime referenceDate = today.AddMonths( ( ( numberOfMonths - i ) - 1 ) * -1 );
                     DateTime startDate = new DateTime( referenceDate.Year, referenceDate.Month, 1 );
                     DateTime endDate = new DateTime( referenceDate.Year, referenceDate.Month, DateTime.DaysInMonth( referenceDate.Year, referenceDate.Month ) );
 
@@ -492,7 +556,8 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         public static void ExportFinancialAccounts()
         {
-            try {
+            try
+            {
                 var request = new RestRequest( API_FINANCIAL_ACCOUNTS, Method.GET );
                 var response = _client.Execute( request );
 
@@ -507,7 +572,6 @@ namespace Slingshot.CCB.Utilities
 
                 foreach ( var sourceAccount in sourceAccounts.Elements( "transaction_detail_type" ) )
                 {
-
                     var financialAccount = new FinancialAccount();
                     financialAccount.Name = sourceAccount.Element( "name" )?.Value;
                     financialAccount.Id = (int)sourceAccount.Attribute( "id" )?.Value.AsInteger();
@@ -604,7 +668,7 @@ namespace Slingshot.CCB.Utilities
                 if ( field.Element( "label" ).Value.IsNotNullOrWhitespace() )
                 {
                     var personAttribute = new PersonAttribute();
-                    personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_"); // need to strip out the '_ind' so they match what is returned from CCB on the person record
+                    personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_" ); // need to strip out the '_ind' so they match what is returned from CCB on the person record
                     personAttribute.Name = field.Element( "label" ).Value;
 
                     if ( field.Element( "name" ).Value.Contains( "_text_" ) )
@@ -625,6 +689,21 @@ namespace Slingshot.CCB.Utilities
         }
 
         /// <summary>
+        /// Writes the group attributes.
+        /// </summary>
+        public static void WriteGroupAttributes()
+        {
+            // export person attribute list
+            ImportPackage.WriteToPackage( new GroupAttribute()
+            {
+                Name = "Has Childcare",
+                Key = "HasChildcare",
+                Category = "Small Group",
+                FieldType = "Rock.Field.Types.BooleanFieldType"
+            } );
+        }
+
+        /// <summary>
         /// Updates the API status.
         /// </summary>
         public static void UpdateApiStatus()
@@ -635,9 +714,17 @@ namespace Slingshot.CCB.Utilities
 
             if ( response.StatusCode == System.Net.HttpStatusCode.OK )
             {
-                XDocument xdoc = XDocument.Parse( response.Content );
+                XElement responseData = null;
+                try
+                {
+                    XDocument xdoc = XDocument.Parse( response.Content );
 
-                var responseData = xdoc.Element( "ccb_api" )?.Element( "response" );
+                    responseData = xdoc.Element( "ccb_api" )?.Element( "response" );
+                }
+                catch ( Exception ex )
+                {
+                    ErrorMessage = response.Content;
+                }
 
                 if ( responseData != null )
                 {
@@ -669,7 +756,6 @@ namespace Slingshot.CCB.Utilities
             }
         }
 
-
         /// <summary>
         /// Exports the attendance.
         /// </summary>
@@ -677,12 +763,12 @@ namespace Slingshot.CCB.Utilities
         {
             // first we need to get the 'events' so we can get the group, location and schedule information
             // since the events have a different modification date than attendance we need to load all of the
-            // events so we have the details we need for the attendance 
-            var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1), 500 );
+            // events so we have the details we need for the attendance
+            var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1 ), 500 );
 
             // add location ids to the location fields (CCB doesn't have location ids) instead of randomly creating ids (that would not be consistant across exports)
             // we'll use a hash of the street name
-            foreach ( var specificAddress in eventDetails.Select(e => new { e.LocationStreetAddress, e.LocationName } ).Distinct() )
+            foreach ( var specificAddress in eventDetails.Select( e => new { e.LocationStreetAddress, e.LocationName } ).Distinct() )
             {
                 int locationId = 1;
 
@@ -690,10 +776,10 @@ namespace Slingshot.CCB.Utilities
                 {
                     MD5 md5Hasher = MD5.Create();
                     var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( specificAddress.LocationName + specificAddress.LocationStreetAddress ) );
-                    locationId = Math.Abs( BitConverter.ToInt32( hashed, 0 )); // used abs to ensure positive number
+                    locationId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 }
 
-                foreach ( var location in eventDetails.Where(e => e.LocationStreetAddress == specificAddress.LocationStreetAddress && e.LocationName == specificAddress.LocationName ) )
+                foreach ( var location in eventDetails.Where( e => e.LocationStreetAddress == specificAddress.LocationStreetAddress && e.LocationName == specificAddress.LocationName ) )
                 {
                     location.LocationId = locationId;
                 }
@@ -709,7 +795,7 @@ namespace Slingshot.CCB.Utilities
                 {
                     MD5 md5Hasher = MD5.Create();
                     var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( specificSchedule ) );
-                    scheduleId = Math.Abs(BitConverter.ToInt32( hashed, 0 )); // used abs to ensure positive number
+                    scheduleId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 }
 
                 foreach ( var location in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
@@ -719,7 +805,7 @@ namespace Slingshot.CCB.Utilities
             }
 
             // export locations, same thing with location ids we'll hash the street address
-            foreach(var location in eventDetails.Select(e => new { e.LocationName, e.LocationStreetAddress, e.LocationCity, e.LocationState, e.LocationZip, e.LocationId} ).Distinct() )
+            foreach ( var location in eventDetails.Select( e => new { e.LocationName, e.LocationStreetAddress, e.LocationCity, e.LocationState, e.LocationZip, e.LocationId } ).Distinct() )
             {
                 ImportPackage.WriteToPackage( new Location()
                 {
@@ -733,7 +819,7 @@ namespace Slingshot.CCB.Utilities
             }
 
             // export schedules
-            foreach( var schedule in eventDetails.Select( s => new { s.ScheduleId, s.ScheduleName } ).Distinct() )
+            foreach ( var schedule in eventDetails.Select( s => new { s.ScheduleId, s.ScheduleName } ).Distinct() )
             {
                 ImportPackage.WriteToPackage( new Schedule()
                 {
@@ -746,10 +832,9 @@ namespace Slingshot.CCB.Utilities
             GetAttendance( modifiedSince, eventDetails );
         }
 
-
-        private static void GetAttendance(DateTime modifiedSince, List<EventDetail> eventDetails )
+        private static void GetAttendance( DateTime modifiedSince, List<EventDetail> eventDetails )
         {
-            // we'll make an api call for each month until the modifiedSince date 
+            // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
             var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
             int loopCounter = 0;
@@ -818,14 +903,14 @@ namespace Slingshot.CCB.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="itemsPerPage">The items per page.</param>
         /// <returns></returns>
-        private static List<EventDetail> GetAttendanceEvents(DateTime modifiedSince, int itemsPerPage )
+        private static List<EventDetail> GetAttendanceEvents( DateTime modifiedSince, int itemsPerPage )
         {
             List<EventDetail> eventDetails = new List<EventDetail>();
 
             int currentPage = 1;
             int loopCounter = 0;
             bool moreItemsExist = true;
-            
+
             try
             {
                 while ( moreItemsExist )
@@ -848,9 +933,9 @@ namespace Slingshot.CCB.Utilities
 
                         var returnCount = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" )?.Attribute( "count" )?.Value.AsIntegerOrNull();
 
-                        var events = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element("events")?.Elements("event");
+                        var events = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" )?.Elements( "event" );
 
-                        foreach( var eventItem in events )
+                        foreach ( var eventItem in events )
                         {
                             var eventDetail = new EventDetail();
                             eventDetails.Add( eventDetail );
@@ -858,8 +943,9 @@ namespace Slingshot.CCB.Utilities
                             eventDetail.EventId = eventItem.Attribute( "id" ).Value.AsInteger();
                             eventDetail.GroupId = eventItem.Element( "group" ).Attribute( "id" ).Value.AsInteger();
                             eventDetail.ScheduleName = eventItem.Element( "recurrence_description" ).Value;
-                            
-                            if (eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements){
+
+                            if ( eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements )
+                            {
                                 eventDetail.LocationName = eventItem.Element( "location" ).Element( "name" ).Value;
                                 eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value;
                                 eventDetail.LocationCity = eventItem.Element( "location" ).Element( "city" ).Value;
@@ -878,20 +964,19 @@ namespace Slingshot.CCB.Utilities
                         }
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day) 
+                    // developer safety blanket (prevents eating all the api calls for the day)
                     if ( loopCounter > loopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
-}
-            catch (Exception ex )
+            }
+            catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
 
-            
             return eventDetails;
         }
 
@@ -914,7 +999,7 @@ namespace Slingshot.CCB.Utilities
                 Name = "Director"
             } );
 
-            // add custom defined group types 
+            // add custom defined group types
             var groupTypes = GetGroupTypes();
             foreach ( var groupType in groupTypes.Where( t => selectedGroupTypes.Contains( t.Id ) ) )
             {
