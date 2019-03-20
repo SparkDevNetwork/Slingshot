@@ -125,7 +125,7 @@ namespace Slingshot.ElexioCommunity.Utilities
         private const string API_GIVING_CATEGORIES = "api/giving/categories";
         private const string API_PLEDGE_CAMPAIGNS = "api/pledges/campaigns";
         private const string API_PLEDGE_PEOPLE = "api/pledges/pledgers_for_campaign/";
-        private const string API_GROUPS = "api/groups/sync";
+        private const string API_GROUPS = "api/v2/groups";
         private const string API_GROUP_MEMBERS = "api/groups/";
         private const string API_ATTENDANCE = "api/attendance/for_person/";
         private const string API_INTERACTIONS = "api/interactions/completed";
@@ -496,6 +496,7 @@ namespace Slingshot.ElexioCommunity.Utilities
             {
                 _request = new RestRequest( API_GROUPS, Method.GET );
                 _request.AddQueryParameter( "session_id", SessionId );
+                _request.AddQueryParameter( "active", "all" );
                 var response = _client.Execute( _request );
                 ApiCounter++;
 
