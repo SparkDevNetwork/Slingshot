@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Runtime.InteropServices;
 using Slingshot.Core.Model;
+using System.Linq;
 
 namespace Slingshot.Breeze.Utilities
 {
@@ -129,7 +130,7 @@ namespace Slingshot.Breeze.Utilities
                     }
 
                     accounts.ForEach( ImportPackage.WriteToPackage );
-                    batches.ForEach( ImportPackage.WriteToPackage );
+                    batches.OrderBy( b => b.StartDate ).ToList().ForEach( ImportPackage.WriteToPackage );
                 }
             }
             catch ( Exception ex )

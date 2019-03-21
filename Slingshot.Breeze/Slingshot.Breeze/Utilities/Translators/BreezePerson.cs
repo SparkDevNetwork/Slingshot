@@ -126,10 +126,6 @@ namespace Slingshot.Breeze.Utilities.Translators
                 } );
             }
 
-            // Get the grade / graduation year
-            person.Grade = CsvFieldTranslators.GetGrade( "Graduation Year", csvRecord );
-            unusedCsvFieldNames.Remove( "Graduation Year" );
-
             // For all remaining fields of the CSV, create an attribute value
             var whitespaceRegex = new Regex( @"\s+" );
 
@@ -143,6 +139,9 @@ namespace Slingshot.Breeze.Utilities.Translators
                     continue;
                 }
 
+                // Don't want the attribute values being added to the core system attribute, so avoid key collisions
+                key = "Breeze" + key;
+
                 var existingAttribute = attributes.FirstOrDefault( a => a.Key.Equals( key, StringComparison.OrdinalIgnoreCase ) );
 
                 if ( existingAttribute == null )
@@ -150,7 +149,8 @@ namespace Slingshot.Breeze.Utilities.Translators
                     existingAttribute = new PersonAttribute { 
                         Key = key,
                         FieldType = "Rock.Field.Types.TextFieldType",
-                        Name = csvFieldName
+                        Name = csvFieldName,
+                        Category = "Breeze Import"
                     };
 
                     attributes.Add( existingAttribute );
@@ -162,6 +162,18 @@ namespace Slingshot.Breeze.Utilities.Translators
                     AttributeValue = value,
                     PersonId = person.Id
                 } );
+            }
+
+            const int maxLength = 50;
+
+            if (person.FirstName != null && person.FirstName.Length > maxLength )
+            {
+                person.FirstName = person.FirstName.Substring( 0, maxLength );
+            }
+
+            if ( person.NickName != null && person.NickName.Length > maxLength )
+            {
+                person.NickName = person.NickName.Substring( 0, maxLength );
             }
 
             return person;

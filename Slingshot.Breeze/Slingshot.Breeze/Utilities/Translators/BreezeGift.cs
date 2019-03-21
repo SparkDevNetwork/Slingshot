@@ -35,11 +35,11 @@ namespace Slingshot.Breeze.Utilities.Translators
                 { "BatchId", "Batch" },
                 { "AuthorizedPersonId", "Person ID" },
                 { "TransactionDate", "Date" },
-                // { "TransactionType", "" }
+                //{ "TransactionType", "" }
                 { "TransactionSource", "Method ID" },
                 { "CurrencyType", "Method ID" },
                 { "Summary", "Note" },
-                // TransactionCode
+                { "TransactionCode", "Payment ID" },
                 { "CreatedDateTime", "Date" }
                 // ModifiedByPersonId
                 // ModifiedDateTime

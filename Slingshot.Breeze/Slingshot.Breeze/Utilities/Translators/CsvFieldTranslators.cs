@@ -14,26 +14,6 @@ namespace Slingshot.Breeze.Utilities
             type = isNullable ? nullableUnderlyingType : type;
             var typeCode = Type.GetTypeCode( type );
 
-            if ( typeCode == TypeCode.Boolean)
-            {
-                return isNullable ? GetNullableBool( csvFieldName, csvRecord ) : GetBool( csvFieldName, csvRecord );
-            }
-
-            if ( typeCode == TypeCode.Int32 )
-            {
-                return isNullable ? GetNullableInt( csvFieldName, csvRecord ) : GetInt( csvFieldName, csvRecord );
-            }
-
-            if (typeCode == TypeCode.Decimal )
-            {
-                return isNullable ? GetNullableDecimal( csvFieldName, csvRecord ) : GetDecimal( csvFieldName, csvRecord );
-            }
-
-            if ( isNullable && type == typeof( DateTime ) )
-            {
-                return GetNullableDateTime( csvFieldName, csvRecord );
-            }
-
             if ( type == typeof( TransactionSource ) )
             {
                 return GetTransactionSource( csvFieldName, csvRecord );
@@ -62,6 +42,26 @@ namespace Slingshot.Breeze.Utilities
             if ( type == typeof( MaritalStatus ) )
             {
                 return GetMaritalStatus( csvFieldName, csvRecord );
+            }
+
+            if ( isNullable && type == typeof( DateTime ) )
+            {
+                return GetNullableDateTime( csvFieldName, csvRecord );
+            }
+
+            if ( typeCode == TypeCode.Boolean )
+            {
+                return isNullable ? GetNullableBool( csvFieldName, csvRecord ) : GetBool( csvFieldName, csvRecord );
+            }
+
+            if ( typeCode == TypeCode.Int32 )
+            {
+                return isNullable ? GetNullableInt( csvFieldName, csvRecord ) : GetInt( csvFieldName, csvRecord );
+            }
+
+            if ( typeCode == TypeCode.Decimal )
+            {
+                return isNullable ? GetNullableDecimal( csvFieldName, csvRecord ) : GetDecimal( csvFieldName, csvRecord );
             }
 
             return GetString( csvFieldName, csvRecord );
