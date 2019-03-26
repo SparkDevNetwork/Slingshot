@@ -43,7 +43,8 @@ namespace Slingshot.Breeze.Utilities.Translators
                 // RecordStatus
                 // InactiveReason
                 // ConnectionStatus
-                { "EmailPreference", "Opt-out Graceland Emails" },
+                // This seems specific to a single church, so make it a person attribute instead of email preference to work for more than one church
+                //{ "EmailPreference", "Opt-out Graceland Emails" },
                 { "CreatedDateTime", "Added Date" },
                 { "ModifiedDateTime", "Record Last Updated" },
                 // PersonPhotoUrl
