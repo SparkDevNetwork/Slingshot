@@ -59,6 +59,8 @@ namespace Slingshot.F1.Utilities
 
         public abstract void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 );
 
+        public abstract void ExportNotes();
+
         public abstract void ExportFinancialAccounts();
 
         public abstract void ExportFinancialPledges();

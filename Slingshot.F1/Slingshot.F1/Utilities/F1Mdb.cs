@@ -104,6 +104,26 @@ FROM Individual_Household";
             }
         }
 
+        public static string SQL_NOTES
+        {
+            get
+            {
+                return $@"
+                    SELECT *
+                    FROM Notes";
+            }
+        }
+
+        public static string SQL_USERS
+        {
+            get
+            {
+                return $@"
+                    SELECT *
+                    FROM Users";
+            }
+        }
+
         public static string SQL_ADDRESSES
         {
             get
@@ -642,6 +662,37 @@ and AttendanceDate is not null";
                 ErrorMessage = ex.Message;
             }
 
+        }
+
+        /// <summary>
+        /// Export the people and household notes
+        /// </summary>
+        public override void ExportNotes()
+        {
+            try
+            {
+                using ( var dtUsers = GetTableData( SQL_USERS ) )
+                using ( var dtNotes = GetTableData( SQL_NOTES ) )
+                using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
+                {
+                    var headOfHouseHolds = dtPeople.Select( "household_position = 'Head'" );
+                    var users = dtUsers.AsEnumerable().ToArray();
+
+                    foreach ( DataRow row in dtNotes.Rows )
+                    {
+                        var importNote = F1Note.Translate( row, headOfHouseHolds, users );
+
+                        if ( importNote != null )
+                        {
+                            ImportPackage.WriteToPackage( importNote );
+                        }
+                    }
+                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
         }
 
         /// <summary>
