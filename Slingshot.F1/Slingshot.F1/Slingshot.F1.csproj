@@ -84,6 +84,9 @@
     <Compile Include="Utilities\Translators\MDF\F1FinancialAccount.cs" />
     <Compile Include="Utilities\Translators\MDF\F1Group.cs" />
     <Compile Include="Utilities\Translators\MDF\F1Note.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1Company.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1CompanyAddress.cs" />
+    <Compile Include="Utilities\Translators\MDF\F1CompanyPhone.cs" />
     <Compile Include="Utilities\Translators\MDF\F1PersonPhone.cs" />
     <Compile Include="Utilities\Translators\MDF\F1PersonAttributeValue.cs" />
     <Compile Include="Utilities\Translators\MDF\F1PersonAddress.cs" />

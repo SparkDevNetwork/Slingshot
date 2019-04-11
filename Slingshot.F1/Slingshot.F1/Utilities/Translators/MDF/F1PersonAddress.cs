@@ -95,7 +95,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 return null;
 
             }
-            catch(Exception ex)
+            catch
             {
                 return null;
             }

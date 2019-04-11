@@ -77,7 +77,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     } );
                 }
             }
-            catch(Exception ex)
+            catch
             {
                return null;
             }

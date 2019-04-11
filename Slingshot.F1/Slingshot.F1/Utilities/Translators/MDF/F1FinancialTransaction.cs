@@ -1,32 +1,37 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
-
-using Slingshot.Core;
 using Slingshot.Core.Model;
+using System.Collections.Generic;
 
 namespace Slingshot.F1.Utilities.Translators.MDB
 {
     public static class F1FinancialTransaction
     {
-        public static FinancialTransaction Translate( DataRow row, DataRow[] headOfHouseHolds )
+        public static FinancialTransaction Translate( DataRow row, Dictionary<int, int> headOfHouseHolds, HashSet<int> companyHouseholdIds )
         {
             var transaction = new FinancialTransaction();
+            var individualId = row.Field<int?>( "Individual_ID" );
+            var householdId = row.Field<int?>( "household_id" );
+            var isCompany = householdId.HasValue && companyHouseholdIds.Contains( householdId.Value );
 
-            if( row.Field<int?>( "Individual_ID" ).HasValue )
+            if ( individualId.HasValue )
             {
-                transaction.AuthorizedPersonId = row.Field<int?>( "Individual_ID" ).Value;
+                transaction.AuthorizedPersonId = individualId.Value;
             }
-            else
+            else if ( isCompany )
             {
-                var headOfHousehold = headOfHouseHolds.Where( x => x.Field<int?>( "household_id" ) == row.Field<int?>( "household_id" ) ).FirstOrDefault();
+                transaction.AuthorizedPersonId = F1Company.GetCompanyAsPersonId( householdId.Value );
+            }
+            else if (householdId.HasValue)
+            {
+                var foundHeadOfHousehold = headOfHouseHolds.TryGetValue( householdId.Value, out var headIndividualId );
 
-                if ( headOfHousehold != null )
+                if ( foundHeadOfHousehold )
                 {
-                    transaction.AuthorizedPersonId = headOfHousehold.Field<int>( "individual_id" );
+                    transaction.AuthorizedPersonId = headIndividualId;
                 }
             }
 
