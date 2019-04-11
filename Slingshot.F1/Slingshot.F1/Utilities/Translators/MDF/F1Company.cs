@@ -28,7 +28,6 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 // Try to avoid collisions with individual IDs but need companies 
                 // to be imported as people in Rock since they have contributions
                 companyAsPerson.Id = GetCompanyAsPersonId( householdId );
-                companyAsPerson.FirstName = "F1-Company";
 
                 // Set the last name and family name to the company name
                 string name = row.Field<string>( "HOUSEHOLD_NAME" );
