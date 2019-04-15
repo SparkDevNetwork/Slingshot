@@ -558,6 +558,24 @@ and AttendanceDate is not null";
             }
         }
 
+        public static string SQL_COMPANY
+        {
+            get
+            {
+                return $@"
+SELECT 
+    HOUSEHOLD_ID, 
+    HOUSEHOLD_NAME, 
+    LAST_ACTIVITY_DATE, 
+    CompanyType, 
+    CONTACT_NAME, 
+    CREATED_DATE
+FROM Company;
+
+";
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -866,7 +884,26 @@ and AttendanceDate is not null";
 
         public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
         {
-            throw new NotImplementedException();
+            try
+            {
+                using ( var dtCompany = GetTableData( SQL_COMPANY ) )
+                {
+                    foreach ( DataRow row in dtCompany.Rows )
+                    {
+                        var importCompany = F1Business.Translate( row );
+
+                        if( importCompany != null )
+                        {
+                            ImportPackage.WriteToPackage( importCompany );
+                        }
+                    }
+                }
+
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
         }
 
         /// <summary>
