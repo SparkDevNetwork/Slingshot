@@ -1,0 +1,39 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Slingshot.Core.Model
+{
+    /// <summary>
+    /// Model for GroupType
+    /// </summary>
+    public class BusinessContact : IImportModel
+    {
+        /// <summary>
+        /// Gets or sets the person indentifier.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public int PersonId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the business indentifier.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
+        public int BusinessId { get; set; }
+
+        /// <summary>
+        /// Gets the name of the file.
+        /// </summary>
+        /// <returns></returns>
+        public string GetFileName()
+        {
+            return "grouptype.csv";
+        }
+    }
+}
