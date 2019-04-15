@@ -147,6 +147,26 @@ namespace Slingshot.Core.Utilities
                         var groupAddress = new GroupAddress();
                         textWriters.Add( groupAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAddress.GetFileName()}" ) );
                     }
+
+                    // if model is for business create related writers
+                    if ( importModel is Business )
+                    {
+                        // business attributes
+                        var businessAttributeValue = new BusinessAttributeValue();
+                        textWriters.Add( businessAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{businessAttributeValue.GetFileName()}" ) );
+
+                        // business phones
+                        var businessPhone = new BusinessPhone();
+                        textWriters.Add( businessPhone.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{businessPhone.GetFileName()}" ) );
+
+                        // business addresses
+                        var businessAddress = new BusinessAddress();
+                        textWriters.Add( businessAddress.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{businessAddress.GetFileName()}" ) );
+
+                        // business contacts
+                        var businessContact = new BusinessContact();
+                        textWriters.Add( businessContact.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{businessContact.GetFileName()}" ) );
+                    }
                 }
 
                 var txtWriter = textWriters[typeName];
@@ -227,6 +247,34 @@ namespace Slingshot.Core.Utilities
                         var newGroupAddressCsvWriter = new CsvWriter( textWriters[groupAddress.GetType().Name] );
                         csvWriters.Add( groupAddress.GetType().Name, newGroupAddressCsvWriter );
                         newGroupAddressCsvWriter.WriteHeader<GroupAddress>();
+                    }
+
+                    // if model is for business create related writers
+                    if ( importModel is Business )
+                    {
+                        // business attributes
+                        var businessAttributeValue = new BusinessAttributeValue();
+                        var newBusinessAttributeValueCsvWriter = new CsvWriter( textWriters[businessAttributeValue.GetType().Name] );
+                        csvWriters.Add( businessAttributeValue.GetType().Name, newBusinessAttributeValueCsvWriter );
+                        newBusinessAttributeValueCsvWriter.WriteHeader<BusinessAttributeValue>();
+
+                        // business phones
+                        var businessPhone = new BusinessPhone();
+                        var newBusinessPhoneCsvWriter = new CsvWriter( textWriters[businessPhone.GetType().Name] );
+                        csvWriters.Add( businessPhone.GetType().Name, newBusinessPhoneCsvWriter );
+                        newBusinessPhoneCsvWriter.WriteHeader<PersonPhone>();
+
+                        // business addresses
+                        var businessAddress = new BusinessAddress();
+                        var newBusinessAddressCsvWriter = new CsvWriter( textWriters[businessAddress.GetType().Name] );
+                        csvWriters.Add( businessAddress.GetType().Name, newBusinessAddressCsvWriter );
+                        newBusinessAddressCsvWriter.WriteHeader<PersonAddress>();
+
+                        // business Contacts
+                        var businessContacts = new BusinessContact();
+                        var newBusinessContactsCsvWriter = new CsvWriter( textWriters[businessContacts.GetType().Name] );
+                        csvWriters.Add( businessContacts.GetType().Name, newBusinessContactsCsvWriter );
+                        newBusinessContactsCsvWriter.WriteHeader<PersonAddress>();
                     }
                 }
 
@@ -349,6 +397,58 @@ namespace Slingshot.Core.Utilities
                         foreach ( var address in ( (Group)importModel ).Addresses )
                         {
                             csvGroupAddressWriter.WriteRecord( address );
+                        }
+                    }
+                }
+
+                // if business model write out any related models
+                if ( importModel is Business )
+                {
+                    // business attributes
+                    var personBusinessValue = new BusinessAttributeValue();
+                    var csvBusinessAttributeValueWriter = csvWriters[personBusinessValue.GetType().Name];
+
+                    if ( csvBusinessAttributeValueWriter != null )
+                    {
+                        foreach ( var attribute in ( ( Business ) importModel ).Attributes )
+                        {
+                            csvBusinessAttributeValueWriter.WriteRecord( attribute );
+                        }
+                    }
+
+                    // business phones
+                    var businessPhone = new BusinessPhone();
+                    var csvBusinessPhoneWriter = csvWriters[businessPhone.GetType().Name];
+
+                    if ( csvBusinessPhoneWriter != null )
+                    {
+                        foreach ( var phone in ( ( Business ) importModel ).PhoneNumbers )
+                        {
+                            csvBusinessPhoneWriter.WriteRecord( phone );
+                        }
+                    }
+
+                    // business addresses
+                    var businessAddress = new BusinessAddress();
+                    var csvBusinessAddressWriter = csvWriters[businessAddress.GetType().Name];
+
+                    if ( csvBusinessAddressWriter != null )
+                    {
+                        foreach ( var address in ( ( Business ) importModel ).Addresses )
+                        {
+                            csvBusinessAddressWriter.WriteRecord( address );
+                        }
+                    }
+
+                    // business contacts
+                    var businessContact = new BusinessContact();
+                    var csvBusinessContactWriter = csvWriters[businessContact.GetType().Name];
+
+                    if ( csvBusinessContactWriter != null )
+                    {
+                        foreach ( var contact in ( ( Business ) importModel ).Contacts )
+                        {
+                            csvBusinessAddressWriter.WriteRecord( contact );
                         }
                     }
                 }
