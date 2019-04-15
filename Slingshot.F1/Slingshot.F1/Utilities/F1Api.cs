@@ -748,7 +748,12 @@ namespace Slingshot.F1.Utilities
 
         public override void ExportAttendance( DateTime modifiedSince )
         {
-            //No implementation
+            throw new NotImplementedException();
+        }
+
+        public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

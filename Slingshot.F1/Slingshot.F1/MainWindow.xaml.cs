@@ -157,6 +157,21 @@ namespace Slingshot.F1
                 }
             }
 
+            // export Businesses
+            if ( exportSettings.ExportBusinesses )
+            {
+                exportWorker.ReportProgress( 1, "Exporting Businesses..." );
+                exporter.ExportBusinesses( exportSettings.ModifiedSince );
+
+                if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    this.Dispatcher.Invoke( () =>
+                    {
+                        exportWorker.ReportProgress( 2, $"Error exporting businesses: {F1Api.ErrorMessage}" );
+                    } );
+                }
+            }
+
 
             // finalize the package
             ImportPackage.FinalizePackage( "f1-export.slingshot" );
@@ -213,7 +228,8 @@ namespace Slingshot.F1
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportContributionImages = cbExportContribImages.IsChecked.Value,
-                ExportAttendance = cbAttendance.IsChecked.Value
+                ExportAttendance = cbAttendance.IsChecked.Value, 
+                ExportBusinesses = cbBusinesses.IsChecked.Value
             };
 
             // configure group types to export
@@ -260,6 +276,11 @@ namespace Slingshot.F1
         private void cbAttendance_Checked( object sender, RoutedEventArgs e )
         {
         }
+
+        private void cbBusinesses_Checked( object sender, RoutedEventArgs e )
+        {
+
+        }
     }
 
     public class ExportSettings
@@ -275,6 +296,8 @@ namespace Slingshot.F1
         public bool ExportContributionImages { get; set; } = true;
 
         public bool ExportAttendance { get; set; } = true;
+
+        public bool ExportBusinesses { get; set; } = true;
     }
 
     public class CheckListItem
