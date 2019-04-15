@@ -2,7 +2,6 @@
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 using Slingshot.Core.Model;
 using System.Collections.Generic;
 
@@ -10,7 +9,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 {
     public static class F1FinancialTransaction
     {
-        public static FinancialTransaction Translate( DataRow row, Dictionary<int, int> headOfHouseHolds, HashSet<int> companyHouseholdIds )
+        public static FinancialTransaction Translate( DataRow row, Dictionary<int, HeadOfHousehold> headOfHouseHolds, HashSet<int> companyHouseholdIds )
         {
             var transaction = new FinancialTransaction();
             var individualId = row.Field<int?>( "Individual_ID" );
@@ -25,23 +24,18 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 transaction.AuthorizedPersonId = F1Company.GetCompanyAsPersonId( householdId.Value );
             }
-            else if (householdId.HasValue)
+            else if ( householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headIndividual ) )
             {
-                var foundHeadOfHousehold = headOfHouseHolds.TryGetValue( householdId.Value, out var headIndividualId );
-
-                if ( foundHeadOfHousehold )
-                {
-                    transaction.AuthorizedPersonId = headIndividualId;
-                }
+                transaction.AuthorizedPersonId = headIndividual?.IndividualId;
             }
 
-            if( row.Field<int?>( "BatchID" ).HasValue )
+            if ( row.Field<int?>( "BatchID" ).HasValue )
             {
                 transaction.BatchId = row.Field<int?>( "BatchID" ).Value;
             }
             else
             {
-                transaction.BatchId = 90000000 +  int.Parse( row.Field<DateTime?>( "Received_Date" ).Value.ToString( "yyyyMMdd" ) );
+                transaction.BatchId = 90000000 + int.Parse( row.Field<DateTime?>( "Received_Date" ).Value.ToString( "yyyyMMdd" ) );
             }
 
             transaction.TransactionDate = row.Field<DateTime?>( "Received_Date" );
@@ -79,7 +73,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 //Use Hash to create Account ID
                 hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) ) );
-               
+
             }
             else
             {

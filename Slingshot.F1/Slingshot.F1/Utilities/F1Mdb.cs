@@ -96,6 +96,52 @@ FROM Individual_Household";
             }
         }
 
+        /// <summary>
+        /// Access flavor SQL to get the "highest ranking" representative of each household.
+        /// The first Head is returned. If no Head, then Spouse, Child, Other, and then Visitor.
+        /// </summary>
+        public static string SQL_HEAD_OF_HOUSEHOLD
+        {
+            get
+            {
+                return @"
+                    SELECT
+                        HeadOfHousehold.household_id,
+                        FIRST(HeadOfHousehold.SubStatus_Name) AS SubStatus_Name,
+                        FIRST(HeadOfHousehold.individual_id) AS individual_id
+                    FROM
+                        (
+                            SELECT
+                                household_id,
+                                MAX(SWITCH(
+                                    household_position = 'Head', 10,
+                                    household_position = 'Spouse', 8,
+                                    household_position = 'Child', 6,
+                                    household_position = 'Other', 4,
+                                    household_position = 'Visitor', 2)) AS role_index
+                            FROM Individual_Household
+                            GROUP BY household_id
+                        ) AS MaxRoleOfHousehold
+                        INNER JOIN (
+                            SELECT
+                                household_id,
+                                individual_id,
+                                SubStatus_Name,
+                                SWITCH(
+                                    household_position = 'Head', 10,
+                                    household_position = 'Spouse', 8,
+                                    household_position = 'Child', 6,
+                                    household_position = 'Other', 4,
+                                    household_position = 'Visitor', 2) AS role_index
+                            FROM Individual_Household
+                        ) AS HeadOfHousehold ON
+                            HeadOfHousehold.household_id = MaxRoleOfHousehold.household_id
+                            AND HeadOfHousehold.role_index = MaxRoleOfHousehold.role_index
+                    GROUP BY
+                        HeadOfHousehold.household_id;";
+            }
+        }
+
         public static string SQL_NOTES
         {
             get
@@ -627,11 +673,11 @@ and AttendanceDate is not null";
                 var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
                 var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
                 
-
                 // export people
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
                 using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
                 {
-                    var headOfHouseHolds = dtPeople.Select( "household_position = 'Head'" );
+                    var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
                     
                     foreach ( DataRow row in dtPeople.Rows )
                     {
@@ -748,9 +794,9 @@ and AttendanceDate is not null";
             {
                 using ( var dtUsers = GetTableData( SQL_USERS ) )
                 using ( var dtNotes = GetTableData( SQL_NOTES ) )
-                using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
                 {
-                    var headOfHouseHoldMap = GetHeadOfHouseholdMap( dtPeople );
+                    var headOfHouseHoldMap = GetHeadOfHouseholdMap( dtHoh );
                     var users = dtUsers.AsEnumerable().ToArray();
 
                     foreach ( DataRow row in dtNotes.Rows )
@@ -808,7 +854,7 @@ and AttendanceDate is not null";
                 using ( var dtPledges = GetTableData( SQL_PLEDGES ) )
                 {
                     //Get head of house holds because in F1 pledges can be tied to indiviuals or households
-                    var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SQL_PEOPLE ) );
+                    var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SQL_HEAD_OF_HOUSEHOLD ) );
 
                     foreach ( DataRow row in dtPledges.Rows )
                     {
@@ -864,10 +910,11 @@ and AttendanceDate is not null";
 
             try
             {
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
                 using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
                 using ( var dtContributions = GetTableData( SQL_CONTRIBUTIONS ) )
                 {
-                    var headOfHouseholdMap = GetHeadOfHouseholdMap( dtPeople );
+                    var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
 
                     var dtCompanies = GetTableData( SQL_COMPANIES );
                     var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
@@ -1224,6 +1271,8 @@ and AttendanceDate is not null";
             return null;
         }
 
+        private static Dictionary<string, DataTable> TableDataCache = new Dictionary<string, DataTable>();
+
         /// <summary>
         /// Gets the table data.
         /// </summary>
@@ -1231,8 +1280,13 @@ and AttendanceDate is not null";
         /// <returns></returns>
         public static DataTable GetTableData( string command )
         {
+            if ( TableDataCache.TryGetValue( command, out var dataTable ) )
+            {
+                return dataTable;
+            }
+
             DataSet dataSet = new DataSet();
-            DataTable dataTable = new DataTable();
+            dataTable = new DataTable();
             OleDbCommand dbCommand = new OleDbCommand( command, _dbConnection );
             OleDbDataAdapter adapter = new OleDbDataAdapter();
 
@@ -1240,24 +1294,42 @@ and AttendanceDate is not null";
             adapter.Fill( dataSet );
 
             dataTable = dataSet.Tables["Table"];
+            TableDataCache[command] = dataTable;
 
             return dataTable;
         }
 
-        private static Dictionary<int, int> GetHeadOfHouseholdMap( DataTable dtPeople )
-        {
-            var headOfHouseholdMap = new Dictionary<int, int>();
-            var headOfHouseHolds = dtPeople.Select( "household_position = 'Head'" );
+        private static Dictionary<int, HeadOfHousehold> HeadOfHouseholdMapCache = null;
 
-            foreach ( var headOfHousehold in headOfHouseHolds )
+        private static Dictionary<int, HeadOfHousehold> GetHeadOfHouseholdMap( DataTable dtHoh )
+        {
+            if ( HeadOfHouseholdMapCache != null)
+            {
+                return HeadOfHouseholdMapCache;
+            }
+
+            HeadOfHouseholdMapCache = new Dictionary<int, HeadOfHousehold>();
+
+            foreach ( DataRow headOfHousehold in dtHoh.Rows )
             {
                 var individualId = headOfHousehold.Field<int>( "individual_id" );
                 var householdId = headOfHousehold.Field<int>( "household_id" );
+                var subStatusName = headOfHousehold.Field<string>( "SubStatus_Name" );
 
-                headOfHouseholdMap[householdId] = individualId;
+                HeadOfHouseholdMapCache[householdId] = new HeadOfHousehold
+                {
+                    IndividualId = individualId,
+                    SubStatusName = subStatusName
+                };
             }
 
-            return headOfHouseholdMap;
+            return HeadOfHouseholdMapCache;
         }
+    }
+
+    public class HeadOfHousehold
+    {
+        public int IndividualId { get; set; }
+        public string SubStatusName { get; set; }
     }
 }

@@ -3,16 +3,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
-
-using Slingshot.Core;
 using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.MDB
 {
     public static class F1FinancialPledge
     {
-        public static FinancialPledge Translate( DataRow row, Dictionary<int, int> headOfHouseHolds )
+        public static FinancialPledge Translate( DataRow row, Dictionary<int, HeadOfHousehold> headOfHouseHolds )
         {
             var pledge = new FinancialPledge();
 
@@ -24,9 +21,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 pledge.PersonId = individualId.Value;
             }
-            else if ( householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headOfHouseholdId ) )
+            else if ( householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headOfHousehold ) )
             {
-                pledge.PersonId = headOfHouseholdId;
+                pledge.PersonId = headOfHousehold?.IndividualId ?? 0;
             }
 
             pledge.TotalAmount = row.Field<decimal>( "total_pledge" );

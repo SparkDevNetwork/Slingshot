@@ -15,7 +15,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
         /// <param name="headOfHouseHolds">The subset of F1 individual_household records that are heads of the house</param>
         /// <param name="users">The F1 Users table</param>
         /// <returns></returns>
-        public static PersonNote Translate( DataRow row, Dictionary<int, int> headOfHouseHolds, DataRow[] users )
+        public static PersonNote Translate( DataRow row, Dictionary<int, HeadOfHousehold> headOfHouseHolds, DataRow[] users )
         {
             try
             {
@@ -23,9 +23,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 var householdId = row.Field<int?>( "Household_ID" );
 
                 // Sometimes notes are made for households. Since rock notes go on people, attach that note to the head of household
-                if ( !individualId.HasValue && householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headOfHouseholdId ) )
+                if ( !individualId.HasValue && householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headOfHousehold ) )
                 {
-                    individualId = headOfHouseholdId;
+                    individualId = headOfHousehold?.IndividualId;
                 }
 
                 if ( !individualId.HasValue )
