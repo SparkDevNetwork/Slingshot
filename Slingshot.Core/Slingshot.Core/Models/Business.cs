@@ -18,20 +18,13 @@ namespace Slingshot.Core.Model
         public int Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the company.
+        /// Gets or sets the name of the Business.
         /// </summary>
         /// <value>
-        /// The name of the company.
+        /// The name of the Business.
         /// </value>
-        public string CompanyName { get; set; }
+        public string Name { get; set; }
 
-        /// <summary>
-        /// Gets or sets the company image URL.
-        /// </summary>
-        /// <value>
-        /// The company image URL.
-        /// </value>
-        public string CompanyImageUrl { get; set; }
 
         /// <summary>
         /// Gets or sets the email.
@@ -57,14 +50,7 @@ namespace Slingshot.Core.Model
         /// </value>
         public string InactiveReason { get; set; }
 
-        /// <summary>
-        /// Gets or sets the connection status.
-        /// </summary>
-        /// <value>
-        /// The connection status.
-        /// </value>
-        public string ConnectionStatus { get; set; }
-
+  
         /// <summary>
         /// Gets or sets the email preference.
         /// </summary>
@@ -112,7 +98,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The attributes.
         /// </value>
-        public List<PersonAttributeValue> Attributes { get; set; } = new List<PersonAttributeValue>();
+        public List<BusinessAttribute> Attributes { get; set; } = new List<BusinessAttribute>();
 
         /// <summary>
         /// Gets or sets the phone numbers.
@@ -120,7 +106,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The phone numbers.
         /// </value>
-        public List<PersonPhone> PhoneNumbers { get; set; } = new List<PersonPhone>();
+        public List<BusinessPhone> PhoneNumbers { get; set; } = new List<BusinessPhone>();
 
         /// <summary>
         /// Gets or sets the addresses.
@@ -128,7 +114,15 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The addresses.
         /// </value>
-        public List<PersonAddress> Addresses { get; set; } = new List<PersonAddress>();
+        public List<BusinessAddress> Addresses { get; set; } = new List<BusinessAddress>();
+
+        /// <summary>
+        /// Gets or sets the business Contacts.
+        /// </summary>
+        /// <value>
+        /// The business contacts.
+        /// </value>
+        public List<BusinessContact> Contacts { get; set; } = new List<BusinessContact>();
 
         public string GetFileName()
         {
