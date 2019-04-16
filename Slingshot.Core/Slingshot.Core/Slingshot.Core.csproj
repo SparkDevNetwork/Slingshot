@@ -52,10 +52,16 @@
     <Compile Include="Models\GroupAttributeValue.cs" />
     <Compile Include="Models\GroupAttribute.cs" />
     <Compile Include="Models\GroupAddress.cs" />
+    <Compile Include="Models\Business.cs" />
+    <Compile Include="Models\BusinessAttribute.cs" />
+    <Compile Include="Models\BusinessAttributeValue.cs" />
+    <Compile Include="Models\BusinessAddress.cs" />
+    <Compile Include="Models\Business-Contact.cs" />
     <Compile Include="Models\PersonNote.cs" />
     <Compile Include="Models\FamilyNote.cs" />
     <Compile Include="Models\FamilyAttribute.cs" />
     <Compile Include="Models\FinancialPledge.cs" />
+    <Compile Include="Models\BusinessPhone.cs" />
     <Compile Include="Models\Schedule.cs" />
     <Compile Include="Models\Location.cs" />
     <Compile Include="Models\GroupMember.cs" />

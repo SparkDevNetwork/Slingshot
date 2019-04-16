@@ -28,7 +28,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     return phone;
                 }
             }
-            catch(Exception ex)
+            catch
             {
                 return null;
             }

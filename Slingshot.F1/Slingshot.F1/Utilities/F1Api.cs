@@ -295,6 +295,22 @@ namespace Slingshot.F1.Utilities
         }
 
         /// <summary>
+        /// Export the people and household notes
+        /// </summary>
+        public override void ExportNotes()
+        {
+            // Unimplemented for API export
+        }
+
+        /// <summary>
+        /// Export the companies
+        /// </summary>
+        public override void ExportCompanies()
+        {
+            // Unimplemented for API export
+        }
+
+        /// <summary>
         /// Exports the accounts.
         /// </summary>
         public override void ExportFinancialAccounts()

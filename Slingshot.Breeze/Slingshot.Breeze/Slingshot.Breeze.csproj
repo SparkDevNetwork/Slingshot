@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7F42A6B0-8083-413F-9571-F500F8477FA1}</ProjectGuid>
+    <ProjectGuid>{40951EB6-D861-4C3B-89E0-A2C59E57A35C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Slingshot.F1</RootNamespace>
-    <AssemblyName>Slingshot.F1</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <RootNamespace>Slingshot.Breeze</RootNamespace>
+    <AssemblyName>Slingshot.Breeze</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,17 +35,19 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OrcaMDF.Core">
-      <HintPath>..\libs\OrcaMDF.Core.dll</HintPath>
+    <Reference Include="CsvHelper, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Slingshot.Core\Slingshot.Core\bin\Debug\CsvHelper.dll</HintPath>
     </Reference>
-    <Reference Include="OrcaMDF.Framework">
-      <HintPath>..\libs\OrcaMDF.Framework.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
+    <Reference Include="RestSharp, Version=106.5.4.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.106.5.4\lib\net452\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -64,37 +67,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Login.xaml.cs">
-      <DependentUpon>Login.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Utilities\F1Mdb.cs" />
-    <Compile Include="Utilities\F1Api.cs" />
-    <Compile Include="Utilities\F1Translator.cs" />
-    <Compile Include="Utilities\Translators\API\F1FinancialBatch.cs" />
-    <Compile Include="Utilities\Translators\API\F1FinancialAccount.cs" />
-    <Compile Include="Utilities\Translators\API\F1FinancialPledge.cs" />
-    <Compile Include="Utilities\Translators\API\F1FinancialTransaction.cs" />
-    <Compile Include="Utilities\Translators\API\F1FinancialTransactionDetail.cs" />
-    <Compile Include="Utilities\Translators\API\F1Group.cs" />
-    <Compile Include="Utilities\Translators\API\F1Person.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1Attendance.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1FinancialTransaction.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1FinancialBatch.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1FinancialPledge.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1FinancialAccount.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1Group.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1Note.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1Company.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1CompanyAddress.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1CompanyPhone.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1PersonPhone.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1PersonAttributeValue.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1PersonAddress.cs" />
-    <Compile Include="Utilities\Translators\MDF\F1Person.cs" />
-    <Page Include="Login.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -109,6 +81,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Utilities\BreezeApi.cs" />
+    <Compile Include="Utilities\Translators\BreezeGift.cs" />
+    <Compile Include="Utilities\Translators\BreezeTag.cs" />
+    <Compile Include="Utilities\Translators\BreezeNote.cs" />
+    <Compile Include="Utilities\Translators\CsvFieldTranslators.cs" />
+    <Compile Include="Utilities\Translators\BreezePerson.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -126,8 +104,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="Assets\background.psd" />
-    <None Include="Assets\icon.psd" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -135,32 +111,42 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Microsoft.Office.Core">
+      <Guid>{2DF8D04C-5BFA-101B-BDE5-00AA0044DE52}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>8</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="Microsoft.Office.Interop.Excel">
+      <Guid>{00020813-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>9</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="VBIDE">
+      <Guid>{0002E157-0000-0000-C000-000000000046}</Guid>
+      <VersionMajor>5</VersionMajor>
+      <VersionMinor>3</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>primary</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Slingshot.Core\Slingshot.Core\Slingshot.Core.csproj">
       <Project>{b6072804-dc94-473f-a7e9-e175db03cad4}</Project>
       <Name>Slingshot.Core</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup />
-  <ItemGroup>
-    <Resource Include="Assets\Icon\icon-128.png" />
-    <Resource Include="Assets\Icon\icon-192.png" />
-    <Resource Include="Assets\Icon\icon-256.png" />
-    <Resource Include="Assets\Icon\icon-32.png" />
-    <Resource Include="Assets\Icon\icon-512.png" />
-    <Resource Include="Assets\Icon\icon-64.png" />
-    <Resource Include="Assets\Icon\icon-96.png" />
-    <Resource Include="Assets\Icon\icon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Assets\background.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

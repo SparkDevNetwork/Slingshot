@@ -53,14 +53,6 @@ namespace Slingshot.F1.Utilities
         }
 
         /// <summary>
-        /// Gets or sets the error message.
-        /// </summary>
-        /// <value>
-        /// The error message.
-        /// </value>
-        public static string ErrorMessage { get; set; }
-
-        /// <summary>
         /// Connects the specified host name.
         /// </summary>
         /// <param name="hostName">Name of the host.</param>
@@ -104,6 +96,82 @@ FROM Individual_Household";
             }
         }
 
+        /// <summary>
+        /// Access flavor SQL to get the "highest ranking" representative of each household.
+        /// The first Head is returned. If no Head, then Spouse, Child, Other, and then Visitor.
+        /// </summary>
+        public static string SQL_HEAD_OF_HOUSEHOLD
+        {
+            get
+            {
+                return @"
+                    SELECT
+                        HeadOfHousehold.household_id,
+                        FIRST(HeadOfHousehold.SubStatus_Name) AS SubStatus_Name,
+                        FIRST(HeadOfHousehold.individual_id) AS individual_id
+                    FROM
+                        (
+                            SELECT
+                                household_id,
+                                MAX(SWITCH(
+                                    household_position = 'Head', 10,
+                                    household_position = 'Spouse', 8,
+                                    household_position = 'Child', 6,
+                                    household_position = 'Other', 4,
+                                    household_position = 'Visitor', 2)) AS role_index
+                            FROM Individual_Household
+                            GROUP BY household_id
+                        ) AS MaxRoleOfHousehold
+                        INNER JOIN (
+                            SELECT
+                                household_id,
+                                individual_id,
+                                SubStatus_Name,
+                                SWITCH(
+                                    household_position = 'Head', 10,
+                                    household_position = 'Spouse', 8,
+                                    household_position = 'Child', 6,
+                                    household_position = 'Other', 4,
+                                    household_position = 'Visitor', 2) AS role_index
+                            FROM Individual_Household
+                        ) AS HeadOfHousehold ON
+                            HeadOfHousehold.household_id = MaxRoleOfHousehold.household_id
+                            AND HeadOfHousehold.role_index = MaxRoleOfHousehold.role_index
+                    GROUP BY
+                        HeadOfHousehold.household_id;";
+            }
+        }
+
+        public static string SQL_NOTES
+        {
+            get
+            {
+                return $@"
+                    SELECT *
+                    FROM Notes";
+            }
+        }
+
+        public static string SQL_COMPANIES
+        {
+            get
+            {
+                return $@"
+                    SELECT *
+                    FROM Company";
+            }
+        }
+
+        public static string SQL_USERS
+        {
+            get
+            {
+                return $@"
+                    SELECT *
+                    FROM Users";
+            }
+        }
+
         public static string SQL_ADDRESSES
         {
             get
@@ -111,6 +179,19 @@ FROM Individual_Household";
                 return $@"
 Select *
 FROM Household_Address";
+            }
+        }
+
+        public static string SQL_COMPANY_ADDRESSES
+        {
+            get
+            {
+                return $@"
+                    SELECT 
+                        Household_Address.*
+                    FROM 
+                        Company 
+                        INNER JOIN Household_Address ON Company.HOUSEHOLD_ID = Household_Address.household_id;";
             }
         }
 
@@ -127,6 +208,19 @@ individual_id
 FROM Communication
 Where individual_id is not null
 AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
+            }
+        }
+
+        public static string SQL_COMPANY_COMMUNICATIONS
+        {
+            get
+            {
+                return $@"
+                    SELECT 
+                        Communication.*
+                    FROM 
+                        Company 
+                        INNER JOIN Communication ON Company.HOUSEHOLD_ID = Communication.household_id;";
             }
         }
 
@@ -567,10 +661,6 @@ and AttendanceDate is not null";
         /// <param name="peoplePerPage">The people per page.</param>
         public override void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
         {
-            TextInfo textInfo = new CultureInfo( "en-US", false ).TextInfo;
-
-            HashSet<int> personIds = new HashSet<int>();
-
             try
             {
                 // write out the person attributes
@@ -583,11 +673,12 @@ and AttendanceDate is not null";
                 var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
                 var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
                 
-
                 // export people
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
                 using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
                 {
-                    var headOfHouseHolds = dtPeople.Select( "household_position = 'Head' ");
+                    var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
+                    
                     foreach ( DataRow row in dtPeople.Rows )
                     {
                         var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
@@ -645,6 +736,87 @@ and AttendanceDate is not null";
         }
 
         /// <summary>
+        /// Exports the companies.
+        /// </summary>
+        public override void ExportCompanies()
+        {
+            try
+            {
+                using ( var dtAddress = GetTableData( SQL_COMPANY_ADDRESSES ) )
+                using ( var dtCommunications = GetTableData( SQL_COMPANY_COMMUNICATIONS ) )
+                using ( var dtCompanies = GetTableData( SQL_COMPANIES ) )
+                {
+                    foreach ( DataRow row in dtCompanies.Rows )
+                    {
+                        var importCompanyAsPerson = F1Company.Translate( row, dtCommunications );
+
+                        if ( importCompanyAsPerson != null )
+                        {
+                            ImportPackage.WriteToPackage( importCompanyAsPerson );
+                        }
+                    }
+
+                    foreach ( DataRow row in dtAddress.Rows )
+                    {
+                        var importAddress = F1CompanyAddress.Translate( row );
+
+                        if ( importAddress != null )
+                        {
+                            ImportPackage.WriteToPackage( importAddress );
+                        }
+                    }
+
+                    // export Phone Numbers
+                    foreach ( DataRow row in dtCommunications.Rows )
+                    {
+                        var importNumber = F1CompanyPhone.Translate( row );
+
+                        if ( importNumber != null )
+                        {
+                            ImportPackage.WriteToPackage( importNumber );
+                        }
+                    }
+                }
+
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Export the people and household notes
+        /// </summary>
+        public override void ExportNotes()
+        {
+            try
+            {
+                using ( var dtUsers = GetTableData( SQL_USERS ) )
+                using ( var dtNotes = GetTableData( SQL_NOTES ) )
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
+                {
+                    var headOfHouseHoldMap = GetHeadOfHouseholdMap( dtHoh );
+                    var users = dtUsers.AsEnumerable().ToArray();
+
+                    foreach ( DataRow row in dtNotes.Rows )
+                    {
+                        var importNote = F1Note.Translate( row, headOfHouseHoldMap, users );
+
+                        if ( importNote != null )
+                        {
+                            ImportPackage.WriteToPackage( importNote );
+                        }
+                    }
+                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
         /// Exports the accounts.
         /// </summary>
         public override void ExportFinancialAccounts()
@@ -682,7 +854,8 @@ and AttendanceDate is not null";
                 using ( var dtPledges = GetTableData( SQL_PLEDGES ) )
                 {
                     //Get head of house holds because in F1 pledges can be tied to indiviuals or households
-                    var headOfHouseHolds = GetTableData( SQL_PEOPLE ).Select( "household_position = 'Head' " );
+                    var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SQL_HEAD_OF_HOUSEHOLD ) );
+
                     foreach ( DataRow row in dtPledges.Rows )
                     {
                         var importPledge = F1FinancialPledge.Translate( row, headOfHouseHolds );
@@ -737,15 +910,18 @@ and AttendanceDate is not null";
 
             try
             {
+                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
+                using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
                 using ( var dtContributions = GetTableData( SQL_CONTRIBUTIONS ) )
                 {
+                    var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
 
-                    //Get head of house holds because in F1 pledges can be tied to indiviuals or households
-                    var headOfHouseHolds = GetTableData( SQL_PEOPLE ).Select( "household_position = 'Head' " );
+                    var dtCompanies = GetTableData( SQL_COMPANIES );
+                    var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
 
                     foreach ( DataRow row in dtContributions.Rows )
                     {
-                        var importTransaction = F1FinancialTransaction.Translate( row, headOfHouseHolds );
+                        var importTransaction = F1FinancialTransaction.Translate( row, headOfHouseholdMap, companyIds );
 
                         if ( importTransaction != null )
                         {
@@ -1095,6 +1271,8 @@ and AttendanceDate is not null";
             return null;
         }
 
+        private static Dictionary<string, DataTable> TableDataCache = new Dictionary<string, DataTable>();
+
         /// <summary>
         /// Gets the table data.
         /// </summary>
@@ -1102,8 +1280,13 @@ and AttendanceDate is not null";
         /// <returns></returns>
         public static DataTable GetTableData( string command )
         {
+            if ( TableDataCache.TryGetValue( command, out var dataTable ) )
+            {
+                return dataTable;
+            }
+
             DataSet dataSet = new DataSet();
-            DataTable dataTable = new DataTable();
+            dataTable = new DataTable();
             OleDbCommand dbCommand = new OleDbCommand( command, _dbConnection );
             OleDbDataAdapter adapter = new OleDbDataAdapter();
 
@@ -1111,9 +1294,42 @@ and AttendanceDate is not null";
             adapter.Fill( dataSet );
 
             dataTable = dataSet.Tables["Table"];
+            TableDataCache[command] = dataTable;
 
             return dataTable;
         }
 
+        private static Dictionary<int, HeadOfHousehold> HeadOfHouseholdMapCache = null;
+
+        private static Dictionary<int, HeadOfHousehold> GetHeadOfHouseholdMap( DataTable dtHoh )
+        {
+            if ( HeadOfHouseholdMapCache != null)
+            {
+                return HeadOfHouseholdMapCache;
+            }
+
+            HeadOfHouseholdMapCache = new Dictionary<int, HeadOfHousehold>();
+
+            foreach ( DataRow headOfHousehold in dtHoh.Rows )
+            {
+                var individualId = headOfHousehold.Field<int>( "individual_id" );
+                var householdId = headOfHousehold.Field<int>( "household_id" );
+                var subStatusName = headOfHousehold.Field<string>( "SubStatus_Name" );
+
+                HeadOfHouseholdMapCache[householdId] = new HeadOfHousehold
+                {
+                    IndividualId = individualId,
+                    SubStatusName = subStatusName
+                };
+            }
+
+            return HeadOfHouseholdMapCache;
+        }
+    }
+
+    public class HeadOfHousehold
+    {
+        public int IndividualId { get; set; }
+        public string SubStatusName { get; set; }
     }
 }

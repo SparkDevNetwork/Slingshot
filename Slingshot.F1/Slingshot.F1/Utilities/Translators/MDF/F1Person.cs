@@ -15,7 +15,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
         public static Person Translate(
             DataRow row
             , DataTable Communications
-            , DataRow[] HeadOfHouseHolds
+            , Dictionary<int, HeadOfHousehold> headOfHouseHolds
             , DataTable dtRequirementValues
             , DataTable dtCommunicationValues )
         {
@@ -203,12 +203,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 // Family members of the same family can have different campuses in F1 and Slingshot will set the family campus to the first family
                 // member it see. To be consistent, we'll use the head of household's campus for the whole family.
-                var headOfHousehold = HeadOfHouseHolds.Where( x => x.Field<int>("household_id") ==  person.FamilyId ).FirstOrDefault();
-
-
-                if ( headOfHousehold != null )
+                if ( headOfHouseHolds.TryGetValue( houseHouldId, out var headOfHousehold ) )
                 {
-                    campus.CampusName = headOfHousehold.Field<string>( "SubStatus_Name" );
+                    campus.CampusName = headOfHousehold?.SubStatusName;
                 }
                 else
                 {
