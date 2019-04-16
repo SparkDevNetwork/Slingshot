@@ -93,6 +93,36 @@ namespace Slingshot.F1
                 }
             }
 
+            // export companies
+            if ( exportSettings.ExportCompanies )
+            {
+                exportWorker.ReportProgress( 1, "Exporting Companies..." );
+                exporter.ExportCompanies();
+
+                if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    Dispatcher.Invoke( () =>
+                    {
+                        exportWorker.ReportProgress( 2, $"Error exporting companies: {F1Api.ErrorMessage}" );
+                    } );
+                }
+            }
+
+            // export notes
+            if ( exportSettings.ExportNotes )
+            {
+                exportWorker.ReportProgress( 1, "Exporting Notes..." );
+                exporter.ExportNotes();
+
+                if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    Dispatcher.Invoke( () =>
+                    {
+                        exportWorker.ReportProgress( 2, $"Error exporting notes: {F1Api.ErrorMessage}" );
+                    } );
+                }
+            }
+
             // export contributions
             if ( exportSettings.ExportContributions )
             {
@@ -212,6 +242,8 @@ namespace Slingshot.F1
                 ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
+                ExportNotes = cbNotes.IsChecked.Value,
+                ExportCompanies = cbCompanies.IsChecked.Value,
                 ExportContributionImages = cbExportContribImages.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value
             };
@@ -267,6 +299,10 @@ namespace Slingshot.F1
         public DateTime ModifiedSince { get; set; } = DateTime.Now;
 
         public bool ExportIndividuals { get; set; } = true;
+
+        public bool ExportNotes { get; set; } = true;
+
+        public bool ExportCompanies { get; set; } = true;
 
         public bool ExportContributions { get; set; } = true;
 

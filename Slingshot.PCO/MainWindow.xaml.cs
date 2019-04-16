@@ -130,7 +130,8 @@ namespace Slingshot.PCO
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                PCOApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
+                // TODO - This method is not yet implemented
+                //PCOApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
