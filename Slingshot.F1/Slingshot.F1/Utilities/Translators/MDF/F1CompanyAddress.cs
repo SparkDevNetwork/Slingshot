@@ -23,37 +23,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 address.State = row.Field<string>( "state" );
                 address.PostalCode = row.Field<string>( "zip_code" );
                 address.Country = row.Field<string>( "country" );
-
-                var addressType = row.Field<string>( "address_type" );
-                switch ( addressType )
-                {
-                    case "Primary":
-                        {
-                            address.AddressType = AddressType.Home;
-                            address.IsMailing = true;
-                            break;
-                        }
-                    case "Previous":
-                        {
-                            address.AddressType = AddressType.Previous;
-                            break;
-                        }
-                    case "Business":
-                        {
-                            address.AddressType = AddressType.Work;
-                            break;
-                        }
-                    case "Mail Returned / Incorrect":
-                        {
-                            address.AddressType = AddressType.Other;
-                            break;
-                        }
-                    default:
-                        {
-                            address.AddressType = AddressType.Other;
-                            break;
-                        }
-                }
+                address.AddressType = AddressType.Work;
 
                 // only add the address if we have a valid address
                 if ( address.Street1.IsNotNullOrWhitespace() &&
