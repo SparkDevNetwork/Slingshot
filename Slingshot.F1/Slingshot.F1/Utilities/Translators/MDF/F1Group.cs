@@ -39,7 +39,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
             }
 
-            group.Name = row.Field<string>( "Group_Name" );
+            // Limit the group name to 50 since the schedules that will be created in Rock use the group's name as the schedule name and
+            // that field is limited in the database to 50 characters
+            group.Name = row.Field<string>( "Group_Name" ).Left( 50 );
             group.GroupTypeId = row.Field<int>( "Group_Type_ID" );
             group.IsActive = row.Field<int>( "is_active" ) != 0;
             group.IsPublic = row.Field<int>( "is_public" ) != 0;

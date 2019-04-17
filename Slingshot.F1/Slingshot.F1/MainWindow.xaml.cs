@@ -155,7 +155,7 @@ namespace Slingshot.F1
                 exporter.ExportContributions( exportSettings.ModifiedSince, exportSettings.ExportContributionImages );
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
-                    exportWorker.ReportProgress( 37, $"Error exporting financial batches: {F1Api.ErrorMessage}" );
+                    exportWorker.ReportProgress( 37, $"Error exporting financial contributions: {F1Api.ErrorMessage}" );
                 }
             }
 

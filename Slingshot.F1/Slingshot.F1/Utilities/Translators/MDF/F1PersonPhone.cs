@@ -24,7 +24,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 {
                     phone.PersonId = row.Field<int>( "individual_id" );
                     phone.PhoneType = phoneType;
-                    phone.PhoneNumber = phoneNumber;
+                    phone.PhoneNumber = phoneNumber.Left( 20 );
                     return phone;
                 }
             }
