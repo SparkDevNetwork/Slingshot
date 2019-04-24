@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 
 using Slingshot.Core;
 using Slingshot.Core.Model;
@@ -12,7 +10,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 {
     public static class F1Group
     {
-        public static Group Translate( DataRow row, DataTable members )
+        public static Group Translate( DataRow row, DataTable members, DataTable staffing )
         {
             var group = new Group();
 
@@ -82,6 +80,19 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 groupMember.Role = member.Field<string>( "Group_Member_Type" );
 
                 group.GroupMembers.Add( groupMember );
+            }
+
+            if ( staffing != null )
+            {
+                foreach ( var staff in staffing.Select( "Group_Id =" + group.Id ) )
+                {
+                    var groupMember = new GroupMember();
+                    groupMember.GroupId = group.Id;
+                    groupMember.PersonId = staff.Field<int>( "INDIVIDUAL_ID" );
+                    groupMember.Role = "Staff";
+
+                    group.GroupMembers.Add( groupMember );
+                }
             }
 
             return group;

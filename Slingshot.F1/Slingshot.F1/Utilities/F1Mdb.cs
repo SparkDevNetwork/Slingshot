@@ -422,6 +422,26 @@ Order By Group_Id, Individual_ID";
             }
         }
 
+        public static string SQL_STAFFING
+        {
+            get
+            {
+                return @"
+                    SELECT 
+                        Staffing_Assignment.INDIVIDUAL_ID, 
+                        IIF( 
+                            ISNULL(Staffing_Assignment.RLC_ID), 
+                            Staffing_Assignment.Activity_ID, 
+                            Staffing_Assignment.RLC_ID
+                        ) AS Group_Id
+                    FROM 
+                        ActivityMinistry 
+                        INNER JOIN Staffing_Assignment ON 
+                            ActivityMinistry.Activity_ID = Staffing_Assignment.Activity_ID 
+                            AND ActivityMinistry.Ministry_ID = Staffing_Assignment.Ministry_ID;";
+            }
+        }
+
         public static string SQL_ACTIVITIES
         {
             get
@@ -965,7 +985,7 @@ and AttendanceDate is not null";
                 var dtActivityMembers = GetTableData( SQL_ACTIVITY_MEMBERS );
 
                 // Add Group Ids for Break Out Groups
-                foreach( var member in dtActivityMembers.Select( "Group_Id is null" ) )
+                foreach ( var member in dtActivityMembers.Select( "Group_Id is null" ) )
                 {
                     MD5 md5Hasher = MD5.Create();
                     var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" ) ) );
@@ -976,12 +996,13 @@ and AttendanceDate is not null";
                     }
                 }
 
+                using ( var dtStaffing = GetTableData( SQL_STAFFING ) )
                 using ( var dtActivites = GetTableData( SQL_ACTIVITIES ) )
                 {
                    
                     foreach ( DataRow row in dtActivites.Rows )
                     {
-                        var importGroup = F1Group.Translate( row, dtActivityMembers );
+                        var importGroup = F1Group.Translate( row, dtActivityMembers, dtStaffing );
 
                         if ( importGroup != null )
                         {
@@ -999,7 +1020,7 @@ and AttendanceDate is not null";
 
                 foreach ( DataRow row in dtGroups.Select( "Group_Type_Id in(" + group_Type_Ids + ")" ) )
                 {
-                    var importGroup = F1Group.Translate( row, dtGroupMembers );
+                    var importGroup = F1Group.Translate( row, dtGroupMembers, null );
 
                     if ( importGroup != null )
                     {
