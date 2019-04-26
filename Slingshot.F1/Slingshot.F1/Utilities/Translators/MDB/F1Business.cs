@@ -19,7 +19,8 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             var notes = new List<string>();
             try
             {
-                business.Id = row.Field<int>( "HOUSEHOLD_ID" );
+                // Add 900,000,000 to HouseHold_ID to insure it doesn't conflict with any Indiviual Ids, because in Rock, business are people, not families.
+                business.Id = row.Field<int>( "HOUSEHOLD_ID" ) + 900000000;
                 business.Name = row.Field<string>( "HOUSEHOLD_NAME" );
                 business.ModifiedDateTime = row.Field<DateTime?>( "LAST_ACTIVITY_DATE" );
                 business.CreatedDateTime = row.Field<DateTime>( "CREATED_DATE" );
