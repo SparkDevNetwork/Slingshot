@@ -884,6 +884,9 @@ FROM Company;
 
         public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
         {
+
+            WriteBusinessAttributes();
+
             try
             {
                 using ( var dtCompany = GetTableData( SQL_COMPANY ) )
@@ -1074,6 +1077,29 @@ FROM Company;
 
 
             return attributes;
+        }
+
+        /// <summary>
+        /// Exports the person attributes.
+        /// </summary>
+        public void WriteBusinessAttributes()
+        {
+            // export business fields as attributes
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Company Type",
+                Key = "CompanyType",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Contact Name",
+                Key = "ContactName",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
         }
 
         /// <summary>

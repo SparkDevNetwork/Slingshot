@@ -132,7 +132,7 @@ namespace Slingshot.F1
             // export group types
             if ( exportSettings.ExportGroupTypes.Count > 0 )
             {
-                exportWorker.ReportProgress( 54, $"Exporting Groups..." );
+                exportWorker.ReportProgress( 53, $"Exporting Groups..." );
 
                 exporter.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
 
@@ -145,14 +145,14 @@ namespace Slingshot.F1
             // export attendance
             if ( exportSettings.ExportAttendance )
             {
-                exportWorker.ReportProgress( 1, "Exporting Attendance..." );
+                exportWorker.ReportProgress( 61, "Exporting Attendance..." );
                 exporter.ExportAttendance( exportSettings.ModifiedSince );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     this.Dispatcher.Invoke( () =>
                     {
-                        exportWorker.ReportProgress( 2, $"Error exporting attendance: {F1Api.ErrorMessage}" );
+                        exportWorker.ReportProgress( 68, $"Error exporting attendance: {F1Api.ErrorMessage}" );
                     } );
                 }
             }
@@ -160,14 +160,14 @@ namespace Slingshot.F1
             // export Businesses
             if ( exportSettings.ExportBusinesses )
             {
-                exportWorker.ReportProgress( 1, "Exporting Businesses..." );
+                exportWorker.ReportProgress( 71, "Exporting Businesses..." );
                 exporter.ExportBusinesses( exportSettings.ModifiedSince );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     this.Dispatcher.Invoke( () =>
                     {
-                        exportWorker.ReportProgress( 2, $"Error exporting businesses: {F1Api.ErrorMessage}" );
+                        exportWorker.ReportProgress( 72, $"Error exporting businesses: {F1Api.ErrorMessage}" );
                     } );
                 }
             }
