@@ -31,7 +31,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 else
                 {
                     //If there is no head of household, and no indivual tied to the transaction, it should be assumed to be a business transaction.
-                    transaction.AuthorizedPersonId = row.Field<int>( "household_id" ) + 90000000;
+                    transaction.AuthorizedPersonId = row.Field<int>( "household_id" ) + 900000000;
                 }
             }
 
