@@ -786,7 +786,7 @@ FROM Company;
                 {
                     foreach ( DataRow row in dtCompanies.Rows )
                     {
-                        var importCompanyAsPerson = F1Company.Translate( row, dtCommunications );
+                        var importCompanyAsPerson = F1Business.Translate( row );
 
                         if ( importCompanyAsPerson != null )
                         {
@@ -796,7 +796,7 @@ FROM Company;
 
                     foreach ( DataRow row in dtAddress.Rows )
                     {
-                        var importAddress = F1CompanyAddress.Translate( row );
+                        var importAddress = F1BusinessAddress.Translate( row );
 
                         if ( importAddress != null )
                         {
@@ -807,7 +807,7 @@ FROM Company;
                     // export Phone Numbers
                     foreach ( DataRow row in dtCommunications.Rows )
                     {
-                        var importNumber = F1CompanyPhone.Translate( row );
+                        var importNumber = F1BusinessPhone.Translate( row );
 
                         if ( importNumber != null )
                         {
