@@ -672,6 +672,24 @@ and AttendanceDate is not null";
             }
         }
 
+        public static string SQL_COMPANY
+        {
+            get
+            {
+                return $@"
+SELECT 
+    HOUSEHOLD_ID, 
+    HOUSEHOLD_NAME, 
+    LAST_ACTIVITY_DATE, 
+    CompanyType, 
+    CONTACT_NAME, 
+    CREATED_DATE
+FROM Company;
+
+";
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -1061,6 +1079,33 @@ and AttendanceDate is not null";
             }
         }
 
+        public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
+        {
+
+            WriteBusinessAttributes();
+
+            try
+            {
+                using ( var dtCompany = GetTableData( SQL_COMPANY ) )
+                {
+                    foreach ( DataRow row in dtCompany.Rows )
+                    {
+                        var importCompany = F1Business.Translate( row );
+
+                        if( importCompany != null )
+                        {
+                            ImportPackage.WriteToPackage( importCompany );
+                        }
+                    }
+                }
+
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
         /// <summary>
         /// Exports the person attributes.
         /// </summary>
@@ -1229,6 +1274,29 @@ and AttendanceDate is not null";
 
 
             return attributes;
+        }
+
+        /// <summary>
+        /// Exports the person attributes.
+        /// </summary>
+        public void WriteBusinessAttributes()
+        {
+            // export business fields as attributes
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Company Type",
+                Key = "CompanyType",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Contact Name",
+                Key = "ContactName",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
         }
 
         /// <summary>

@@ -69,12 +69,11 @@
 
                     <Label Content="Export Data Types" Grid.Row="3" FontWeight="Bold" />
                     <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="Individuals" Margin="0,10,0,10" />
-                    <CheckBox Name="cbNotes" Grid.Row="4" IsChecked="True" Content="Notes" Margin="90,10,0,10" />
-                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Contributions" Margin="160,10,0,10" Checked="cbContributions_Checked" Unchecked="cbContributions_Checked" />
-                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="270,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
-                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Attendance" Margin="340,10,0,10" Checked="cbAttendance_Checked" Unchecked="cbAttendance_Checked" />
-                    <CheckBox Name="cbCompanies" Grid.Row="4" IsChecked="True" Content="Companies" Margin="430,10,0,10" />
-                    
+                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Contributions" Margin="90,10,0,10" Checked="cbContributions_Checked" Unchecked="cbContributions_Checked" />
+                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="195,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
+                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Attendance" Margin="265,10,0,10" Checked="cbBusinesses_Checked" Unchecked="cbAttendance_Checked" />
+                    <CheckBox Name="cbBusinesses" Grid.Row="4" IsChecked="True" Content="Businesses" Margin="360,10,0,10" Checked="cbBusinesses_Checked" Unchecked="cbBusinesses_Checked" />
+
                     <Label Content="Group Types To Export" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0" />
                     <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="5" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3">
                         <ListBox.ItemTemplate>

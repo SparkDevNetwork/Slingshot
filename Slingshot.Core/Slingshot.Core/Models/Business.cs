@@ -98,7 +98,7 @@ namespace Slingshot.Core.Model
         /// <value>
         /// The attributes.
         /// </value>
-        public List<BusinessAttribute> Attributes { get; set; } = new List<BusinessAttribute>();
+        public List<BusinessAttributeValue> Attributes { get; set; } = new List<BusinessAttributeValue>();
 
         /// <summary>
         /// Gets or sets the phone numbers.

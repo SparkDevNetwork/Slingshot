@@ -22,11 +22,17 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             }
             else if ( isCompany )
             {
-                transaction.AuthorizedPersonId = F1Company.GetCompanyAsPersonId( householdId.Value );
-            }
-            else if ( householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headIndividual ) )
-            {
-                transaction.AuthorizedPersonId = headIndividual?.IndividualId;
+                var headOfHousehold = headOfHouseHolds.Where( x => x.Field<int?>( "household_id" ) == row.Field<int?>( "household_id" ) ).FirstOrDefault();
+
+                if ( headOfHousehold != null )
+                {
+                    transaction.AuthorizedPersonId = headOfHousehold.Field<int>( "individual_id" );
+                }
+                else
+                {
+                    //If there is no head of household, and no indivual tied to the transaction, it should be assumed to be a business transaction.
+                    transaction.AuthorizedPersonId = row.Field<int>( "household_id" ) + 900000000;
+                }
             }
 
             if ( row.Field<int?>( "BatchID" ).HasValue )
