@@ -22,7 +22,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 string phoneNumber = new string( row.Field<string>( "communication_value" ).Where( c => char.IsDigit( c ) ).ToArray() );
                 if ( !string.IsNullOrWhiteSpace( phoneNumber ) )
                 {
-                    phone.BusinessId = row.Field<int>( "HOUSEHOLD_ID" ) + +900000000;
+                    phone.BusinessId = F1Business.GetCompanyAsPersonId( row.Field<int>( "HOUSEHOLD_ID" ) );
                     phone.PhoneType = phoneType;
                     phone.PhoneNumber = phoneNumber.Left( 20 );
                     return phone;

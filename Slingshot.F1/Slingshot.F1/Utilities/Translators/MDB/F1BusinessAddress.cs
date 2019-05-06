@@ -19,7 +19,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
             try
             {
-                address.BusinessId = row.Field<int>( "HOUSEHOLD_ID" ) + +900000000;
+                address.BusinessId = F1Business.GetCompanyAsPersonId( row.Field<int>( "HOUSEHOLD_ID" ) );
                 address.Street1 = row.Field<string>( "address_1" );
                 address.Street2 = row.Field<string>( "address_2" );
                 address.City = row.Field<string>( "city" );

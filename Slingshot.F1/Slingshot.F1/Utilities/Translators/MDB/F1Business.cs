@@ -12,18 +12,36 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 {
     public static class F1Business
     {
-        public static Business Translate( DataRow row )
+        public static int GetCompanyAsPersonId( int householdId )
+        {
+            return int.MaxValue - householdId;
+        }
+
+        public static Business Translate( DataRow row, DataTable communications )
         {
 
             var business = new Business();
             var notes = new List<string>();
             try
             {
-                // Add 900,000,000 to HouseHold_ID to insure it doesn't conflict with any Indiviual Ids, because in Rock, business are people, not families.
-                business.Id = row.Field<int>( "HOUSEHOLD_ID" ) + 900000000;
+                var householdId = row.Field<int>( "HOUSEHOLD_ID" );
+                business.Id = F1Business.GetCompanyAsPersonId( householdId );
                 business.Name = row.Field<string>( "HOUSEHOLD_NAME" );
                 business.ModifiedDateTime = row.Field<DateTime?>( "LAST_ACTIVITY_DATE" );
                 business.CreatedDateTime = row.Field<DateTime>( "CREATED_DATE" );
+
+                // Get communication values
+                var emailRow = communications.Select( "household_id = " + householdId + " AND communication_type = 'Email'" ).FirstOrDefault();
+
+                if ( emailRow != null )
+                {
+                    var email = emailRow.Field<string>( "communication_value" );
+
+                    if ( email.IsNotNullOrWhitespace() )
+                    {
+                        business.Email = email;
+                    }
+                }
 
                 string companyType = row.Field<string>( "CompanyType" );
                 if ( companyType.IsNotNullOrWhitespace() )
