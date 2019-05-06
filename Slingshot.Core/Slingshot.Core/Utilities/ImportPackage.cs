@@ -262,19 +262,19 @@ namespace Slingshot.Core.Utilities
                         var businessPhone = new BusinessPhone();
                         var newBusinessPhoneCsvWriter = new CsvWriter( textWriters[businessPhone.GetType().Name] );
                         csvWriters.Add( businessPhone.GetType().Name, newBusinessPhoneCsvWriter );
-                        newBusinessPhoneCsvWriter.WriteHeader<PersonPhone>();
+                        newBusinessPhoneCsvWriter.WriteHeader<BusinessPhone>();
 
                         // business addresses
                         var businessAddress = new BusinessAddress();
                         var newBusinessAddressCsvWriter = new CsvWriter( textWriters[businessAddress.GetType().Name] );
                         csvWriters.Add( businessAddress.GetType().Name, newBusinessAddressCsvWriter );
-                        newBusinessAddressCsvWriter.WriteHeader<PersonAddress>();
+                        newBusinessAddressCsvWriter.WriteHeader<BusinessAddress>();
 
                         // business Contacts
                         var businessContacts = new BusinessContact();
                         var newBusinessContactsCsvWriter = new CsvWriter( textWriters[businessContacts.GetType().Name] );
                         csvWriters.Add( businessContacts.GetType().Name, newBusinessContactsCsvWriter );
-                        newBusinessContactsCsvWriter.WriteHeader<PersonAddress>();
+                        newBusinessContactsCsvWriter.WriteHeader<BusinessContact>();
                     }
                 }
 

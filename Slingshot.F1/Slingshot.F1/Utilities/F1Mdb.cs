@@ -770,6 +770,8 @@ FROM Company;
         {
             try
             {
+                WriteBusinessAttributes();
+
                 using ( var dtAddress = GetTableData( SQL_COMPANY_ADDRESSES ) )
                 using ( var dtCommunications = GetTableData( SQL_COMPANY_COMMUNICATIONS ) )
                 using ( var dtCompanies = GetTableData( SQL_COMPANY ) )
