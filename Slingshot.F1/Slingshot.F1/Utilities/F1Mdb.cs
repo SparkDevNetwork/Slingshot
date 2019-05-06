@@ -152,16 +152,6 @@ FROM Individual_Household";
             }
         }
 
-        public static string SQL_COMPANIES
-        {
-            get
-            {
-                return $@"
-                    SELECT *
-                    FROM Company";
-            }
-        }
-
         public static string SQL_USERS
         {
             get
@@ -780,17 +770,19 @@ FROM Company;
         {
             try
             {
+                WriteBusinessAttributes();
+
                 using ( var dtAddress = GetTableData( SQL_COMPANY_ADDRESSES ) )
                 using ( var dtCommunications = GetTableData( SQL_COMPANY_COMMUNICATIONS ) )
-                using ( var dtCompanies = GetTableData( SQL_COMPANIES ) )
+                using ( var dtCompanies = GetTableData( SQL_COMPANY ) )
                 {
                     foreach ( DataRow row in dtCompanies.Rows )
                     {
-                        var importCompanyAsPerson = F1Business.Translate( row );
+                        var business = F1Business.Translate( row, dtCommunications );
 
-                        if ( importCompanyAsPerson != null )
+                        if ( business != null )
                         {
-                            ImportPackage.WriteToPackage( importCompanyAsPerson );
+                            ImportPackage.WriteToPackage( business );
                         }
                     }
 
@@ -954,7 +946,7 @@ FROM Company;
                 {
                     var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
 
-                    var dtCompanies = GetTableData( SQL_COMPANIES );
+                    var dtCompanies = GetTableData( SQL_COMPANY );
                     var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
 
                     foreach ( DataRow row in dtContributions.Rows )
@@ -1072,33 +1064,6 @@ FROM Company;
                         }
                     }
                 }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
-        {
-
-            WriteBusinessAttributes();
-
-            try
-            {
-                using ( var dtCompany = GetTableData( SQL_COMPANY ) )
-                {
-                    foreach ( DataRow row in dtCompany.Rows )
-                    {
-                        var importCompany = F1Business.Translate( row );
-
-                        if( importCompany != null )
-                        {
-                            ImportPackage.WriteToPackage( importCompany );
-                        }
-                    }
-                }
-
             }
             catch ( Exception ex )
             {

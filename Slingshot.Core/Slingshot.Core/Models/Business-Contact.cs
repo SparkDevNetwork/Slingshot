@@ -33,7 +33,7 @@ namespace Slingshot.Core.Model
         /// <returns></returns>
         public string GetFileName()
         {
-            return "grouptype.csv";
+            return "business-contact.csv";
         }
     }
 }

@@ -187,22 +187,6 @@ namespace Slingshot.F1
                 }
             }
 
-            // export Businesses
-            if ( exportSettings.ExportBusinesses )
-            {
-                exportWorker.ReportProgress( 71, "Exporting Businesses..." );
-                exporter.ExportBusinesses( exportSettings.ModifiedSince );
-
-                if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    this.Dispatcher.Invoke( () =>
-                    {
-                        exportWorker.ReportProgress( 72, $"Error exporting businesses: {F1Api.ErrorMessage}" );
-                    } );
-                }
-            }
-
-
             // finalize the package
             ImportPackage.FinalizePackage( "f1-export.slingshot" );
 
@@ -258,7 +242,7 @@ namespace Slingshot.F1
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportNotes = cbNotes.IsChecked.Value,
-                ExportCompanies = cbCompanies.IsChecked.Value,
+                ExportCompanies = cbBusinesses.IsChecked.Value,
                 ExportContributionImages = cbExportContribImages.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value, 
                 ExportBusinesses = cbBusinesses.IsChecked.Value

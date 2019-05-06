@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Slingshot.Core.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Slingshot.F1.Utilities.Translators.MDB
 {
@@ -20,18 +21,17 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 transaction.AuthorizedPersonId = individualId.Value;
             }
-            else if ( isCompany )
+            else
             {
-                var headOfHousehold = headOfHouseHolds.Where( x => x.Field<int?>( "household_id" ) == row.Field<int?>( "household_id" ) ).FirstOrDefault();
+                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == row.Field<int?>( "household_id" ) ).FirstOrDefault().Value;
 
                 if ( headOfHousehold != null )
                 {
-                    transaction.AuthorizedPersonId = headOfHousehold.Field<int>( "individual_id" );
+                    transaction.AuthorizedPersonId = headOfHousehold.IndividualId;
                 }
-                else
+                else if ( isCompany )
                 {
-                    //If there is no head of household, and no indivual tied to the transaction, it should be assumed to be a business transaction.
-                    transaction.AuthorizedPersonId = row.Field<int>( "household_id" ) + 900000000;
+                    transaction.AuthorizedPersonId = F1Business.GetCompanyAsPersonId( row.Field<int>( "household_id" ) );
                 }
             }
 
