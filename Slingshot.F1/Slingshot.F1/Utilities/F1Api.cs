@@ -768,11 +768,6 @@ namespace Slingshot.F1.Utilities
             throw new NotImplementedException();
         }
 
-        public override void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 )
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Exports the person attributes.
         /// </summary>

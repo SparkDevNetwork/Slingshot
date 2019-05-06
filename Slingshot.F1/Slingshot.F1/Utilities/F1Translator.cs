@@ -75,8 +75,6 @@ namespace Slingshot.F1.Utilities
 
         public abstract void ExportGroups( List<int> selectedGroupTypes );
 
-        public abstract void ExportBusinesses( DateTime modifiedSince, int businessesPerPage = 500 );
-
         public abstract List<PersonAttribute> WritePersonAttributes();
 
         public abstract List<GroupType> GetGroupTypes();

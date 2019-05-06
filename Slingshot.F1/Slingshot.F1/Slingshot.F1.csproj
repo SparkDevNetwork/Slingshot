@@ -78,12 +78,15 @@
     <Compile Include="Utilities\Translators\API\F1Group.cs" />
     <Compile Include="Utilities\Translators\API\F1Person.cs" />
     <Compile Include="Utilities\Translators\MDB\F1Attendance.cs" />
+    <Compile Include="Utilities\Translators\MDB\F1BusinessAddress.cs" />
+    <Compile Include="Utilities\Translators\MDB\F1BusinessPhone.cs" />
     <Compile Include="Utilities\Translators\MDB\F1FinancialTransaction.cs" />
     <Compile Include="Utilities\Translators\MDB\F1FinancialBatch.cs" />
     <Compile Include="Utilities\Translators\MDB\F1FinancialPledge.cs" />
     <Compile Include="Utilities\Translators\MDB\F1FinancialAccount.cs" />
     <Compile Include="Utilities\Translators\MDB\F1Group.cs" />
     <Compile Include="Utilities\Translators\MDB\F1Business.cs" />
+    <Compile Include="Utilities\Translators\MDB\F1Note.cs" />
     <Compile Include="Utilities\Translators\MDB\F1PersonPhone.cs" />
     <Compile Include="Utilities\Translators\MDB\F1PersonAttributeValue.cs" />
     <Compile Include="Utilities\Translators\MDB\F1PersonAddress.cs" />
