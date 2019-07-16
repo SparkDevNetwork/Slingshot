@@ -24,6 +24,8 @@ namespace Slingshot.Core.Utilities
         private static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
         private static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
 
+        private static List<FamilyAddress> _familyAddresses = new List<FamilyAddress>();
+
         public static string PackageDirectory
         {
             get
@@ -317,7 +319,30 @@ namespace Slingshot.Core.Utilities
                     {
                         foreach ( var address in ( (Person)importModel ).Addresses )
                         {
-                            csvPersonAddressWriter.WriteRecord( address );
+                            if ( ( ( Person ) importModel ).FamilyId.HasValue )
+                            {
+                                var familyAddress = new FamilyAddress
+                                {
+                                    FamilyId = ( ( Person ) importModel ).FamilyId.Value,
+                                    Street1 = address.Street1,
+                                    PostalCode = address.PostalCode.Left( 5 )
+                                };
+
+                                var index = _familyAddresses.FindIndex( a => 
+                                    a.FamilyId == ( ( Person ) importModel ).FamilyId.Value && 
+                                    a.Street1.Equals( address.Street1, StringComparison.OrdinalIgnoreCase ) && 
+                                    a.PostalCode.Equals( address.PostalCode.Left( 5 ) ) );
+
+                                if ( index == -1 )
+                                {
+                                    _familyAddresses.Add( familyAddress );
+                                    csvPersonAddressWriter.WriteRecord( address );
+                                }
+                            }
+                            else
+                            {
+                                csvPersonAddressWriter.WriteRecord( address );
+                            }
                         }
                     }
                 }
@@ -543,6 +568,13 @@ namespace Slingshot.Core.Utilities
             {
                 Directory.Delete( _imageDirectory, true );
             }
+        }
+
+        private class FamilyAddress
+        {
+            public int FamilyId { get; set; }
+            public string Street1 { get; set; }
+            public string PostalCode { get; set; }
         }
     }
 }
