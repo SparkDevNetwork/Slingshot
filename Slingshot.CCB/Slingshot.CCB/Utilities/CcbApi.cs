@@ -714,6 +714,10 @@ namespace Slingshot.CCB.Utilities
             }
         }
 
+        /// <summary>
+        /// Writes the significant events.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
         private static void WriteSignificantEvents( DateTime modifiedSince )
         {
             var request = new RestRequest( API_INDIVIDUAL_SIGNIFICANT_EVENTS, Method.GET );
