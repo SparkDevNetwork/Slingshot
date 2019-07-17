@@ -671,7 +671,7 @@ namespace Slingshot.CCB.Utilities
                     personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_" ); // need to strip out the '_ind' so they match what is returned from CCB on the person record
                     personAttribute.Name = field.Element( "label" ).Value;
 
-                    if ( field.Element( "name" ).Value.Contains( "_text_" ) )
+                    if ( field.Element( "name" ).Value.Contains( "_text_" ) || field.Element( "name" ).Value.Contains( "_ind_pulldown_" ) )
                     {
                         personAttribute.FieldType = "Rock.Field.Types.TextFieldType";
                     }
