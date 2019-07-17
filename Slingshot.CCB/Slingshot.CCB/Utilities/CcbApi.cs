@@ -170,6 +170,8 @@ namespace Slingshot.CCB.Utilities
         private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
         private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
         private const string API_ATTENDANCE = "/api.php?srv=attendance_profiles&start_date={startDate}&end_date={endDate}";
+        private const string API_SIGNIFICANT_EVENT_LIST = "/api.php?srv=significant_event_list";
+        private const string API_INDIVIDUAL_SIGNIFICANT_EVENTS = "/api.php?srv=individual_significant_events";
 
         #endregion API Call Paths
 
@@ -459,6 +461,8 @@ namespace Slingshot.CCB.Utilities
                     }
                     loopCounter++;
                 }
+
+                WriteSignificantEvents( modifiedSince );
             }
             catch ( Exception ex )
             {
@@ -683,6 +687,74 @@ namespace Slingshot.CCB.Utilities
                     if ( personAttribute.FieldType.IsNotNullOrWhitespace() )
                     {
                         ImportPackage.WriteToPackage( personAttribute );
+                    }
+                }
+            }
+
+            // export significant events as person attributes
+            var significantEventsRequest = new RestRequest( API_SIGNIFICANT_EVENT_LIST, Method.GET );
+            var significantEventsResponse = _client.Execute( significantEventsRequest );
+
+            XDocument xdocSignificantEvents = XDocument.Parse( significantEventsResponse.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_SIGNIFICANT_EVENT_LIST_ResponseLog.xml" ) );
+            }
+
+            var significantEvents = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "items" );
+
+            foreach ( var field in significantEvents.Elements( "item" ) )
+            {
+                var personAttribute = new PersonAttribute();
+                personAttribute.Key = $"significant_event_{field.Element( "name" ).Value.RemoveSpecialCharacters()}";
+                personAttribute.Name = field.Element( "name" ).Value;
+                personAttribute.FieldType = "Rock.Field.Types.DateFieldType";
+                ImportPackage.WriteToPackage( personAttribute );
+            }
+        }
+
+        private static void WriteSignificantEvents( DateTime modifiedSince )
+        {
+            var request = new RestRequest( API_INDIVIDUAL_SIGNIFICANT_EVENTS, Method.GET );
+            var response = _client.Execute( request );
+
+            XDocument xdocSignificantEvents = XDocument.Parse( response.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog.xml" ) );
+            }
+
+            var individuals = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
+            var numIndividuals = individuals.Attribute( "count" ).Value.AsInteger();
+
+            if ( numIndividuals > 0 )
+            {
+                foreach ( var individual in individuals.Elements( "individual" ) )
+                {
+                    var personId = individual.Attribute( "id" ).Value.AsInteger();
+                    var significantEvents = individual.Element( "significant_events" );
+                    var numSignificantEvents = significantEvents.Attribute( "count" ).Value.AsInteger();
+                    if ( personId > 0 && numSignificantEvents > 0 )
+                    {
+                        foreach ( var significantEvent in significantEvents.Elements( "significant_event" ) )
+                        {
+                            var dateModified = significantEvent.Element( "modified" ).Value.AsDateTime();
+                            if ( dateModified.HasValue )
+                            {
+                                var result = DateTime.Compare( modifiedSince, dateModified.Value );
+                                if ( result <= 0 )
+                                {
+                                    ImportPackage.WriteToPackage( new PersonAttributeValue
+                                    {
+                                        PersonId = personId,
+                                        AttributeKey = $"significant_event_{significantEvent.Element( "name" ).Value.RemoveSpecialCharacters()}",
+                                        AttributeValue = significantEvent.Element( "date" ).Value.AsDateTime().ToString()
+                                    } );
+                                }
+                            }
+                        }
                     }
                 }
             }

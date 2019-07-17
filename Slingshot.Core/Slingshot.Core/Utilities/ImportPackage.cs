@@ -114,6 +114,12 @@ namespace Slingshot.Core.Utilities
                         textWriters.Add( personAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personAddress.GetFileName()}" ) );
                     }
 
+                    if ( importModel is PersonAttributeValue )
+                    {
+                        var personAttributeValue = new PersonAttributeValue();
+                        textWriters.Add( personAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
+                    }
+
                     // if model is for financial batch create related writers
                     if ( importModel is FinancialBatch  )
                     {
@@ -201,6 +207,14 @@ namespace Slingshot.Core.Utilities
                         var newPersonAddressCsvWriter = new CsvWriter( textWriters[personAddress.GetType().Name] );
                         csvWriters.Add( personAddress.GetType().Name, newPersonAddressCsvWriter );
                         newPersonAddressCsvWriter.WriteHeader<PersonAddress>();
+                    }
+
+                    if ( importModel is PersonAttributeValue )
+                    {
+                        var personAttributeValue = new PersonAttributeValue();
+                        var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[personAttributeValue.GetType().Name] );
+                        csvWriters.Add( personAttributeValue.GetType().Name, newPersonAttributeValueCsvWriter );
+                        newPersonAttributeValueCsvWriter.WriteHeader<PersonAttributeValue>();
                     }
 
                     // if model is for financial batch create related writers
@@ -344,6 +358,17 @@ namespace Slingshot.Core.Utilities
                                 csvPersonAddressWriter.WriteRecord( address );
                             }
                         }
+                    }
+                }
+
+                if ( importModel is PersonAttributeValue )
+                {
+                    var personAttributeValue = new PersonAttributeValue();
+                    var csvPersonAttributeValueWriter = csvWriters[personAttributeValue.GetType().Name];
+
+                    if ( csvPersonAttributeValueWriter != null )
+                    {
+                        csvPersonAttributeValueWriter.WriteRecord( ( PersonAttributeValue ) importModel );
                     }
                 }
 
