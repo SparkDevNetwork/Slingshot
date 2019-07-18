@@ -37,9 +37,6 @@ namespace Slingshot.CCB
 
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick; ;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
-            
-            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
@@ -184,6 +181,9 @@ namespace Slingshot.CCB
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
+            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
+
             // clear result from previous export
             txtExportMessage.Text = string.Empty;
 
