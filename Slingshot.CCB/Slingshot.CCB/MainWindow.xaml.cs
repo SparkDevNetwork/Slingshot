@@ -184,6 +184,9 @@ namespace Slingshot.CCB
             // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
             CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
+            // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
+            CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
+
             // clear result from previous export
             txtExportMessage.Text = string.Empty;
 

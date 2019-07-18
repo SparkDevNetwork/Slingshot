@@ -75,6 +75,9 @@ namespace Slingshot.CCB.Utilities
         // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
         public static bool DumpResponseToXmlFile { get; set; }
 
+        // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
+        public static bool ConsolidateScheduleNames { get; set; }
+
         /// <summary>
         /// Gets or sets the last run date.
         /// </summary>
@@ -874,9 +877,9 @@ namespace Slingshot.CCB.Utilities
                     scheduleId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 }
 
-                foreach ( var location in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
+                foreach ( var schedule in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
                 {
-                    location.ScheduleId = scheduleId;
+                    schedule.ScheduleId = scheduleId;
                 }
             }
 
@@ -1018,7 +1021,13 @@ namespace Slingshot.CCB.Utilities
 
                             eventDetail.EventId = eventItem.Attribute( "id" ).Value.AsInteger();
                             eventDetail.GroupId = eventItem.Element( "group" ).Attribute( "id" ).Value.AsInteger();
-                            eventDetail.ScheduleName = eventItem.Element( "recurrence_description" ).Value;
+
+                            var scheduleName = eventItem.Element( "recurrence_description" ).Value;
+                            if ( CcbApi.ConsolidateScheduleNames )
+                            {
+                                scheduleName = $"{eventItem.Element( "start_datetime" ).Value.AsDateTime()?.DayOfWeek.ToString()} at {eventItem.Element( "start_time" ).Value}";
+                            }
+                            eventDetail.ScheduleName = scheduleName;
 
                             if ( eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements )
                             {
