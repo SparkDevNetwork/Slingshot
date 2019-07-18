@@ -361,17 +361,6 @@ namespace Slingshot.Core.Utilities
                     }
                 }
 
-                if ( importModel is PersonAttributeValue )
-                {
-                    var personAttributeValue = new PersonAttributeValue();
-                    var csvPersonAttributeValueWriter = csvWriters[personAttributeValue.GetType().Name];
-
-                    if ( csvPersonAttributeValueWriter != null )
-                    {
-                        csvPersonAttributeValueWriter.WriteRecord( ( PersonAttributeValue ) importModel );
-                    }
-                }
-
                 // if financial model write out any related models
                 if ( importModel is FinancialBatch )
                 {
