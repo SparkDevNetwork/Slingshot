@@ -72,11 +72,23 @@ namespace Slingshot.CCB.Utilities
         private static RateLimitedRestClient _client;
         private static int loopThreshold = 100;
 
-        // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-        public static bool DumpResponseToXmlFile { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether [dump response to XML file].
+        /// Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [dump response to XML file]; otherwise, <c>false</c>.
+        /// </value>
+        public static bool DumpResponseToXmlFile { get; set; } = false;
 
-        // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
-        public static bool ConsolidateScheduleNames { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether [consolidate schedule names].
+        /// Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [consolidate schedule names]; otherwise, <c>false</c>.
+        /// </value>
+        public static bool ConsolidateScheduleNames { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the last run date.
