@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbFinancialTransactionDetail
     {
-        public static FinancialTransactionDetail Translate(XElement inputTransactionDetail, int transactionId)
+        public static FinancialTransactionDetail Translate( XElement inputTransactionDetail, int transactionId )
         {
             var financialTransactionDetail = new FinancialTransactionDetail();
 
@@ -24,7 +24,7 @@ namespace Slingshot.CCB.Utilities.Translators
             financialTransactionDetail.CreatedDateTime = inputTransactionDetail.Element( "created" )?.Value.AsDateTime();
             financialTransactionDetail.ModifiedDateTime = inputTransactionDetail.Element( "modified" )?.Value.AsDateTime();
 
-            financialTransactionDetail.CreatedByPersonId = inputTransactionDetail.Element( "creator" )?.Attribute("id")?.Value.AsIntegerOrNull();
+            financialTransactionDetail.CreatedByPersonId = inputTransactionDetail.Element( "creator" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
             financialTransactionDetail.ModifiedByPersonId = inputTransactionDetail.Element( "modifier" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
 
             return financialTransactionDetail;

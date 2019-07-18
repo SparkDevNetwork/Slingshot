@@ -41,18 +41,18 @@ namespace Slingshot.CCB.Utilities
             var response = base.Execute( restRequest );
             var remainingCalls = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
-                .Select( x => ((string)x.Value).AsIntegerOrNull() )
+                .Select( x => ( ( string ) x.Value ).AsIntegerOrNull() )
                 .FirstOrDefault();
             var resetTime = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-RESET", StringComparison.InvariantCultureIgnoreCase ) )
-                .Select( x => ((string)x.Value).AsDoubleOrNull() )
+                .Select( x => ( ( string ) x.Value ).AsDoubleOrNull() )
                 .FirstOrDefault();
 
             // allow the server to burst up to the throttle rate
             if ( remainingCalls.HasValue && remainingCalls < ThrottleRate && resetTime.HasValue )
             {
                 var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
-                if ( coolDownTime.Seconds > 0)
+                if ( coolDownTime.Seconds > 0 )
                 {
                     CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
                     Thread.Sleep( coolDownTime );
@@ -593,7 +593,7 @@ namespace Slingshot.CCB.Utilities
                 {
                     var financialAccount = new FinancialAccount();
                     financialAccount.Name = sourceAccount.Element( "name" )?.Value;
-                    financialAccount.Id = (int)sourceAccount.Attribute( "id" )?.Value.AsInteger();
+                    financialAccount.Id = ( int ) sourceAccount.Attribute( "id" )?.Value.AsInteger();
 
                     var parentAccountId = sourceAccount.Element( "parent" )?.Attribute( "id" )?.Value;
                     if ( parentAccountId.IsNotNullOrWhitespace() )

@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbFinancialBatch
     {
-        public static FinancialBatch Translate(XElement inputBatch )
+        public static FinancialBatch Translate( XElement inputBatch )
         {
             var financialBatch = new FinancialBatch();
             financialBatch.Id = inputBatch.Attribute( "id" ).Value.AsInteger();
@@ -29,10 +29,9 @@ namespace Slingshot.CCB.Utilities.Translators
                     financialBatch.Status = BatchStatus.Open;
                     break;
             }
-            
+
             financialBatch.CreatedDateTime = inputBatch.Element( "created" )?.Value.AsDateTime();
             financialBatch.ModifiedDateTime = inputBatch.Element( "modified" )?.Value.AsDateTime();
-
             financialBatch.CreatedByPersonId = inputBatch.Element( "creator" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
             financialBatch.ModifiedByPersonId = inputBatch.Element( "modifier" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
 

@@ -35,7 +35,7 @@ namespace Slingshot.CCB
         {
             InitializeComponent();
 
-            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick; ;
+            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
 
             exportWorker.DoWork += ExportWorker_DoWork;
@@ -62,12 +62,10 @@ namespace Slingshot.CCB
         {
             exportWorker.ReportProgress( 0, "" );
 
-            var exportSettings = (ExportSettings)e.Argument;
+            var exportSettings = ( ExportSettings ) e.Argument;
 
             // clear filesystem directories
             CcbApi.InitializeExport();
-
-            
 
             // export individuals
             if ( exportSettings.ExportIndividuals )
@@ -165,13 +163,14 @@ namespace Slingshot.CCB
             // add group types
             ExportGroupTypes = CcbApi.GetGroupTypes();
 
-            foreach ( var groupType in ExportGroupTypes ) {
+            foreach ( var groupType in ExportGroupTypes )
+            {
                 //cblGroupTypes.Items.Add( groupType );
                 GroupTypesCheckboxItems.Add( new CheckListItem { Id = groupType.Id, Text = groupType.Name, Checked = true } );
             }
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
-            
+
             txtImportCutOff.Text = DateTime.Now.ToShortDateString(); // remove before flight (sets today's date as the modified since)
         }
 
@@ -196,19 +195,19 @@ namespace Slingshot.CCB
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
-            foreach ( var selectedItem in GroupTypesCheckboxItems.Where( i => i.Checked ))
+            foreach ( var selectedItem in GroupTypesCheckboxItems.Where( i => i.Checked ) )
             {
                 exportSettings.ExportGroupTypes.Add( selectedItem.Id );
             }
 
-            exportWorker.RunWorkerAsync( exportSettings ); 
+            exportWorker.RunWorkerAsync( exportSettings );
         }
 
         #region Window Events
@@ -219,7 +218,6 @@ namespace Slingshot.CCB
             if ( cbGroups.IsChecked.Value )
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
-                
             }
             else
             {

@@ -226,7 +226,8 @@ namespace Slingshot.CCB.Utilities.Translators
                 if ( imageURI.IsNotNullOrWhitespace() && !imageURI.Contains( "profile-default.gif" ) )
                 {
                     // CCB encoded key expires too quickly, so download immediately instead of setting person.PersonPhotoUrl
-                    Task.Run( () => {
+                    Task.Run( () =>
+                    {
                         // save image locally
                         var imageResponse = WebRequest.Create( imageURI ).GetResponse();
                         var imageStream = imageResponse.GetResponseStream();

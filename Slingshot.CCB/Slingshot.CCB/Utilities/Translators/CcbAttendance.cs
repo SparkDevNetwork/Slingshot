@@ -12,7 +12,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbAttendance
     {
-        public static List<Attendance> Translate(XElement inputAttendance, List<EventDetail> eventDetails )
+        public static List<Attendance> Translate( XElement inputAttendance, List<EventDetail> eventDetails )
         {
             List<Attendance> attendanceList = new List<Attendance>();
 
