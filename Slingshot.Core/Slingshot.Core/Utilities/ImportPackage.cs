@@ -428,13 +428,13 @@ namespace Slingshot.Core.Utilities
 
                     // group attributes
                     var groupAttributeValue = new GroupAttributeValue();
-                    var csvPersonAttributeValueWriter = csvWriters[groupAttributeValue.GetType().Name];
+                    var csvGroupAttributeValueWriter = csvWriters[groupAttributeValue.GetType().Name];
 
-                    if ( csvPersonAttributeValueWriter != null )
+                    if ( csvGroupAttributeValueWriter != null )
                     {
                         foreach ( var attribute in ( (Group)importModel ).Attributes )
                         {
-                            csvPersonAttributeValueWriter.WriteRecord( attribute );
+                            csvGroupAttributeValueWriter.WriteRecord( attribute );
                         }
                     }
 
