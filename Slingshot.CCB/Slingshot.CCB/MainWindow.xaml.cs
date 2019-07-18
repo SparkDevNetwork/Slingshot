@@ -53,6 +53,7 @@ namespace Slingshot.CCB
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = true;
             txtExportMessage.Text = "Export Complete";
             pbProgress.Value = 100;
         }
@@ -181,6 +182,8 @@ namespace Slingshot.CCB
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = false;
+
             // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
             CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
