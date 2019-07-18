@@ -99,7 +99,7 @@ namespace Slingshot.CCB.Utilities.Translators
                     {
                         var importAddress = new PersonAddress();
                         importAddress.PersonId = person.Id;
-                        importAddress.Street1 = address.Element( "street_address" ).Value;
+                        importAddress.Street1 = address.Element( "street_address" ).Value.RemoveCrLf();
                         importAddress.City = address.Element( "city" ).Value;
                         importAddress.State = address.Element( "state" ).Value;
                         importAddress.PostalCode = address.Element( "zip" ).Value;

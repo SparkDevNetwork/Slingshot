@@ -31,6 +31,16 @@ namespace Slingshot.Core
         #region String Extensions
 
         /// <summary>
+        /// Removes any carriage return and/or line feed characters.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <returns></returns>
+        public static string RemoveCrLf( this string str )
+        {
+            return str.Replace( Environment.NewLine, " " ).Replace( "\x0A", " " );
+        }
+
+        /// <summary>
         /// Removes special characters from the string so that only Alpha, Numeric, '.' and '_' remain;
         /// </summary>
         /// <param name="str">The identifier.</param>

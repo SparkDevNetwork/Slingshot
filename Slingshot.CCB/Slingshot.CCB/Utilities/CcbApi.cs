@@ -1032,7 +1032,7 @@ namespace Slingshot.CCB.Utilities
                             if ( eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements )
                             {
                                 eventDetail.LocationName = eventItem.Element( "location" ).Element( "name" ).Value;
-                                eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value;
+                                eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value.RemoveCrLf();
                                 eventDetail.LocationCity = eventItem.Element( "location" ).Element( "city" ).Value;
                                 eventDetail.LocationState = eventItem.Element( "location" ).Element( "state" ).Value;
                                 eventDetail.LocationZip = eventItem.Element( "location" ).Element( "zip" ).Value;
