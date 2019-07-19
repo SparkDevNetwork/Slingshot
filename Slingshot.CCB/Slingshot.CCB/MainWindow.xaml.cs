@@ -35,6 +35,8 @@ namespace Slingshot.CCB
         {
             InitializeComponent();
 
+            txtLoopThreshold.Text = "100";
+
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
 
@@ -189,13 +191,18 @@ namespace Slingshot.CCB
             // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
             CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
 
+            if ( txtLoopThreshold.Text.IsNotNullOrWhitespace() && txtLoopThreshold.Text.AsInteger() > 0 )
+            {
+                CcbApi.LoopThreshold = txtLoopThreshold.Text.AsInteger();
+            }
+
             // clear result from previous export
             txtExportMessage.Text = string.Empty;
 
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value
@@ -225,11 +232,22 @@ namespace Slingshot.CCB
             }
         }
         #endregion
+
+        private void TxtLoopThreshold_PreviewTextInput( object sender, TextCompositionEventArgs e )
+        {
+            e.Handled = !IsValid( ( ( TextBox ) sender ).Text + e.Text );
+        }
+
+        public static bool IsValid( string str )
+        {
+            int i;
+            return int.TryParse( str, out i ) && i >= 1 && i <= 9999;
+        }
     }
 
     public class ExportSettings
     {
-        public DateTime ModifiedSince { get; set; } = DateTime.Now;
+        public DateTime? ModifiedSince { get; set; }
 
         public bool ExportIndividuals { get; set; } = true;
 
