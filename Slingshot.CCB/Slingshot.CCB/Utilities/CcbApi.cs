@@ -77,6 +77,14 @@ namespace Slingshot.CCB.Utilities
         public static int LoopThreshold { get; set; } = 100;
 
         /// <summary>
+        /// Gets or sets the groups per API page.
+        /// </summary>
+        /// <value>
+        /// The groups per API page.
+        /// </value>
+        public static int GroupsPerApiPage { get; set; } = 500;
+
+        /// <summary>
         /// Gets or sets a value indicating whether [dump response to XML file].
         /// Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package.
         /// </summary>

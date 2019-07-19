@@ -75,8 +75,12 @@
                         <Label Content="Advanced" FontWeight="Bold" Margin="0,0,0,0"/>
                         <CheckBox Name="cbDumpResponseToXmlFile" Content="Dump Response to XmlFiles" Margin="0,10,0,10"  Padding="3,0,0,0"  />
                         <CheckBox Name="cbConsolidateSchedules" Content="Consolidate Schedules to Day of Week and Time" Margin="0,0,0,10"  Padding="3,0,0,0"  />
-                        <Label Name="lblLoopThreshold" Content="Max API Loops:" Margin="0,0,462,-25" Padding="3" Width="90px" />
-                        <TextBox x:Name="txtLoopThreshold" Margin="95,0,367,10" Padding="0,3" Width="85px" PreviewTextInput="TxtLoopThreshold_PreviewTextInput" />
+                        <Label Name="lblLoopThreshold" Content="Max API Loops:" Padding="0,0,0,3" VerticalAlignment="Bottom" MinWidth="100" />
+                        <TextBox x:Name="txtLoopThreshold" Margin="0,0,0,10" Padding="3" PreviewTextInput="TxtLoopThreshold_PreviewTextInput" MinWidth="100" />
+                        <TextBlock Name="lblLoopThresholdPost" Text="This is maximum number of API requests for People and Groups." Margin="10,-5,10,10" Padding="0" Foreground="Gray" />
+                        <Label Name="lblGroupsPerPage" Content="Groups Per Page:" Padding="0,0,0,3" VerticalAlignment="Bottom" MinWidth="100" />
+                        <TextBox x:Name="txtGroupsPerPage" Margin="0,0,0,10" Padding="3" PreviewTextInput="TxtLoopThreshold_PreviewTextInput" MinWidth="100" />
+                        <TextBlock Name="lblGroupsPerPagePost" Text="This is the page size of the Group API requests. Group Members are returned with each Group. Large organizations could have timeout issues with the Slingshot default of 500. The CCB default is 25." Margin="10,-5,10,10" Padding="0" TextWrapping="Wrap" Foreground="Gray" />
                     </StackPanel>
 
                     <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">

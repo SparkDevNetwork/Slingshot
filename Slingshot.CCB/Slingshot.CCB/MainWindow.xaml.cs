@@ -36,6 +36,7 @@ namespace Slingshot.CCB
             InitializeComponent();
 
             txtLoopThreshold.Text = "100";
+            txtGroupsPerPage.Text = "500";
 
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
@@ -109,7 +110,7 @@ namespace Slingshot.CCB
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince );
+                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince, CcbApi.GroupsPerApiPage );
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -194,6 +195,11 @@ namespace Slingshot.CCB
             if ( txtLoopThreshold.Text.IsNotNullOrWhitespace() && txtLoopThreshold.Text.AsInteger() > 0 )
             {
                 CcbApi.LoopThreshold = txtLoopThreshold.Text.AsInteger();
+            }
+
+            if ( txtGroupsPerPage.Text.IsNotNullOrWhitespace() && txtGroupsPerPage.Text.AsInteger() > 0 )
+            {
+                CcbApi.GroupsPerApiPage = txtLoopThreshold.Text.AsInteger();
             }
 
             // clear result from previous export
