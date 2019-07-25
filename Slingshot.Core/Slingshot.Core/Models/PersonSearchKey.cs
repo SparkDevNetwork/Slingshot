@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Slingshot.Core.Data;
 
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// ImportModel for GroupMember
+    /// ImportModel for Person Search Key.
+    /// Search Keys can be used to help find a person record
     /// </summary>
-    public class GroupMember : IImportModel
+    public class PersonSearchKey: IImportModel
     {
         /// <summary>
         /// Gets or sets the person identifier.
@@ -20,20 +18,21 @@ namespace Slingshot.Core.Model
         public int PersonId { get; set; }
 
         /// <summary>
-        /// Gets or sets the group identifier.
+        /// Gets or sets the name of the search type. Default is 'Alternate Id'
         /// </summary>
         /// <value>
-        /// The group identifier.
+        /// The name of the search type.
         /// </value>
-        public int GroupId { get; set; }
+        [Obsolete("Open Question if we want to support this")]
+        public string SearchTypeName { get; set; }
 
         /// <summary>
-        /// Gets or sets the role.
+        /// Gets or sets the search value (max length of 255)
         /// </summary>
         /// <value>
-        /// The role.
+        /// The search value.
         /// </value>
-        public string Role { get; set; }
+        public string SearchValue { get; set; }
 
         /// <summary>
         /// Gets the name of the file.
@@ -41,7 +40,7 @@ namespace Slingshot.Core.Model
         /// <returns></returns>
         public string GetFileName()
         {
-            return "groupmember.csv";
+            return "person-search-key.csv";
         }
     }
 }

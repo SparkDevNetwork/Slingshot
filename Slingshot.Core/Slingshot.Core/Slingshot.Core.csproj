@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\Slingshot.Core.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -28,6 +29,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\Slingshot.Core.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="$(SolutionDir)\packages\CsvHelper.2.16.3.0\lib\net45\CsvHelper.dll">
@@ -57,6 +59,7 @@
     <Compile Include="Models\BusinessAttributeValue.cs" />
     <Compile Include="Models\BusinessAddress.cs" />
     <Compile Include="Models\Business-Contact.cs" />
+    <Compile Include="Models\PersonSearchKey.cs" />
     <Compile Include="Models\PersonNote.cs" />
     <Compile Include="Models\FamilyNote.cs" />
     <Compile Include="Models\FamilyAttribute.cs" />

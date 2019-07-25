@@ -3,7 +3,7 @@
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonNote
+    /// ImportModel for PersonNote
     /// </summary>
     public class PersonNote : EntityNote, IImportModel
     {

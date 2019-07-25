@@ -3,7 +3,7 @@
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for GroupAttribute
+    /// ImportModel for GroupAttribute
     /// </summary>
     public class GroupAttribute : EntityAttribute, IImportModel
     {

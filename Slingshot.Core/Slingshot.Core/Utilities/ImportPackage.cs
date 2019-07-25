@@ -24,6 +24,12 @@ namespace Slingshot.Core.Utilities
         private static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
         private static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
 
+        /// <summary>
+        /// Gets the package directory.
+        /// </summary>
+        /// <value>
+        /// The package directory.
+        /// </value>
         public static string PackageDirectory
         {
             get
@@ -32,6 +38,12 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets the image directory.
+        /// </summary>
+        /// <value>
+        /// The image directory.
+        /// </value>
         public static string ImageDirectory
         {
             get
@@ -455,6 +467,10 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Finalizes the package.
+        /// </summary>
+        /// <param name="exportFilename">The export filename.</param>
         public static void FinalizePackage( string exportFilename )
         {
             // close all csvWriters

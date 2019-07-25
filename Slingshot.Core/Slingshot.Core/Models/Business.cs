@@ -7,6 +7,10 @@ using System.Xml.Linq;
 
 namespace Slingshot.Core.Model
 {
+    /// <summary>
+    ///  ImportModel for Business
+    /// </summary>
+    /// <seealso cref="Slingshot.Core.Model.IImportModel" />
     public class Business : IImportModel
     {
         /// <summary>
@@ -124,6 +128,10 @@ namespace Slingshot.Core.Model
         /// </value>
         public List<BusinessContact> Contacts { get; set; } = new List<BusinessContact>();
 
+        /// <summary>
+        /// Gets the name of the file.
+        /// </summary>
+        /// <returns></returns>
         public string GetFileName()
         {
             return "business.csv";

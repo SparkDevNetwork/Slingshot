@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for Location
+    /// ImportModel for Location
     /// </summary>
     public class Location : IImportModel
     {
@@ -122,10 +122,29 @@ namespace Slingshot.Core.Model
     /// </summary>
     public enum LocationType
     {
+        /// <summary>
+        /// home
+        /// </summary>
         Home = 0,
+
+        /// <summary>
+        /// work
+        /// </summary>
         Work = 1,
+
+        /// <summary>
+        /// previous
+        /// </summary>
         Previous = 2,
+
+        /// <summary>
+        /// meeting location
+        /// </summary>
         MeetingLocation = 3,
+
+        /// <summary>
+        /// geographic area
+        /// </summary>
         GeographicArea = 4
     }
 }

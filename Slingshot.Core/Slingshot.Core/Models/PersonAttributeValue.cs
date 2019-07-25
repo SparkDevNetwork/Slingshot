@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonAttributeValue
+    /// ImportModel for PersonAttributeValue
     /// </summary>
     public class PersonAttributeValue : IImportModel
     {

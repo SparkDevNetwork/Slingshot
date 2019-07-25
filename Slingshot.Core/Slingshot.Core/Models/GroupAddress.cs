@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for GroupAddress
+    /// ImportModel for GroupAddress
     /// </summary>
     public class GroupAddress : IImportModel
     {
@@ -83,10 +83,26 @@ namespace Slingshot.Core.Model
         /// </value>
         public string Longitude { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is mailing.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is mailing; otherwise, <c>false</c>.
+        /// </value>
         public bool IsMailing { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type of the address.
+        /// </summary>
+        /// <value>
+        /// The type of the address.
+        /// </value>
         public AddressType AddressType { get; set; }
 
+        /// <summary>
+        /// Gets the name of the file.
+        /// </summary>
+        /// <returns></returns>
         public string GetFileName()
         {
             return "group-address.csv";

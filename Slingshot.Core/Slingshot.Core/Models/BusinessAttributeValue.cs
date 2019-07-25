@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonAttributeValue
+    /// ImportModel for a Business Attribute Value
     /// </summary>
     public class BusinessAttributeValue : IImportModel
     {
         /// <summary>
-        /// Gets or sets the person identifier.
+        /// Gets or sets the business (person ) identifier.
         /// </summary>
         /// <value>
         /// The person identifier.

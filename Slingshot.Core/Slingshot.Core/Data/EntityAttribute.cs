@@ -1,5 +1,8 @@
 ﻿namespace Slingshot.Core.Data
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public abstract class EntityAttribute
     {
         /// <summary>

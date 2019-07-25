@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for FinancialTransaction
+    /// ImportModel for FinancialTransaction
     /// </summary>
     public class FinancialTransaction : IImportModel
     {
@@ -133,29 +133,91 @@ namespace Slingshot.Core.Model
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum TransactionType
     {
+        /// <summary>
+        /// The contribution
+        /// </summary>
         Contribution,
+
+        /// <summary>
+        /// The event registration
+        /// </summary>
         EventRegistration
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum TransactionSource
     {
+        /// <summary>
+        /// website
+        /// </summary>
         Website,
+
+        /// <summary>
+        /// kiosk
+        /// </summary>
         Kiosk,
+
+        /// <summary>
+        /// mobile application
+        /// </summary>
         MobileApplication,
+
+        /// <summary>
+        /// onsite collection
+        /// </summary>
         OnsiteCollection,
+
+        /// <summary>
+        /// bank checks
+        /// </summary>
         BankChecks
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum CurrencyType
     {
+        /// <summary>
+        /// unknown
+        /// </summary>
         Unknown,
+
+        /// <summary>
+        /// check
+        /// </summary>
         Check,
+
+        /// <summary>
+        /// cash
+        /// </summary>
         Cash,
+
+        /// <summary>
+        /// credit card
+        /// </summary>
         CreditCard,
+
+        /// <summary>
+        /// ach
+        /// </summary>
         ACH,
+
+        /// <summary>
+        /// other
+        /// </summary>
         Other,
+
+        /// <summary>
+        /// non cash
+        /// </summary>
         NonCash
     }
 }
