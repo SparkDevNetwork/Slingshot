@@ -139,14 +139,19 @@ namespace Slingshot.Core.Model
     public enum TransactionType
     {
         /// <summary>
-        /// The contribution
+        /// Transaction type of Contribution 
         /// </summary>
         Contribution,
 
         /// <summary>
-        /// The event registration
+        /// Transaction type of Event Registration
         /// </summary>
-        EventRegistration
+        EventRegistration,
+
+        /// <summary>
+        /// Transaction type of Reciept
+        /// </summary>
+        Receipt
     }
 
     /// <summary>

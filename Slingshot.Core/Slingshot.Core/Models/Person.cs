@@ -228,6 +228,14 @@ namespace Slingshot.Core.Model
         public string Grade { get; set; }
 
         /// <summary>
+        /// Gets or sets the person search keys.
+        /// </summary>
+        /// <value>
+        /// The person search keys.
+        /// </value>
+        public List<PersonSearchKey> PersonSearchKeys { get; set; } = new List<PersonSearchKey>();
+
+        /// <summary>
         /// Gets or sets the attributes.
         /// </summary>
         /// <value>

@@ -18,15 +18,6 @@ namespace Slingshot.Core.Model
         public int PersonId { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the search type. Default is 'Alternate Id'
-        /// </summary>
-        /// <value>
-        /// The name of the search type.
-        /// </value>
-        [Obsolete("Open Question if we want to support this")]
-        public string SearchTypeName { get; set; }
-
-        /// <summary>
         /// Gets or sets the search value (max length of 255)
         /// </summary>
         /// <value>

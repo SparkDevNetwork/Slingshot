@@ -211,6 +211,12 @@ namespace Slingshot.Core.Utilities
                         var newPersonAddressCsvWriter = new CsvWriter( textWriters[personAddress.GetType().Name] );
                         csvWriters.Add( personAddress.GetType().Name, newPersonAddressCsvWriter );
                         newPersonAddressCsvWriter.WriteHeader<PersonAddress>();
+
+                        // person search keys
+                        var personSearchKey = new PersonSearchKey();
+                        var newPersonSearchKeyCsvWriter = new CsvWriter( textWriters[personSearchKey.GetType().Name] );
+                        csvWriters.Add( personSearchKey.GetType().Name, newPersonSearchKeyCsvWriter );
+                        newPersonSearchKeyCsvWriter.WriteHeader<PersonSearchKey>();
                     }
 
                     // if model is for financial batch create related writers
@@ -330,6 +336,18 @@ namespace Slingshot.Core.Utilities
                         foreach ( var address in ( (Person)importModel ).Addresses )
                         {
                             csvPersonAddressWriter.WriteRecord( address );
+                        }
+                    }
+
+                    // person search keys
+                    var personSearchKey = new PersonSearchKey();
+                    var csvPersonSearchKeyWriter = csvWriters[personSearchKey.GetType().Name];
+
+                    if ( csvPersonSearchKeyWriter != null )
+                    {
+                        foreach ( var searchKey in ( ( Person ) importModel ).PersonSearchKeys )
+                        {
+                            csvPersonSearchKeyWriter.WriteRecord( searchKey );
                         }
                     }
                 }
