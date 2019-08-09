@@ -40,6 +40,12 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets the image directory.
+        /// </summary>
+        /// <value>
+        /// The image directory.
+        /// </value>
         public static string ImageDirectory
         {
             get
@@ -213,6 +219,12 @@ namespace Slingshot.Core.Utilities
                         var newPersonAddressCsvWriter = new CsvWriter( textWriters[personAddress.GetType().Name] );
                         csvWriters.Add( personAddress.GetType().Name, newPersonAddressCsvWriter );
                         newPersonAddressCsvWriter.WriteHeader<PersonAddress>();
+
+                        // person search keys
+                        var personSearchKey = new PersonSearchKey();
+                        var newPersonSearchKeyCsvWriter = new CsvWriter( textWriters[personSearchKey.GetType().Name] );
+                        csvWriters.Add( personSearchKey.GetType().Name, newPersonSearchKeyCsvWriter );
+                        newPersonSearchKeyCsvWriter.WriteHeader<PersonSearchKey>();
                     }
 
                     if ( importModel is PersonAttributeValue )
@@ -365,6 +377,18 @@ namespace Slingshot.Core.Utilities
                             }
                         }
                     }
+
+                    // person search keys
+                    var personSearchKey = new PersonSearchKey();
+                    var csvPersonSearchKeyWriter = csvWriters[personSearchKey.GetType().Name];
+
+                    if ( csvPersonSearchKeyWriter != null )
+                    {
+                        foreach ( var searchKey in ( ( Person ) importModel ).PersonSearchKeys )
+                        {
+                            csvPersonSearchKeyWriter.WriteRecord( searchKey );
+                        }
+                    }
                 }
 
                 // if financial model write out any related models
@@ -500,6 +524,10 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Finalizes the package.
+        /// </summary>
+        /// <param name="exportFilename">The export filename.</param>
         public static void FinalizePackage( string exportFilename )
         {
             // close all csvWriters

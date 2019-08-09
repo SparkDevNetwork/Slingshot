@@ -3,7 +3,7 @@
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonAttribute
+    /// ImportModel for PersonAttribute
     /// </summary>
     public class PersonAttribute: EntityAttribute, IImportModel
     {

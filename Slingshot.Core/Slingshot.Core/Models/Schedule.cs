@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Slingshot.Core.Model
+﻿namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for Schedule
+    /// ImportModel for Schedule
     /// </summary>
     public class Schedule : IImportModel
     {

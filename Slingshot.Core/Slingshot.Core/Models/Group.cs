@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for Group
+    /// ImportModel for Group
     /// </summary>
     public class Group : IImportModel
     {

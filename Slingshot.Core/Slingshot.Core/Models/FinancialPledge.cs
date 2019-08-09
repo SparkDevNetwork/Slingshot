@@ -3,7 +3,7 @@
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for FinancialPledge
+    /// ImportModel for Financial Pledge
     /// </summary>
     public class FinancialPledge : IImportModel
     {
@@ -23,7 +23,7 @@ namespace Slingshot.Core.Model
         /// </value>
         public int PersonId { get; set; }
 
-        //// <summary>
+        /// <summary>
         /// Gets or sets the account identifier.
         /// </summary>
         /// <value>
@@ -56,7 +56,7 @@ namespace Slingshot.Core.Model
         public PledgeFrequency? PledgeFrequency { get; set; }
 
         /// <summary>
-        /// Gets or sets the pledge amount that is promised to be given at the specified <see cref="PledgeFrequencyValue"/>.
+        /// Gets or sets the pledge amount that is promised to be given at the specified <see cref="PledgeFrequency"/>.
         /// </summary>
         /// <value>
         /// A <see cref="System.Decimal"/> representing the amount to be pledged at the specified frequency.
@@ -92,30 +92,49 @@ namespace Slingshot.Core.Model
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum PledgeFrequency
     {
-        // One Time
+        /// <summary>
+        /// One time
+        /// </summary>
         OneTime,
 
-        // Every Week
+        /// <summary>
+        /// Every Week
+        /// </summary>
         Weekly,
 
-        // Every Two Weeks
+        /// <summary>
+        /// Every Two Weeks
+        /// </summary>
         BiWeekly,
 
-        // Twice a Month
+        /// <summary>
+        /// Twice a Month
+        /// </summary>
         TwiceAMonth,
 
-        // Once a Month
+        /// <summary>
+        /// Once a Month
+        /// </summary>
         Monthly,
 
-        // Every Quarter
+        /// <summary>
+        /// Every Quarter
+        /// </summary>
         Quarterly,
 
-        // Every Six Months
+        /// <summary>
+        /// Every Six Months
+        /// </summary>
         TwiceAYear,
 
-        // Every Year
+        /// <summary>
+        /// Every Year
+        /// </summary>
         Yearly
     }
 }
