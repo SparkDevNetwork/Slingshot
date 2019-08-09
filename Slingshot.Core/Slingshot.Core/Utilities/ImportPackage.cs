@@ -26,6 +26,12 @@ namespace Slingshot.Core.Utilities
 
         private static List<FamilyAddress> _familyAddresses = new List<FamilyAddress>();
 
+        /// <summary>
+        /// Gets the package directory.
+        /// </summary>
+        /// <value>
+        /// The package directory.
+        /// </value>
         public static string PackageDirectory
         {
             get
