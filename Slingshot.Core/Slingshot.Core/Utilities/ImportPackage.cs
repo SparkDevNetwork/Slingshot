@@ -124,6 +124,10 @@ namespace Slingshot.Core.Utilities
                         // person addresses
                         var personAddress = new PersonAddress();
                         textWriters.Add( personAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personAddress.GetFileName()}" ) );
+
+                        // person search key
+                        var personSearchKey = new PersonSearchKey();
+                        textWriters.Add( personSearchKey.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personSearchKey.GetFileName()}" ) );
                     }
 
                     if ( importModel is PersonAttributeValue )
