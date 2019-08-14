@@ -199,7 +199,7 @@ namespace Slingshot.CCB
 
             if ( txtGroupsPerPage.Text.IsNotNullOrWhitespace() && txtGroupsPerPage.Text.AsInteger() > 0 )
             {
-                CcbApi.GroupsPerApiPage = txtLoopThreshold.Text.AsInteger();
+                CcbApi.GroupsPerApiPage = txtGroupsPerPage.Text.AsInteger();
             }
 
             // clear result from previous export
