@@ -193,7 +193,6 @@ namespace Slingshot.CCB.Utilities
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
         private const string API_FINANCIAL_BATCHES = "/api.php?srv=batch_profiles_in_date_range&date_start={startDate}&date_end={endDate}";
-        private const string API_FINANCIAL_BATCHES_ALL = "/api.php?srv=batch_profiles";
         private const string API_GROUP_TYPES = "/api.php?srv=group_type_list";
         private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={perPage}";
         private const string API_GROUPS_ALL = "/api.php?srv=group_profiles&include_participants=true&page={currentPage}&per_page={perPage}";
@@ -302,7 +301,7 @@ namespace Slingshot.CCB.Utilities
                 {
                     RestRequest request;
                     if ( modifiedSince.HasValue )
-                    { 
+                    {
                         request = new RestRequest( API_GROUPS, Method.GET );
                         request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
                         request.AddUrlSegment( "currentPage", currentPage.ToString() );
@@ -527,92 +526,38 @@ namespace Slingshot.CCB.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         public static void ExportContributions( DateTime? modifiedSince )
         {
-            if ( modifiedSince.HasValue )
+            if ( !modifiedSince.HasValue )
             {
-
-                // we'll make an api call for each month until the modifiedSince date
-                var today = DateTime.Now;
-                var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
-                int loopCounter = 0;
-                try
-                {
-                    for ( int i = 0; i < numberOfMonths; i++ )
-                    {
-                        DateTime referenceDate = today.AddMonths( ( ( numberOfMonths - i ) - 1 ) * -1 );
-                        DateTime startDate = new DateTime( referenceDate.Year, referenceDate.Month, 1 );
-                        DateTime endDate = new DateTime( referenceDate.Year, referenceDate.Month, DateTime.DaysInMonth( referenceDate.Year, referenceDate.Month ) );
-
-                        // if it's the first instance set start date to the modifiedSince date
-                        if ( i == 0 )
-                        {
-                            startDate = modifiedSince.Value;
-                        }
-
-                        // if it's the last time through set the end dat to today's date
-                        if ( i == numberOfMonths - 1 )
-                        {
-                            endDate = today;
-                        }
-
-                        var request = new RestRequest( API_FINANCIAL_BATCHES, Method.GET );
-                        request.AddUrlSegment( "startDate", startDate.ToString( "yyyy-MM-dd" ) );
-                        request.AddUrlSegment( "endDate", endDate.ToString( "yyyy-MM-dd" ) );
-
-                        var response = _client.Execute( request );
-
-                        XDocument xdoc = XDocument.Parse( response.Content );
-
-                        if ( CcbApi.DumpResponseToXmlFile )
-                        {
-                            xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ResponseLog_{loopCounter++}.xml" ) );
-                        }
-
-                        var sourceBatches = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "batches" ).Elements( "batch" );
-
-                        foreach ( var sourceBatch in sourceBatches )
-                        {
-                            var importBatch = CcbFinancialBatch.Translate( sourceBatch );
-
-                            var sourceTransactions = sourceBatch.Element( "transactions" ).Elements( "transaction" );
-
-                            foreach ( var sourceTransaction in sourceTransactions )
-                            {
-                                var importTransaction = CcbFinancialTransaction.Translate( sourceTransaction, sourceBatch.Attribute( "id" ).Value.AsInteger() );
-
-                                if ( importTransaction != null )
-                                {
-                                    importBatch.FinancialTransactions.Add( importTransaction );
-
-                                    var sourceTransactionDetails = sourceTransaction.Element( "transaction_details" ).Elements( "transaction_detail" );
-                                    foreach ( var sourceTransactionDetail in sourceTransactionDetails )
-                                    {
-                                        var importTransactionDetail = CcbFinancialTransactionDetail.Translate( sourceTransactionDetail, importTransaction.Id );
-
-                                        if ( importTransactionDetail != null )
-                                        {
-                                            importTransaction.FinancialTransactionDetails.Add( importTransactionDetail );
-                                        }
-                                    }
-                                }
-                            }
-
-                            if ( importBatch != null )
-                            {
-                                ImportPackage.WriteToPackage( importBatch );
-                            }
-                        }
-                    }
-                }
-                catch ( Exception ex )
-                {
-                    ErrorMessage = ex.Message;
-                }
+                modifiedSince = new DateTime( 2000, 1, 1 );
             }
-            else
+
+            // we'll make an api call for each month until the modifiedSince date
+            var today = DateTime.Now;
+            var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
+            int loopCounter = 0;
+            try
             {
-                try
+                for ( int i = 0; i < numberOfMonths; i++ )
                 {
-                    var request = new RestRequest( API_FINANCIAL_BATCHES_ALL, Method.GET );
+                    DateTime referenceDate = today.AddMonths( ( ( numberOfMonths - i ) - 1 ) * -1 );
+                    DateTime startDate = new DateTime( referenceDate.Year, referenceDate.Month, 1 );
+                    DateTime endDate = new DateTime( referenceDate.Year, referenceDate.Month, DateTime.DaysInMonth( referenceDate.Year, referenceDate.Month ) );
+
+                    // if it's the first instance set start date to the modifiedSince date
+                    if ( i == 0 )
+                    {
+                        startDate = modifiedSince.Value;
+                    }
+
+                    // if it's the last time through set the end dat to today's date
+                    if ( i == numberOfMonths - 1 )
+                    {
+                        endDate = today;
+                    }
+
+                    var request = new RestRequest( API_FINANCIAL_BATCHES, Method.GET );
+                    request.AddUrlSegment( "startDate", startDate.ToString( "yyyy-MM-dd" ) );
+                    request.AddUrlSegment( "endDate", endDate.ToString( "yyyy-MM-dd" ) );
 
                     var response = _client.Execute( request );
 
@@ -620,7 +565,7 @@ namespace Slingshot.CCB.Utilities
 
                     if ( CcbApi.DumpResponseToXmlFile )
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ALL_ResponseLog.xml" ) );
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ResponseLog_{loopCounter++}.xml" ) );
                     }
 
                     var sourceBatches = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "batches" ).Elements( "batch" );
@@ -657,12 +602,11 @@ namespace Slingshot.CCB.Utilities
                             ImportPackage.WriteToPackage( importBatch );
                         }
                     }
-
                 }
-                catch ( Exception ex )
-                {
-                    ErrorMessage = ex.Message;
-                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
             }
         }
 
