@@ -25,6 +25,19 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     phone.PersonId = row.Field<int>( "individual_id" );
                     phone.PhoneType = phoneType;
                     phone.PhoneNumber = phoneNumber.Left( 20 );
+                    phone.IsMessagingEnabled = false;
+                    if( row.Field<int>("listed") == 255)
+                    {
+                        phone.IsUnlisted = false;
+                        if( phoneType == "Mobile" || phoneType == "Cell" )
+                        {
+                            phone.IsMessagingEnabled = true;
+                        }
+                    }
+                    else
+                    {
+                        phone.IsUnlisted = true;
+                    }
                     return phone;
                 }
             }

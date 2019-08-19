@@ -219,13 +219,32 @@ AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
             get
             {
                 return $@"
-Select DISTINCT
-individual_id
-, communication_type
-, communication_value
-, listed
-FROM Communication
-Where individual_id is not null
+Select a.* FROM
+( SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, c.LastUpdateDate
+     FROM Communication AS c INNER JOIN (SELECT Distinct
+          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
+          , c.Communication_Id
+          , c.Communication_Type
+          , c.LastUpdateDate
+     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
+     )  AS x ON c.Communication_Id = x.Communication_Id ) a
+INNER JOIN (
+SELECT
+          Max(LastUpdateDate) as LatestDate
+          , Individual_Id
+          , communication_type
+FROM (
+     SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, LastUpdateDate
+     FROM Communication AS c INNER JOIN (SELECT Distinct
+          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
+          , c.Communication_Id
+          , c.Communication_Type
+     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
+     )  AS x ON c.Communication_Id = x.Communication_Id
+     WHERE x.Individual_Id is not null
+) b
+Group by  Individual_Id , communication_type
+) d ON ( d.Individual_Id = a.Individual_Id AND d.Communication_Type = a.Communication_Type AND d.LatestDate = a.LastUpdateDate )
 ";
             }
         }
@@ -343,9 +362,9 @@ and c.individual_id is not null";
             get
             {
                 return $@"
-SELECT d.[Group_Name]
-      ,d.[Group_ID]
-	      , g.Group_Type_Id
+SELECT g.[Group_Name]
+      ,g.[Group_ID]
+	  , g.Group_Type_Id
       ,[Description]
       , IIF(d.is_open=0,0,1) as is_active
       ,[start_date]
@@ -360,12 +379,11 @@ SELECT d.[Group_Name]
       ,[PostalCode]
       ,[Country]
 	  , null as parentGroupId
-  FROM [GroupsDescription] d
-INNER JOIN
-(
-	SELECT DISTINCT Group_Id, Group_Type_Id 
+  FROM (
+	SELECT DISTINCT Group_Id, Group_Type_Id, Group_Name 
 	FROM Groups 
-) g on g.Group_ID = d.Group_ID";
+) g
+LEFT JOIN GroupsDescription d on g.Group_ID = d.Group_ID";
             }
         }
 
@@ -632,6 +650,7 @@ SELECT [Individual_ID]
       , Fund_Name
       , Sub_Fund_Name
       , Amount
+      , Fund_Type
 FROM [Contribution]";
             }
         }
@@ -1087,6 +1106,14 @@ FROM Company;
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
+                Name = "Default Tag Comment",
+                Key = "F1_Defatul_Tag_Comment",
+                Category = "Childhood Information",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+            
+            ImportPackage.WriteToPackage( new PersonAttribute()
+            {
                 Name = "Employer",
                 Key = "Employer",
                 Category = "Employment",
@@ -1095,8 +1122,8 @@ FROM Company;
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
-                Name = "School",
-                Key = "School",
+                Name = "F1 School",
+                Key = "F1School",
                 Category = "Education",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
@@ -1114,14 +1141,6 @@ FROM Company;
                 Name = "PreviousChurch",
                 Key = "PreviousChurch",
                 Category = "Visit Information",
-                FieldType = "Rock.Field.Types.TextFieldType"
-            } );
-
-            ImportPackage.WriteToPackage( new PersonAttribute()
-            {
-                Name = "Bar Code",
-                Key = "BarCode",
-                Category = "Childhood Information",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
 

@@ -71,6 +71,19 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     break;
             }
 
+            switch ( row.Field<string>( "Fund_Type" ) )
+            {
+                case "Receipt":
+                    transaction.TransactionType = TransactionType.Receipt;
+                    break;
+                case "EventRegistration":
+                    transaction.TransactionType = TransactionType.EventRegistration;
+                    break;
+                default:
+                    transaction.TransactionType = TransactionType.Contribution;
+                    break;
+            }
+
             var accountId = 0;
             MD5 md5Hasher = MD5.Create();
             byte[] hashed;
