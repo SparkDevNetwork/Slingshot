@@ -34,25 +34,26 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // names
-                string firstName = row.Field<string>( "first_name" );
+                // Limit the Name fields to 50 characters because the Rock DB has a limit of 50 characters.
+                string firstName = row.Field<string>( "first_name" ).Left(50);
                 if ( firstName.IsNotNullOrWhitespace() )
                 {
                     person.FirstName = firstName;
                 }
 
-                string nickName = row.Field<string>( "goes_by" );
+                string nickName = row.Field<string>( "goes_by" ).Left( 50 );
                 if ( nickName.IsNotNullOrWhitespace() )
                 {
                     person.NickName = nickName;
                 }
 
-                string middleName = row.Field<string>( "middle_name" );
+                string middleName = row.Field<string>( "middle_name" ).Left( 50 );
                 if ( middleName.IsNotNullOrWhitespace() )
                 {
                     person.MiddleName = middleName;
                 }
 
-                string lastName = row.Field<string>( "last_name" );
+                string lastName = row.Field<string>( "last_name" ).Left( 50 );
                 if ( lastName.IsNotNullOrWhitespace() )
                 {
                     person.LastName = lastName;
@@ -73,6 +74,10 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 string email = null;
                 // email
                 var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'" ).FirstOrDefault();
+                if( emailrow == null )
+                {
+                    emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'" ).FirstOrDefault();
+                }
                 if( emailrow != null )
                 {
                     email = emailrow.Field<string>( "communication_value" );
@@ -292,7 +297,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 {
                     person.Attributes.Add( new PersonAttributeValue
                     {
-                        AttributeKey = "School",
+                        AttributeKey = "F1School",
                         AttributeValue = school,
                         PersonId = person.Id
                     } );
@@ -322,17 +327,30 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     } );
                 }
 
-                // former Church
-                string barcode = row.Field<string>( "Bar_Code" );
-                if ( barcode.IsNotNullOrWhitespace() )
+                // Default Tag Comment
+                string defaultTagComment = row.Field<string>( "Defatul_Tag_Commment" );
+                if ( defaultTagComment.IsNotNullOrWhitespace() )
                 {
                     person.Attributes.Add( new PersonAttributeValue
                     {
-                        AttributeKey = "BarCode",
-                        AttributeValue = barcode,
+                        AttributeKey = "F1_Default_Tag_Comment",
+                        AttributeValue = defaultTagComment,
                         PersonId = person.Id
                     } );
                 }
+
+                // Add Bar Code as Person Search Key
+                string barcode = row.Field<string>( "Bar_Code" );
+                if ( barcode.IsNotNullOrWhitespace() )
+                {
+                    person.PersonSearchKeys.Add( new PersonSearchKey
+                    {
+                        PersonId = person.Id,
+                        SearchValue = barcode
+                    } );
+                }
+
+
 
                 // Communications That aren't phone or email
                 var communicationAttributeValues = dtCommunicationValues.Select( "individual_id = " + person.Id );
