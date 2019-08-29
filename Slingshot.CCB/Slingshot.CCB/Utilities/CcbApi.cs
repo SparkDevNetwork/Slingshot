@@ -41,18 +41,18 @@ namespace Slingshot.CCB.Utilities
             var response = base.Execute( restRequest );
             var remainingCalls = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
-                .Select( x => ((string)x.Value).AsIntegerOrNull() )
+                .Select( x => ( ( string ) x.Value ).AsIntegerOrNull() )
                 .FirstOrDefault();
             var resetTime = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-RESET", StringComparison.InvariantCultureIgnoreCase ) )
-                .Select( x => ((string)x.Value).AsDoubleOrNull() )
+                .Select( x => ( ( string ) x.Value ).AsDoubleOrNull() )
                 .FirstOrDefault();
 
             // allow the server to burst up to the throttle rate
             if ( remainingCalls.HasValue && remainingCalls < ThrottleRate && resetTime.HasValue )
             {
                 var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
-                if ( coolDownTime.Seconds > 0)
+                if ( coolDownTime.Seconds > 0 )
                 {
                     CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
                     Thread.Sleep( coolDownTime );
@@ -70,10 +70,37 @@ namespace Slingshot.CCB.Utilities
     public static class CcbApi
     {
         private static RateLimitedRestClient _client;
-        private static int loopThreshold = 100;
 
-        // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-        public static bool DumpResponseToXmlFile { get; set; }
+        /// <summary>
+        /// A developer safety blanket to prevent eating all the api calls for the day.
+        /// </summary>
+        public static int LoopThreshold { get; set; } = 100;
+
+        /// <summary>
+        /// Gets or sets the groups per API page.
+        /// </summary>
+        /// <value>
+        /// The groups per API page.
+        /// </value>
+        public static int GroupsPerApiPage { get; set; } = 500;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether [dump response to XML file].
+        /// Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [dump response to XML file]; otherwise, <c>false</c>.
+        /// </value>
+        public static bool DumpResponseToXmlFile { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether [consolidate schedule names].
+        /// Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [consolidate schedule names]; otherwise, <c>false</c>.
+        /// </value>
+        public static bool ConsolidateScheduleNames { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the last run date.
@@ -162,14 +189,19 @@ namespace Slingshot.CCB.Utilities
 
         private const string API_STATUS = "/api.php?srv=api_status";
         private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
+        private const string API_INDIVIDUALS_ALL = "/api.php?srv=individual_profiles&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
         private const string API_FINANCIAL_BATCHES = "/api.php?srv=batch_profiles_in_date_range&date_start={startDate}&date_end={endDate}";
         private const string API_GROUP_TYPES = "/api.php?srv=group_type_list";
         private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={perPage}";
+        private const string API_GROUPS_ALL = "/api.php?srv=group_profiles&include_participants=true&page={currentPage}&per_page={perPage}";
         private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
         private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_EVENTS_ALL = "/api.php?srv=event_profiles&page={currentPage}&per_page={itemsPerPage}";
         private const string API_ATTENDANCE = "/api.php?srv=attendance_profiles&start_date={startDate}&end_date={endDate}";
+        private const string API_SIGNIFICANT_EVENT_LIST = "/api.php?srv=significant_event_list";
+        private const string API_INDIVIDUAL_SIGNIFICANT_EVENTS = "/api.php?srv=individual_significant_events";
 
         #endregion API Call Paths
 
@@ -248,7 +280,7 @@ namespace Slingshot.CCB.Utilities
         /// <param name="selectedGroupTypes">The selected group types.</param>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="perPage">The people per page.</param>
-        public static void ExportGroups( List<int> selectedGroupTypes, DateTime modifiedSince, int perPage = 500 )
+        public static void ExportGroups( List<int> selectedGroupTypes, DateTime? modifiedSince, int perPage = 500 )
         {
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
@@ -267,10 +299,20 @@ namespace Slingshot.CCB.Utilities
                 bool moreExist = true;
                 while ( moreExist )
                 {
-                    var request = new RestRequest( API_GROUPS, Method.GET );
-                    request.AddUrlSegment( "modifiedSince", modifiedSince.ToString( "yyyy-MM-dd" ) );
-                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                    request.AddUrlSegment( "perPage", perPage.ToString() );
+                    RestRequest request;
+                    if ( modifiedSince.HasValue )
+                    {
+                        request = new RestRequest( API_GROUPS, Method.GET );
+                        request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "perPage", perPage.ToString() );
+                    }
+                    else
+                    {
+                        request = new RestRequest( API_GROUPS_ALL, Method.GET );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "perPage", perPage.ToString() );
+                    }
 
                     var response = _client.Execute( request );
 
@@ -328,7 +370,7 @@ namespace Slingshot.CCB.Utilities
                     }
 
                     // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > loopThreshold )
+                    if ( loopCounter > LoopThreshold )
                     {
                         break;
                     }
@@ -383,7 +425,7 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="peoplePerPage">The people per page.</param>
-        public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
+        public static void ExportIndividuals( DateTime? modifiedSince, int peoplePerPage = 500 )
         {
             // write out the person attributes
             WritePersonAttributes();
@@ -405,10 +447,20 @@ namespace Slingshot.CCB.Utilities
             {
                 while ( moreIndividualsExist )
                 {
-                    var request = new RestRequest( API_INDIVIDUALS, Method.GET );
-                    request.AddUrlSegment( "modifiedSince", modifiedSince.ToString( "yyyy-MM-dd" ) );
-                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                    request.AddUrlSegment( "peoplePerPage", peoplePerPage.ToString() );
+                    RestRequest request;
+                    if ( modifiedSince.HasValue )
+                    {
+                        request = new RestRequest( API_INDIVIDUALS, Method.GET );
+                        request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "peoplePerPage", peoplePerPage.ToString() );
+                    }
+                    else
+                    {
+                        request = new RestRequest( API_INDIVIDUALS_ALL, Method.GET );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "peoplePerPage", peoplePerPage.ToString() );
+                    }
 
                     var response = _client.Execute( request );
 
@@ -453,12 +505,14 @@ namespace Slingshot.CCB.Utilities
                     }
 
                     // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > loopThreshold )
+                    if ( loopCounter > LoopThreshold )
                     {
                         break;
                     }
                     loopCounter++;
                 }
+
+                WriteSignificantEvents( modifiedSince );
             }
             catch ( Exception ex )
             {
@@ -470,11 +524,16 @@ namespace Slingshot.CCB.Utilities
         /// Exports the contributions.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        public static void ExportContributions( DateTime modifiedSince )
+        public static void ExportContributions( DateTime? modifiedSince )
         {
+            if ( !modifiedSince.HasValue )
+            {
+                modifiedSince = new DateTime( 2000, 1, 1 );
+            }
+
             // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
-            var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
+            var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
             int loopCounter = 0;
             try
             {
@@ -487,7 +546,7 @@ namespace Slingshot.CCB.Utilities
                     // if it's the first instance set start date to the modifiedSince date
                     if ( i == 0 )
                     {
-                        startDate = modifiedSince;
+                        startDate = modifiedSince.Value;
                     }
 
                     // if it's the last time through set the end dat to today's date
@@ -574,7 +633,7 @@ namespace Slingshot.CCB.Utilities
                 {
                     var financialAccount = new FinancialAccount();
                     financialAccount.Name = sourceAccount.Element( "name" )?.Value;
-                    financialAccount.Id = (int)sourceAccount.Attribute( "id" )?.Value.AsInteger();
+                    financialAccount.Id = ( int ) sourceAccount.Attribute( "id" )?.Value.AsInteger();
 
                     var parentAccountId = sourceAccount.Element( "parent" )?.Attribute( "id" )?.Value;
                     if ( parentAccountId.IsNotNullOrWhitespace() )
@@ -671,7 +730,7 @@ namespace Slingshot.CCB.Utilities
                     personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_" ); // need to strip out the '_ind' so they match what is returned from CCB on the person record
                     personAttribute.Name = field.Element( "label" ).Value;
 
-                    if ( field.Element( "name" ).Value.Contains( "_text_" ) )
+                    if ( field.Element( "name" ).Value.Contains( "_text_" ) || field.Element( "name" ).Value.Contains( "_ind_pulldown_" ) )
                     {
                         personAttribute.FieldType = "Rock.Field.Types.TextFieldType";
                     }
@@ -683,6 +742,84 @@ namespace Slingshot.CCB.Utilities
                     if ( personAttribute.FieldType.IsNotNullOrWhitespace() )
                     {
                         ImportPackage.WriteToPackage( personAttribute );
+                    }
+                }
+            }
+
+            // export significant events as person attributes
+            var significantEventsRequest = new RestRequest( API_SIGNIFICANT_EVENT_LIST, Method.GET );
+            var significantEventsResponse = _client.Execute( significantEventsRequest );
+
+            XDocument xdocSignificantEvents = XDocument.Parse( significantEventsResponse.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_SIGNIFICANT_EVENT_LIST_ResponseLog.xml" ) );
+            }
+
+            var significantEvents = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "items" );
+
+            foreach ( var field in significantEvents.Elements( "item" ) )
+            {
+                var personAttribute = new PersonAttribute();
+                personAttribute.Key = $"significant_event_{field.Element( "name" ).Value.RemoveSpecialCharacters()}";
+                personAttribute.Name = field.Element( "name" ).Value;
+                personAttribute.FieldType = "Rock.Field.Types.DateFieldType";
+                ImportPackage.WriteToPackage( personAttribute );
+            }
+        }
+
+        /// <summary>
+        /// Writes the significant events.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        private static void WriteSignificantEvents( DateTime? modifiedSince )
+        {
+            if ( !modifiedSince.HasValue )
+            {
+                // DateTime.MinValue is fine because no api hits in this loop
+                modifiedSince = DateTime.MinValue;
+            }
+
+            var request = new RestRequest( API_INDIVIDUAL_SIGNIFICANT_EVENTS, Method.GET );
+            var response = _client.Execute( request );
+
+            XDocument xdocSignificantEvents = XDocument.Parse( response.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog.xml" ) );
+            }
+
+            var individuals = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
+            var numIndividuals = individuals.Attribute( "count" ).Value.AsInteger();
+
+            if ( numIndividuals > 0 )
+            {
+                foreach ( var individual in individuals.Elements( "individual" ) )
+                {
+                    var personId = individual.Attribute( "id" ).Value.AsInteger();
+                    var significantEvents = individual.Element( "significant_events" );
+                    var numSignificantEvents = significantEvents.Attribute( "count" ).Value.AsInteger();
+                    if ( personId > 0 && numSignificantEvents > 0 )
+                    {
+                        foreach ( var significantEvent in significantEvents.Elements( "significant_event" ) )
+                        {
+                            var dateModified = significantEvent.Element( "modified" ).Value.AsDateTime();
+                            if ( dateModified.HasValue )
+                            {
+                                var result = DateTime.Compare( modifiedSince.Value, dateModified.Value );
+                                if ( result <= 0 )
+                                {
+                                    ImportPackage.WriteToPackage( new PersonAttributeValue
+                                    {
+                                        PersonId = personId,
+                                        AttributeKey = $"significant_event_{significantEvent.Element( "name" ).Value.RemoveSpecialCharacters()}",
+                                        AttributeValue = significantEvent.Element( "date" ).Value.AsDateTime().ToString()
+                                    } );
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -759,7 +896,7 @@ namespace Slingshot.CCB.Utilities
         /// <summary>
         /// Exports the attendance.
         /// </summary>
-        public static void ExportAttendance( DateTime modifiedSince )
+        public static void ExportAttendance( DateTime? modifiedSince )
         {
             // first we need to get the 'events' so we can get the group, location and schedule information
             // since the events have a different modification date than attendance we need to load all of the
@@ -798,9 +935,9 @@ namespace Slingshot.CCB.Utilities
                     scheduleId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 }
 
-                foreach ( var location in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
+                foreach ( var schedule in eventDetails.Where( e => e.ScheduleName == specificSchedule ) )
                 {
-                    location.ScheduleId = scheduleId;
+                    schedule.ScheduleId = scheduleId;
                 }
             }
 
@@ -832,11 +969,17 @@ namespace Slingshot.CCB.Utilities
             GetAttendance( modifiedSince, eventDetails );
         }
 
-        private static void GetAttendance( DateTime modifiedSince, List<EventDetail> eventDetails )
+        private static void GetAttendance( DateTime? modifiedSince, List<EventDetail> eventDetails )
         {
+            if ( !modifiedSince.HasValue )
+            {
+                // only test since 2000 so not as many api hits as DateTime.MinValue
+                modifiedSince = "1/1/2000".AsDateTime();
+            }
+
             // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
-            var numberOfMonths = ( ( ( today.Year - modifiedSince.Year ) * 12 ) + today.Month - modifiedSince.Month ) + 1;
+            var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
             int loopCounter = 0;
 
             try
@@ -850,7 +993,7 @@ namespace Slingshot.CCB.Utilities
                     // if it's the first instance set start date to the modifiedSince date
                     if ( i == 0 )
                     {
-                        startDate = modifiedSince;
+                        startDate = modifiedSince.Value;
                     }
 
                     // if it's the last time through set the end dat to today's date
@@ -903,7 +1046,7 @@ namespace Slingshot.CCB.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="itemsPerPage">The items per page.</param>
         /// <returns></returns>
-        private static List<EventDetail> GetAttendanceEvents( DateTime modifiedSince, int itemsPerPage )
+        private static List<EventDetail> GetAttendanceEvents( DateTime? modifiedSince, int itemsPerPage )
         {
             List<EventDetail> eventDetails = new List<EventDetail>();
 
@@ -915,10 +1058,20 @@ namespace Slingshot.CCB.Utilities
             {
                 while ( moreItemsExist )
                 {
-                    var request = new RestRequest( API_EVENTS, Method.GET );
-                    request.AddUrlSegment( "modifiedSince", modifiedSince.ToString( "yyyy-MM-dd" ) );
-                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                    request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
+                    RestRequest request;
+                    if ( modifiedSince.HasValue )
+                    {
+                        request = new RestRequest( API_EVENTS, Method.GET );
+                        request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
+                    }
+                    else
+                    {
+                        request = new RestRequest( API_EVENTS_ALL, Method.GET );
+                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                        request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
+                    }
 
                     var response = _client.Execute( request );
 
@@ -942,12 +1095,18 @@ namespace Slingshot.CCB.Utilities
 
                             eventDetail.EventId = eventItem.Attribute( "id" ).Value.AsInteger();
                             eventDetail.GroupId = eventItem.Element( "group" ).Attribute( "id" ).Value.AsInteger();
-                            eventDetail.ScheduleName = eventItem.Element( "recurrence_description" ).Value;
+
+                            var scheduleName = eventItem.Element( "recurrence_description" ).Value;
+                            if ( CcbApi.ConsolidateScheduleNames )
+                            {
+                                scheduleName = $"{eventItem.Element( "start_datetime" ).Value.AsDateTime()?.DayOfWeek.ToString()} at {eventItem.Element( "start_time" ).Value}";
+                            }
+                            eventDetail.ScheduleName = scheduleName;
 
                             if ( eventItem.Element( "location" ) != null && eventItem.Element( "location" ).HasElements )
                             {
                                 eventDetail.LocationName = eventItem.Element( "location" ).Element( "name" ).Value;
-                                eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value;
+                                eventDetail.LocationStreetAddress = eventItem.Element( "location" ).Element( "street_address" ).Value.RemoveCrLf();
                                 eventDetail.LocationCity = eventItem.Element( "location" ).Element( "city" ).Value;
                                 eventDetail.LocationState = eventItem.Element( "location" ).Element( "state" ).Value;
                                 eventDetail.LocationZip = eventItem.Element( "location" ).Element( "zip" ).Value;
@@ -965,7 +1124,7 @@ namespace Slingshot.CCB.Utilities
                     }
 
                     // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > loopThreshold )
+                    if ( loopCounter > LoopThreshold )
                     {
                         break;
                     }

@@ -35,11 +35,11 @@ namespace Slingshot.CCB
         {
             InitializeComponent();
 
-            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick; ;
+            txtLoopThreshold.Text = "100";
+            txtGroupsPerPage.Text = "500";
+
+            _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
-            
-            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
 
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
@@ -56,6 +56,7 @@ namespace Slingshot.CCB
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = true;
             txtExportMessage.Text = "Export Complete";
             pbProgress.Value = 100;
         }
@@ -64,12 +65,10 @@ namespace Slingshot.CCB
         {
             exportWorker.ReportProgress( 0, "" );
 
-            var exportSettings = (ExportSettings)e.Argument;
+            var exportSettings = ( ExportSettings ) e.Argument;
 
             // clear filesystem directories
             CcbApi.InitializeExport();
-
-            
 
             // export individuals
             if ( exportSettings.ExportIndividuals )
@@ -111,7 +110,7 @@ namespace Slingshot.CCB
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince );
+                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince, CcbApi.GroupsPerApiPage );
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -167,13 +166,14 @@ namespace Slingshot.CCB
             // add group types
             ExportGroupTypes = CcbApi.GetGroupTypes();
 
-            foreach ( var groupType in ExportGroupTypes ) {
+            foreach ( var groupType in ExportGroupTypes )
+            {
                 //cblGroupTypes.Items.Add( groupType );
                 GroupTypesCheckboxItems.Add( new CheckListItem { Id = groupType.Id, Text = groupType.Name, Checked = true } );
             }
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
-            
+
             txtImportCutOff.Text = DateTime.Now.ToShortDateString(); // remove before flight (sets today's date as the modified since)
         }
 
@@ -184,25 +184,43 @@ namespace Slingshot.CCB
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = false;
+
+            // Set CcbApi.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
+            CcbApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
+
+            // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
+            CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
+
+            if ( txtLoopThreshold.Text.IsNotNullOrWhitespace() && txtLoopThreshold.Text.AsInteger() > 0 )
+            {
+                CcbApi.LoopThreshold = txtLoopThreshold.Text.AsInteger();
+            }
+
+            if ( txtGroupsPerPage.Text.IsNotNullOrWhitespace() && txtGroupsPerPage.Text.AsInteger() > 0 )
+            {
+                CcbApi.GroupsPerApiPage = txtGroupsPerPage.Text.AsInteger();
+            }
+
             // clear result from previous export
             txtExportMessage.Text = string.Empty;
 
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
-            foreach ( var selectedItem in GroupTypesCheckboxItems.Where( i => i.Checked ))
+            foreach ( var selectedItem in GroupTypesCheckboxItems.Where( i => i.Checked ) )
             {
                 exportSettings.ExportGroupTypes.Add( selectedItem.Id );
             }
 
-            exportWorker.RunWorkerAsync( exportSettings ); 
+            exportWorker.RunWorkerAsync( exportSettings );
         }
 
         #region Window Events
@@ -213,7 +231,6 @@ namespace Slingshot.CCB
             if ( cbGroups.IsChecked.Value )
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
-                
             }
             else
             {
@@ -221,11 +238,22 @@ namespace Slingshot.CCB
             }
         }
         #endregion
+
+        private void TxtLoopThreshold_PreviewTextInput( object sender, TextCompositionEventArgs e )
+        {
+            e.Handled = !IsValid( ( ( TextBox ) sender ).Text + e.Text );
+        }
+
+        public static bool IsValid( string str )
+        {
+            int i;
+            return int.TryParse( str, out i ) && i >= 1 && i <= 9999;
+        }
     }
 
     public class ExportSettings
     {
-        public DateTime ModifiedSince { get; set; } = DateTime.Now;
+        public DateTime? ModifiedSince { get; set; }
 
         public bool ExportIndividuals { get; set; } = true;
 
