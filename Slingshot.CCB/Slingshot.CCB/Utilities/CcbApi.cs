@@ -77,12 +77,12 @@ namespace Slingshot.CCB.Utilities
         public static int LoopThreshold { get; set; } = 100;
 
         /// <summary>
-        /// Gets or sets the groups per API page.
+        /// Gets or sets the items per page (for paged API requests).
         /// </summary>
         /// <value>
-        /// The groups per API page.
+        /// The number of items per API page.
         /// </value>
-        public static int GroupsPerApiPage { get; set; } = 500;
+        public static int ItemsPerPage { get; set; } = 500;
 
         /// <summary>
         /// Gets or sets a value indicating whether [dump response to XML file].
@@ -188,14 +188,14 @@ namespace Slingshot.CCB.Utilities
         #region API Call Paths
 
         private const string API_STATUS = "/api.php?srv=api_status";
-        private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
-        private const string API_INDIVIDUALS_ALL = "/api.php?srv=individual_profiles&include_inactive=true&page={currentPage}&per_page={peoplePerPage}";
+        private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_INDIVIDUALS_ALL = "/api.php?srv=individual_profiles&include_inactive=true&page={currentPage}&per_page={itemsPerPage}";
         private const string API_CUSTOM_FIELDS = "/api.php?srv=custom_field_labels";
         private const string API_FINANCIAL_ACCOUNTS = "/api.php?srv=transaction_detail_type_list";
         private const string API_FINANCIAL_BATCHES = "/api.php?srv=batch_profiles_in_date_range&date_start={startDate}&date_end={endDate}";
         private const string API_GROUP_TYPES = "/api.php?srv=group_type_list";
-        private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={perPage}";
-        private const string API_GROUPS_ALL = "/api.php?srv=group_profiles&include_participants=true&page={currentPage}&per_page={perPage}";
+        private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_GROUPS_ALL = "/api.php?srv=group_profiles&include_participants=true&page={currentPage}&per_page={itemsPerPage}";
         private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
         private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
         private const string API_EVENTS_ALL = "/api.php?srv=event_profiles&page={currentPage}&per_page={itemsPerPage}";
@@ -221,7 +221,7 @@ namespace Slingshot.CCB.Utilities
         /// <param name="apiPassword">The API password.</param>
         public static void Connect( string hostName, string apiUsername, string apiPassword )
         {
-            Hostname = hostName;
+            Hostname = hostName.Replace( "https://", string.Empty ).Replace( ".ccbchurch.com", string.Empty );
             ApiUsername = apiUsername;
             ApiPassword = apiPassword;
 
@@ -279,8 +279,7 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         /// <param name="selectedGroupTypes">The selected group types.</param>
         /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="perPage">The people per page.</param>
-        public static void ExportGroups( List<int> selectedGroupTypes, DateTime? modifiedSince, int perPage = 500 )
+        public static void ExportGroups( List<int> selectedGroupTypes, DateTime? modifiedSince )
         {
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
@@ -299,20 +298,14 @@ namespace Slingshot.CCB.Utilities
                 bool moreExist = true;
                 while ( moreExist )
                 {
-                    RestRequest request;
+                    RestRequest request = new RestRequest( API_GROUPS_ALL, Method.GET );
                     if ( modifiedSince.HasValue )
                     {
                         request = new RestRequest( API_GROUPS, Method.GET );
                         request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "perPage", perPage.ToString() );
                     }
-                    else
-                    {
-                        request = new RestRequest( API_GROUPS_ALL, Method.GET );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "perPage", perPage.ToString() );
-                    }
+                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                    request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
 
                     var response = _client.Execute( request );
 
@@ -354,7 +347,7 @@ namespace Slingshot.CCB.Utilities
                                 }
                             }
 
-                            if ( returnCount != perPage )
+                            if ( returnCount != ItemsPerPage )
                             {
                                 moreExist = false;
                             }
@@ -424,8 +417,7 @@ namespace Slingshot.CCB.Utilities
         /// Exports the individuals.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="peoplePerPage">The people per page.</param>
-        public static void ExportIndividuals( DateTime? modifiedSince, int peoplePerPage = 500 )
+        public static void ExportIndividuals( DateTime? modifiedSince )
         {
             // write out the person attributes
             WritePersonAttributes();
@@ -447,20 +439,14 @@ namespace Slingshot.CCB.Utilities
             {
                 while ( moreIndividualsExist )
                 {
-                    RestRequest request;
+                    RestRequest request = new RestRequest( API_INDIVIDUALS_ALL, Method.GET );
                     if ( modifiedSince.HasValue )
                     {
                         request = new RestRequest( API_INDIVIDUALS, Method.GET );
                         request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "peoplePerPage", peoplePerPage.ToString() );
                     }
-                    else
-                    {
-                        request = new RestRequest( API_INDIVIDUALS_ALL, Method.GET );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "peoplePerPage", peoplePerPage.ToString() );
-                    }
+                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                    request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
 
                     var response = _client.Execute( request );
 
@@ -489,7 +475,7 @@ namespace Slingshot.CCB.Utilities
                                 }
                             }
 
-                            if ( returnCount != peoplePerPage )
+                            if ( returnCount != ItemsPerPage )
                             {
                                 moreIndividualsExist = false;
                             }
@@ -901,7 +887,7 @@ namespace Slingshot.CCB.Utilities
             // first we need to get the 'events' so we can get the group, location and schedule information
             // since the events have a different modification date than attendance we need to load all of the
             // events so we have the details we need for the attendance
-            var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1 ), 500 );
+            var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1 ) );
 
             // add location ids to the location fields (CCB doesn't have location ids) instead of randomly creating ids (that would not be consistant across exports)
             // we'll use a hash of the street name
@@ -1044,9 +1030,8 @@ namespace Slingshot.CCB.Utilities
         /// Gets the attendance events.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="itemsPerPage">The items per page.</param>
         /// <returns></returns>
-        private static List<EventDetail> GetAttendanceEvents( DateTime? modifiedSince, int itemsPerPage )
+        private static List<EventDetail> GetAttendanceEvents( DateTime? modifiedSince )
         {
             List<EventDetail> eventDetails = new List<EventDetail>();
 
@@ -1058,20 +1043,14 @@ namespace Slingshot.CCB.Utilities
             {
                 while ( moreItemsExist )
                 {
-                    RestRequest request;
+                    RestRequest request = new RestRequest( API_EVENTS_ALL, Method.GET );
                     if ( modifiedSince.HasValue )
                     {
                         request = new RestRequest( API_EVENTS, Method.GET );
                         request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
                     }
-                    else
-                    {
-                        request = new RestRequest( API_EVENTS_ALL, Method.GET );
-                        request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                        request.AddUrlSegment( "itemsPerPage", itemsPerPage.ToString() );
-                    }
+                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                    request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
 
                     var response = _client.Execute( request );
 
@@ -1113,7 +1092,7 @@ namespace Slingshot.CCB.Utilities
                             }
                         }
 
-                        if ( returnCount != itemsPerPage )
+                        if ( returnCount != ItemsPerPage )
                         {
                             moreItemsExist = false;
                         }

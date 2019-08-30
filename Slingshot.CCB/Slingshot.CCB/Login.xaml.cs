@@ -29,6 +29,10 @@ namespace Slingshot.CCB
 
         private void btnLogin_Click( object sender, RoutedEventArgs e )
         {
+            ProcessLogin();
+        }
+        private void ProcessLogin()
+        {
             lblMessage.Text = string.Empty;
 
             if ( txtHostname.Text != string.Empty && txtApiPassword.Text != string.Empty && txtApiUsername.Text != string.Empty )
@@ -51,5 +55,28 @@ namespace Slingshot.CCB
                 lblMessage.Text = "Please provide the information needed to connect.";
             }
         }
+
+        private void TxtHostname_KeyDown( object sender, KeyEventArgs e )
+        {
+            ProcessKeyDownEvent( e );
+        }
+        private void TxtApiUsername_KeyDown( object sender, KeyEventArgs e )
+        {
+            ProcessKeyDownEvent( e );
+        }
+        private void TxtApiPassword_KeyDown(object sender, KeyEventArgs e)
+        {
+            ProcessKeyDownEvent( e );
+        }
+
+        private void ProcessKeyDownEvent( KeyEventArgs e )
+        {
+            if ( e.Key == Key.Enter )
+            {
+                ProcessLogin();
+            }
+            return;
+        }
+
     }
 }

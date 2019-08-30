@@ -77,10 +77,10 @@
                         <CheckBox Name="cbConsolidateSchedules" Content="Consolidate Schedules to Day of Week and Time" Margin="0,0,0,10"  Padding="3,0,0,0"  />
                         <Label Name="lblLoopThreshold" Content="Max API Loops:" Padding="0,0,0,3" VerticalAlignment="Bottom" MinWidth="100" />
                         <TextBox x:Name="txtLoopThreshold" Margin="0,0,0,10" Padding="3" PreviewTextInput="TxtLoopThreshold_PreviewTextInput" MinWidth="100" />
-                        <TextBlock Name="lblLoopThresholdPost" Text="This is maximum number of API requests for People and Groups." Margin="10,-5,10,10" Padding="0" Foreground="Gray" />
-                        <Label Name="lblGroupsPerPage" Content="Groups Per Page:" Padding="0,0,0,3" VerticalAlignment="Bottom" MinWidth="100" />
-                        <TextBox x:Name="txtGroupsPerPage" Margin="0,0,0,10" Padding="3" PreviewTextInput="TxtLoopThreshold_PreviewTextInput" MinWidth="100" />
-                        <TextBlock Name="lblGroupsPerPagePost" Text="This is the page size of the Group API requests. Group Members are returned with each Group. Large organizations could have timeout issues with the Slingshot default of 500. The CCB default is 25." Margin="10,-5,10,10" Padding="0" TextWrapping="Wrap" Foreground="Gray" />
+                        <TextBlock Name="lblLoopThresholdExplanation" Text="This is maximum number of API requests for People and Groups.  If this value is too low, the process may end before downloading all of the data." Margin="10,-5,10,10" Padding="0" TextWrapping="Wrap" Foreground="Gray" />
+                        <Label Name="lblItemsPerPage" Content="Items Per Page:" Padding="0,0,0,3" VerticalAlignment="Bottom" MinWidth="100" />
+                        <TextBox x:Name="txtItemsPerPage" Margin="0,0,0,10" Padding="3" PreviewTextInput="TxtItemsPerPage_PreviewTextInput" MinWidth="100" />
+                        <TextBlock Name="lblItemsPerPageExplanation" Text="This is the page size of paged API requests.  A larger value here may result in timeout errors while retrieving data from the CCB API." Margin="10,-5,10,10" Padding="0" TextWrapping="Wrap" Foreground="Gray" />
                     </StackPanel>
 
                     <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">

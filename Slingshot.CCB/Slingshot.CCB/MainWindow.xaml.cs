@@ -35,8 +35,8 @@ namespace Slingshot.CCB
         {
             InitializeComponent();
 
-            txtLoopThreshold.Text = "100";
-            txtGroupsPerPage.Text = "500";
+            txtLoopThreshold.Text = CcbApi.LoopThreshold.ToString();
+            txtItemsPerPage.Text = CcbApi.ItemsPerPage.ToString();
 
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
@@ -110,7 +110,7 @@ namespace Slingshot.CCB
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince, CcbApi.GroupsPerApiPage );
+                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince );
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -197,9 +197,9 @@ namespace Slingshot.CCB
                 CcbApi.LoopThreshold = txtLoopThreshold.Text.AsInteger();
             }
 
-            if ( txtGroupsPerPage.Text.IsNotNullOrWhitespace() && txtGroupsPerPage.Text.AsInteger() > 0 )
+            if ( txtItemsPerPage.Text.IsNotNullOrWhitespace() && txtItemsPerPage.Text.AsInteger() > 0 )
             {
-                CcbApi.GroupsPerApiPage = txtGroupsPerPage.Text.AsInteger();
+                CcbApi.ItemsPerPage = txtItemsPerPage.Text.AsInteger();
             }
 
             // clear result from previous export
@@ -215,10 +215,8 @@ namespace Slingshot.CCB
             };
 
             // configure group types to export
-            foreach ( var selectedItem in GroupTypesCheckboxItems.Where( i => i.Checked ) )
-            {
-                exportSettings.ExportGroupTypes.Add( selectedItem.Id );
-            }
+            var selectedGroupTypes = GroupTypesCheckboxItems.Where( i => i.Checked ).Select( i => i.Id );
+            exportSettings.ExportGroupTypes.AddRange( selectedGroupTypes );
 
             exportWorker.RunWorkerAsync( exportSettings );
         }
@@ -241,13 +239,21 @@ namespace Slingshot.CCB
 
         private void TxtLoopThreshold_PreviewTextInput( object sender, TextCompositionEventArgs e )
         {
-            e.Handled = !IsValid( ( ( TextBox ) sender ).Text + e.Text );
+            e.Handled = !InputIsValidInteger( ( ( TextBox ) sender ).Text + e.Text );
         }
 
-        public static bool IsValid( string str )
+        private void TxtItemsPerPage_PreviewTextInput( object sender, TextCompositionEventArgs e )
         {
-            int i;
-            return int.TryParse( str, out i ) && i >= 1 && i <= 9999;
+            e.Handled = !InputIsValidInteger( ( ( TextBox ) sender ).Text + e.Text );
+        }
+
+        public static bool InputIsValidInteger( string input )
+        {
+            int? i = input.AsIntegerOrNull();
+            bool isInteger = ( i != null );
+            bool isGreaterThanZero = ( i.Value > 0 );
+            bool isLessThanTenK = ( i < 10000 );
+            return isInteger && isGreaterThanZero && isLessThanTenK;
         }
     }
 

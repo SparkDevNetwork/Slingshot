@@ -329,7 +329,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAttributeValueWriter != null )
                     {
-                        foreach ( var attribute in ( (Person)importModel ).Attributes )
+                        foreach ( var attribute in ( ( Person ) importModel ).Attributes )
                         {
                             csvPersonAttributeValueWriter.WriteRecord( attribute );
                         }
@@ -341,7 +341,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonPhoneWriter != null )
                     {
-                        foreach ( var phone in ( (Person)importModel ).PhoneNumbers )
+                        foreach ( var phone in ( ( Person ) importModel ).PhoneNumbers )
                         {
                             csvPersonPhoneWriter.WriteRecord( phone );
                         }
@@ -353,7 +353,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAddressWriter != null )
                     {
-                        foreach ( var address in ( (Person)importModel ).Addresses )
+                        foreach ( var address in ( ( Person ) importModel ).Addresses )
                         {
                             if ( ( ( Person ) importModel ).FamilyId.HasValue )
                             {
@@ -407,7 +407,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvFinancialTransactionWriter != null && csvFinancialTransactionDetailWriter != null )
                     {
-                        foreach ( var transaction in ( (FinancialBatch)importModel ).FinancialTransactions )
+                        foreach ( var transaction in ( ( FinancialBatch ) importModel ).FinancialTransactions )
                         {
                             csvFinancialTransactionWriter.WriteRecord( transaction );
 
@@ -427,7 +427,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvFinancialTransactionDetailWriter != null )
                     {
-                        foreach ( var transactionDetail in ( (FinancialTransaction)importModel ).FinancialTransactionDetails )
+                        foreach ( var transactionDetail in ( ( FinancialTransaction ) importModel ).FinancialTransactionDetails )
                         {
                             csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                         }
@@ -443,7 +443,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupMemberWriter != null )
                     {
-                        foreach ( var groupMemberItem in ( (Group)importModel ).GroupMembers )
+                        foreach ( var groupMemberItem in ( ( Group ) importModel ).GroupMembers )
                         {
                             csvGroupMemberWriter.WriteRecord( groupMemberItem );
                         }
@@ -455,7 +455,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupAttributeValueWriter != null )
                     {
-                        foreach ( var attribute in ( (Group)importModel ).Attributes )
+                        foreach ( var attribute in ( ( Group ) importModel ).Attributes )
                         {
                             csvGroupAttributeValueWriter.WriteRecord( attribute );
                         }
@@ -467,7 +467,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupAddressWriter != null )
                     {
-                        foreach ( var address in ( (Group)importModel ).Addresses )
+                        foreach ( var address in ( ( Group ) importModel ).Addresses )
                         {
                             csvGroupAddressWriter.WriteRecord( address );
                         }

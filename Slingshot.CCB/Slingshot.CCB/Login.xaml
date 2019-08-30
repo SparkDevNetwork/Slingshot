@@ -20,13 +20,13 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Label Grid.Row="0">Hostname</Label>
-            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+            <TextBox Name="txtHostname" Grid.Row="0" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" KeyDown="TxtHostname_KeyDown" />
 
             <Label Grid.Row="1">API Username</Label>
-            <TextBox Name="txtApiUsername" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+            <TextBox Name="txtApiUsername" Grid.Row="1" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" KeyDown="TxtApiUsername_KeyDown" />
 
             <Label Grid.Row="2">API Password</Label>
-            <TextBox Name="txtApiPassword" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" />
+            <TextBox Name="txtApiPassword" Grid.Row="2" Grid.Column="1" Margin="0,2,0,10" Padding="3" Text="" KeyDown="TxtApiPassword_KeyDown" />
 
             <Button Name="btnLogin" Grid.Row="3" Grid.Column="1" IsDefault="True" Click="btnLogin_Click" Margin="0,0,0,5"  >
                 <Label>Login</Label>
