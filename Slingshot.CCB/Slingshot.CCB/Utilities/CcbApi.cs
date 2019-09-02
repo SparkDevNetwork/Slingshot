@@ -201,7 +201,7 @@ namespace Slingshot.CCB.Utilities
         private const string API_EVENTS_ALL = "/api.php?srv=event_profiles&page={currentPage}&per_page={itemsPerPage}";
         private const string API_ATTENDANCE = "/api.php?srv=attendance_profiles&start_date={startDate}&end_date={endDate}";
         private const string API_SIGNIFICANT_EVENT_LIST = "/api.php?srv=significant_event_list";
-        private const string API_INDIVIDUAL_SIGNIFICANT_EVENTS = "/api.php?srv=individual_significant_events";
+        private const string API_INDIVIDUAL_SIGNIFICANT_EVENTS = "/api.php?srv=individual_significant_events&page={currentPage}&per_page={itemsPerPage}";
 
         #endregion API Call Paths
 
@@ -767,47 +767,82 @@ namespace Slingshot.CCB.Utilities
                 modifiedSince = DateTime.MinValue;
             }
 
-            var request = new RestRequest( API_INDIVIDUAL_SIGNIFICANT_EVENTS, Method.GET );
-            var response = _client.Execute( request );
+            int currentPage = 1;
+            int loopCounter = 0;
+            bool moreItemsExist = true;
 
-            XDocument xdocSignificantEvents = XDocument.Parse( response.Content );
-
-            if ( CcbApi.DumpResponseToXmlFile )
+            while ( moreItemsExist )
             {
-                xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog.xml" ) );
-            }
+                var request = new RestRequest( API_INDIVIDUAL_SIGNIFICANT_EVENTS, Method.GET );
+                request.AddUrlSegment( "currentPage", currentPage.ToString() );
+                request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
 
-            var individuals = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
-            var numIndividuals = individuals.Attribute( "count" ).Value.AsInteger();
+                var response = _client.Execute( request );
 
-            if ( numIndividuals > 0 )
-            {
-                foreach ( var individual in individuals.Elements( "individual" ) )
+                XDocument xdocSignificantEvents = XDocument.Parse( response.Content );
+
+                if ( CcbApi.DumpResponseToXmlFile )
                 {
-                    var personId = individual.Attribute( "id" ).Value.AsInteger();
-                    var significantEvents = individual.Element( "significant_events" );
-                    var numSignificantEvents = significantEvents.Attribute( "count" ).Value.AsInteger();
-                    if ( personId > 0 && numSignificantEvents > 0 )
+                    xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog_{loopCounter++}.xml" ) );
+                }
+
+                var individuals = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
+                if ( individuals != null )
+                {
+
+                    var returnCount = individuals.Attribute( "count" )?.Value.AsIntegerOrNull();
+                    var numIndividuals = individuals.Attribute( "count" ).Value.AsInteger();
+
+                    if ( numIndividuals > 0 )
                     {
-                        foreach ( var significantEvent in significantEvents.Elements( "significant_event" ) )
+                        foreach ( var individual in individuals.Elements( "individual" ) )
                         {
-                            var dateModified = significantEvent.Element( "modified" ).Value.AsDateTime();
-                            if ( dateModified.HasValue )
+                            var personId = individual.Attribute( "id" ).Value.AsInteger();
+                            var significantEvents = individual.Element( "significant_events" );
+                            var numSignificantEvents = significantEvents.Attribute( "count" ).Value.AsInteger();
+                            if ( personId > 0 && numSignificantEvents > 0 )
                             {
-                                var result = DateTime.Compare( modifiedSince.Value, dateModified.Value );
-                                if ( result <= 0 )
+                                foreach ( var significantEvent in significantEvents.Elements( "significant_event" ) )
                                 {
-                                    ImportPackage.WriteToPackage( new PersonAttributeValue
+                                    var dateModified = significantEvent.Element( "modified" ).Value.AsDateTime();
+                                    if ( dateModified.HasValue )
                                     {
-                                        PersonId = personId,
-                                        AttributeKey = $"significant_event_{significantEvent.Element( "name" ).Value.RemoveSpecialCharacters()}",
-                                        AttributeValue = significantEvent.Element( "date" ).Value.AsDateTime().ToString()
-                                    } );
+                                        var result = DateTime.Compare( modifiedSince.Value, dateModified.Value );
+                                        if ( result <= 0 )
+                                        {
+                                            ImportPackage.WriteToPackage( new PersonAttributeValue
+                                            {
+                                                PersonId = personId,
+                                                AttributeKey = $"significant_event_{significantEvent.Element( "name" ).Value.RemoveSpecialCharacters()}",
+                                                AttributeValue = significantEvent.Element( "date" ).Value.AsDateTime().ToString()
+                                            } );
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+
+                    if ( returnCount != ItemsPerPage )
+                    {
+                        moreItemsExist = false;
+                    }
+                    else
+                    {
+                        currentPage++;
+                    }
                 }
+                else
+                {
+                    moreItemsExist = false;
+                }
+
+                // developer safety blanket (prevents eating all the api calls for the day)
+                if ( loopCounter > LoopThreshold )
+                {
+                    break;
+                }
+                loopCounter++;
             }
         }
 
@@ -960,7 +995,7 @@ namespace Slingshot.CCB.Utilities
             if ( !modifiedSince.HasValue )
             {
                 // only test since 2000 so not as many api hits as DateTime.MinValue
-                modifiedSince = "1/1/2000".AsDateTime();
+                modifiedSince = new DateTime(2000, 1, 1);
             }
 
             // we'll make an api call for each month until the modifiedSince date

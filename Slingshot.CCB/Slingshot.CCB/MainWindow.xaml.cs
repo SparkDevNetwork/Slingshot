@@ -28,8 +28,12 @@ namespace Slingshot.CCB
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
+        private bool _errorHasOccurred = false;
+
         public List<GroupType> ExportGroupTypes { get; set; }
+
         public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
+
 
         public MainWindow()
         {
@@ -56,9 +60,12 @@ namespace Slingshot.CCB
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
-            btnDownloadPackage.IsEnabled = true;
-            txtExportMessage.Text = "Export Complete";
-            pbProgress.Value = 100;
+            if ( !_errorHasOccurred )
+            {
+                btnDownloadPackage.IsEnabled = true;
+                txtExportMessage.Text = "Export Complete";
+                pbProgress.Value = 100;
+            }
         }
 
         private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
@@ -71,13 +78,14 @@ namespace Slingshot.CCB
             CcbApi.InitializeExport();
 
             // export individuals
-            if ( exportSettings.ExportIndividuals )
+            if ( ( !_errorHasOccurred ) && ( exportSettings.ExportIndividuals ) )
             {
                 exportWorker.ReportProgress( 1, "Exporting Individuals..." );
                 CcbApi.ExportIndividuals( exportSettings.ModifiedSince );
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     this.Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 2, $"Error exporting individuals: {CcbApi.ErrorMessage}" );
@@ -86,13 +94,14 @@ namespace Slingshot.CCB
             }
 
             // export contributions
-            if ( exportSettings.ExportContributions )
+            if ( ( !_errorHasOccurred ) && ( exportSettings.ExportContributions ) )
             {
                 exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
 
                 CcbApi.ExportFinancialAccounts();
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {CcbApi.ErrorMessage}" );
                 }
 
@@ -101,12 +110,13 @@ namespace Slingshot.CCB
                 CcbApi.ExportContributions( exportSettings.ModifiedSince );
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 36, $"Error exporting financial batches: {CcbApi.ErrorMessage}" );
                 }
             }
 
             // export group types
-            if ( ExportGroupTypes.Count > 0 )
+            if ( ( !_errorHasOccurred ) && ( ExportGroupTypes.Count > 0 ) )
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
@@ -114,12 +124,13 @@ namespace Slingshot.CCB
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {CcbApi.ErrorMessage}" );
                 }
             }
 
             // export attendance 
-            if ( exportSettings.ExportAttendance )
+            if ( ( !_errorHasOccurred ) && ( exportSettings.ExportAttendance ) )
             {
                 exportWorker.ReportProgress( 75, $"Exporting Attendance..." );
 
@@ -128,15 +139,20 @@ namespace Slingshot.CCB
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 75, $"Error exporting attendance: {CcbApi.ErrorMessage}" );
                 }
             }
 
-            // finalize the package
-            ImportPackage.FinalizePackage( "ccb-export.slingshot" );
+            if ( !_errorHasOccurred )
+            {
+                // finalize the package
+                ImportPackage.FinalizePackage( "ccb-export.slingshot" );
 
-            // schedule the API status to update (the status takes a few mins to update)
-            _apiUpdateTimer.Start();
+                // schedule the API status to update (the status takes a few mins to update)
+                _apiUpdateTimer.Start();
+            }
+
         }
 
         #endregion
@@ -222,7 +238,6 @@ namespace Slingshot.CCB
         }
 
         #region Window Events
-
 
         private void cbGroups_Checked( object sender, RoutedEventArgs e )
         {
