@@ -23,6 +23,9 @@ namespace Slingshot.CCB.Utilities
     /// <seealso cref="RestSharp.RestClient" />
     public class RateLimitedRestClient : RestClient
     {
+        public static int ApiRequestLimit { get; set; } = 10000;
+        public static int ApiRequestCount { get; set; } = 0;
+
         private readonly int ThrottleRate = 6;
         private readonly DateTime EpochTime;
         public RateLimitedRestClient( string baseUrl ) : base( baseUrl )
@@ -38,11 +41,21 @@ namespace Slingshot.CCB.Utilities
         /// <returns></returns>
         public override IRestResponse Execute( IRestRequest restRequest )
         {
+            if ( ApiRequestCount >= ApiRequestLimit )
+            {
+                throw new Exception( "Exceeded API Request Limit." );
+            }
+
             var response = base.Execute( restRequest );
+            ApiRequestCount++;
+
+            HandleError( response );
+
             var remainingCalls = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
                 .Select( x => ( ( string ) x.Value ).AsIntegerOrNull() )
                 .FirstOrDefault();
+
             var resetTime = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-RESET", StringComparison.InvariantCultureIgnoreCase ) )
                 .Select( x => ( ( string ) x.Value ).AsDoubleOrNull() )
@@ -62,6 +75,28 @@ namespace Slingshot.CCB.Utilities
 
             return response;
         }
+
+        /// <summary>
+        /// Throws exceptions for various REST/HTTP response error conditions.
+        /// </summary>
+        /// <param name="response">The REST response object.</param>
+        private void HandleError( IRestResponse response )
+        {
+            if ( response.ResponseStatus == ResponseStatus.Aborted )
+            {
+                throw new Exception( "API Request was aborted: " + response.ResponseUri.AbsoluteUri );
+            }
+
+            if ( response.ResponseStatus == ResponseStatus.Error )
+            {
+                throw new Exception( "API Error: " + response.ErrorMessage );
+            }
+
+            if ( response.ResponseStatus == ResponseStatus.TimedOut )
+            {
+                throw new Exception( "API Request Timed Out: " + response.ResponseUri.AbsoluteUri );
+            }
+        }
     }
 
     /// <summary>
@@ -70,6 +105,17 @@ namespace Slingshot.CCB.Utilities
     public static class CcbApi
     {
         private static RateLimitedRestClient _client;
+
+        public static int ApiRequestLimit
+        {
+            get { return RateLimitedRestClient.ApiRequestLimit; }
+            set { RateLimitedRestClient.ApiRequestLimit = value; }
+        }
+        public static int ApiRequestCount
+        {
+            get { return RateLimitedRestClient.ApiRequestCount; }
+            set { RateLimitedRestClient.ApiRequestCount = value; }
+        }
 
         /// <summary>
         /// A developer safety blanket to prevent eating all the api calls for the day.
@@ -82,7 +128,7 @@ namespace Slingshot.CCB.Utilities
         /// <value>
         /// The number of items per API page.
         /// </value>
-        public static int ItemsPerPage { get; set; } = 500;
+        public static int ItemsPerPage { get; set; } = 250;
 
         /// <summary>
         /// Gets or sets a value indicating whether [dump response to XML file].
@@ -294,7 +340,7 @@ namespace Slingshot.CCB.Utilities
             try
             {
                 int currentPage = 1;
-                int loopCounter = 0;
+                //int loopCounter = 0;
                 bool moreExist = true;
                 while ( moreExist )
                 {
@@ -313,7 +359,7 @@ namespace Slingshot.CCB.Utilities
 
                     if ( CcbApi.DumpResponseToXmlFile )
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{loopCounter}.xml" ) );
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{currentPage}.xml" ) );
                     }
 
                     var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
@@ -362,12 +408,12 @@ namespace Slingshot.CCB.Utilities
                         moreExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > LoopThreshold )
-                    {
-                        break;
-                    }
-                    loopCounter++;
+                    //// developer safety blanket (prevents eating all the api calls for the day)
+                    //if ( loopCounter > LoopThreshold )
+                    //{
+                    //    break;
+                    //}
+                    //loopCounter++;
                 }
             }
             catch ( Exception ex )
@@ -432,7 +478,7 @@ namespace Slingshot.CCB.Utilities
             } );
 
             int currentPage = 1;
-            int loopCounter = 0;
+            //int loopCounter = 0;
             bool moreIndividualsExist = true;
 
             try
@@ -454,7 +500,7 @@ namespace Slingshot.CCB.Utilities
 
                     if ( CcbApi.DumpResponseToXmlFile )
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUALS_ResponseLog_{loopCounter}.xml" ) );
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUALS_ResponseLog_{currentPage}.xml" ) );
                     }
 
                     var individuals = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
@@ -490,12 +536,12 @@ namespace Slingshot.CCB.Utilities
                         moreIndividualsExist = false;
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > LoopThreshold )
-                    {
-                        break;
-                    }
-                    loopCounter++;
+                    //// developer safety blanket (prevents eating all the api calls for the day)
+                    //if ( loopCounter > LoopThreshold )
+                    //{
+                    //    break;
+                    //}
+                    //loopCounter++;
                 }
 
                 WriteSignificantEvents( modifiedSince );
@@ -520,7 +566,6 @@ namespace Slingshot.CCB.Utilities
             // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
             var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
-            int loopCounter = 0;
             try
             {
                 for ( int i = 0; i < numberOfMonths; i++ )
@@ -551,7 +596,7 @@ namespace Slingshot.CCB.Utilities
 
                     if ( CcbApi.DumpResponseToXmlFile )
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ResponseLog_{loopCounter++}.xml" ) );
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_BATCHES_ResponseLog_{i}.xml" ) );
                     }
 
                     var sourceBatches = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "batches" ).Elements( "batch" );
@@ -768,7 +813,7 @@ namespace Slingshot.CCB.Utilities
             }
 
             int currentPage = 1;
-            int loopCounter = 0;
+            //int loopCounter = 0;
             bool moreItemsExist = true;
 
             while ( moreItemsExist )
@@ -783,7 +828,7 @@ namespace Slingshot.CCB.Utilities
 
                 if ( CcbApi.DumpResponseToXmlFile )
                 {
-                    xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog_{loopCounter++}.xml" ) );
+                    xdocSignificantEvents.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_INDIVIDUAL_SIGNIFICANT_EVENTS_ResponseLog_{currentPage}.xml" ) );
                 }
 
                 var individuals = xdocSignificantEvents.Element( "ccb_api" )?.Element( "response" )?.Element( "individuals" );
@@ -837,12 +882,12 @@ namespace Slingshot.CCB.Utilities
                     moreItemsExist = false;
                 }
 
-                // developer safety blanket (prevents eating all the api calls for the day)
-                if ( loopCounter > LoopThreshold )
-                {
-                    break;
-                }
-                loopCounter++;
+                //// developer safety blanket (prevents eating all the api calls for the day)
+                //if ( loopCounter > LoopThreshold )
+                //{
+                //    break;
+                //}
+                //loopCounter++;
             }
         }
 
@@ -867,7 +912,6 @@ namespace Slingshot.CCB.Utilities
         public static void UpdateApiStatus()
         {
             var request = new RestRequest( API_STATUS, Method.GET );
-
             var response = _client.Execute( request );
 
             if ( response.StatusCode == System.Net.HttpStatusCode.OK )
@@ -1001,7 +1045,6 @@ namespace Slingshot.CCB.Utilities
             // we'll make an api call for each month until the modifiedSince date
             var today = DateTime.Now;
             var numberOfMonths = ( ( ( today.Year - modifiedSince.Value.Year ) * 12 ) + today.Month - modifiedSince.Value.Month ) + 1;
-            int loopCounter = 0;
 
             try
             {
@@ -1033,7 +1076,7 @@ namespace Slingshot.CCB.Utilities
 
                     if ( CcbApi.DumpResponseToXmlFile )
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_ATTENDANCE_ResponseLog_{loopCounter++}.xml" ) );
+                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_ATTENDANCE_ResponseLog_{i}.xml" ) );
                     }
 
                     var sourceEvents = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" ).Elements( "event" );
@@ -1071,7 +1114,7 @@ namespace Slingshot.CCB.Utilities
             List<EventDetail> eventDetails = new List<EventDetail>();
 
             int currentPage = 1;
-            int loopCounter = 0;
+            //int loopCounter = 0;
             bool moreItemsExist = true;
 
             try
@@ -1095,7 +1138,7 @@ namespace Slingshot.CCB.Utilities
 
                         if ( CcbApi.DumpResponseToXmlFile )
                         {
-                            xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_EVENTS_ResponseLog_{loopCounter++}.xml" ) );
+                            xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_EVENTS_ResponseLog_{currentPage}.xml" ) );
                         }
 
                         var returnCount = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "events" )?.Attribute( "count" )?.Value.AsIntegerOrNull();
@@ -1137,12 +1180,12 @@ namespace Slingshot.CCB.Utilities
                         }
                     }
 
-                    // developer safety blanket (prevents eating all the api calls for the day)
-                    if ( loopCounter > LoopThreshold )
-                    {
-                        break;
-                    }
-                    loopCounter++;
+                    //// developer safety blanket (prevents eating all the api calls for the day)
+                    //if ( loopCounter > LoopThreshold )
+                    //{
+                    //    break;
+                    //}
+                    //loopCounter++;
                 }
             }
             catch ( Exception ex )

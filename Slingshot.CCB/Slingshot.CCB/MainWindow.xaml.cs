@@ -39,9 +39,6 @@ namespace Slingshot.CCB
         {
             InitializeComponent();
 
-            txtLoopThreshold.Text = CcbApi.LoopThreshold.ToString();
-            txtItemsPerPage.Text = CcbApi.ItemsPerPage.ToString();
-
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;
             _apiUpdateTimer.Interval = new TimeSpan( 0, 2, 30 );
 
@@ -54,15 +51,26 @@ namespace Slingshot.CCB
         #region Background Worker Events
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
-            txtExportMessage.Text = e.UserState.ToString();
+            string userState = e.UserState.ToString();
+            txtExportMessage.Text = userState;
             pbProgress.Value = e.ProgressPercentage;
+
+            if ( _errorHasOccurred )
+            {
+                if ( !string.IsNullOrWhiteSpace( userState ) )
+                {
+                    txtMessages.Text += userState + Environment.NewLine;
+                }
+                txtMessages.Visibility = Visibility.Visible;
+                txtError.Visibility = Visibility.Visible;
+            }
         }
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = true;
             if ( !_errorHasOccurred )
             {
-                btnDownloadPackage.IsEnabled = true;
                 txtExportMessage.Text = "Export Complete";
                 pbProgress.Value = 100;
             }
@@ -116,11 +124,11 @@ namespace Slingshot.CCB
             }
 
             // export group types
-            if ( ( !_errorHasOccurred ) && ( ExportGroupTypes.Count > 0 ) )
+            if ( ( !_errorHasOccurred ) && ( exportSettings.ExportGroupTypes.Count > 0 ) )
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                CcbApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList(), exportSettings.ModifiedSince );
+                CcbApi.ExportGroups( exportSettings.ExportGroupTypes, exportSettings.ModifiedSince );
 
                 if ( CcbApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -177,7 +185,11 @@ namespace Slingshot.CCB
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void Window_Loaded( object sender, RoutedEventArgs e )
         {
+            int remainingRequests = CcbApi.DailyLimit - CcbApi.Counter;
+            CcbApi.ApiRequestLimit = remainingRequests;
+
             lblApiUsage.Text = $"API Usage: {CcbApi.Counter} / {CcbApi.DailyLimit}";
+            txtItemsPerPage.Text = CcbApi.ItemsPerPage.ToString();
 
             // add group types
             ExportGroupTypes = CcbApi.GetGroupTypes();
@@ -190,7 +202,7 @@ namespace Slingshot.CCB
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
 
-            txtImportCutOff.Text = DateTime.Now.ToShortDateString(); // remove before flight (sets today's date as the modified since)
+            txtImportCutOff.Text = new DateTime(1998, 1, 1).ToShortDateString();
         }
 
         /// <summary>
@@ -208,10 +220,7 @@ namespace Slingshot.CCB
             // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
             CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
 
-            if ( txtLoopThreshold.Text.IsNotNullOrWhitespace() && txtLoopThreshold.Text.AsInteger() > 0 )
-            {
-                CcbApi.LoopThreshold = txtLoopThreshold.Text.AsInteger();
-            }
+            CcbApi.ApiRequestCount = 0;
 
             if ( txtItemsPerPage.Text.IsNotNullOrWhitespace() && txtItemsPerPage.Text.AsInteger() > 0 )
             {
@@ -220,6 +229,10 @@ namespace Slingshot.CCB
 
             // clear result from previous export
             txtExportMessage.Text = string.Empty;
+            txtMessages.Text = string.Empty;
+            txtMessages.Visibility = Visibility.Collapsed;
+            txtError.Visibility = Visibility.Collapsed;
+            _errorHasOccurred = false;
 
             // launch our background export
             var exportSettings = new ExportSettings
@@ -231,8 +244,11 @@ namespace Slingshot.CCB
             };
 
             // configure group types to export
-            var selectedGroupTypes = GroupTypesCheckboxItems.Where( i => i.Checked ).Select( i => i.Id );
-            exportSettings.ExportGroupTypes.AddRange( selectedGroupTypes );
+            if ( cbGroups.IsChecked == true )
+            {
+                var selectedGroupTypes = GroupTypesCheckboxItems.Where( i => i.Checked ).Select( i => i.Id );
+                exportSettings.ExportGroupTypes.AddRange( selectedGroupTypes );
+            }
 
             exportWorker.RunWorkerAsync( exportSettings );
         }
@@ -251,11 +267,6 @@ namespace Slingshot.CCB
             }
         }
         #endregion
-
-        private void TxtLoopThreshold_PreviewTextInput( object sender, TextCompositionEventArgs e )
-        {
-            e.Handled = !InputIsValidInteger( ( ( TextBox ) sender ).Text + e.Text );
-        }
 
         private void TxtItemsPerPage_PreviewTextInput( object sender, TextCompositionEventArgs e )
         {
@@ -292,4 +303,5 @@ namespace Slingshot.CCB
 
         public bool Checked { get; set; }
     }
+
 }
