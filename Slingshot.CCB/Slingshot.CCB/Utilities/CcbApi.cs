@@ -758,6 +758,7 @@ namespace Slingshot.CCB.Utilities
                 if ( field.Element( "label" ).Value.IsNotNullOrWhitespace() )
                 {
                     var personAttribute = new PersonAttribute();
+                    personAttribute.Category = "CCB Custom Field";
                     personAttribute.Key = field.Element( "name" ).Value.Replace( "_ind_", "_" ); // need to strip out the '_ind' so they match what is returned from CCB on the person record
                     personAttribute.Name = field.Element( "label" ).Value;
 
@@ -793,6 +794,7 @@ namespace Slingshot.CCB.Utilities
             foreach ( var field in significantEvents.Elements( "item" ) )
             {
                 var personAttribute = new PersonAttribute();
+                personAttribute.Category = "CCB Significant Event";
                 personAttribute.Key = $"significant_event_{field.Element( "name" ).Value.RemoveSpecialCharacters()}";
                 personAttribute.Name = field.Element( "name" ).Value;
                 personAttribute.FieldType = "Rock.Field.Types.DateFieldType";
