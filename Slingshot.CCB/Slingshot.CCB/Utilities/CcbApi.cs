@@ -1,4 +1,10 @@
-﻿using System;
+﻿using RestSharp;
+using RestSharp.Authenticators;
+using Slingshot.CCB.Utilities.Translators;
+using Slingshot.Core;
+using Slingshot.Core.Model;
+using Slingshot.Core.Utilities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,28 +12,32 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Xml.Linq;
-using RestSharp;
-using RestSharp.Authenticators;
-using Slingshot.CCB.Utilities.Translators;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.Core.Utilities;
 
 namespace Slingshot.CCB.Utilities
 {
+
     /// <summary>
     /// Provides a custom implementation of a rate limited Rest Client
     /// </summary>
     /// <seealso cref="RestSharp.RestClient" />
     public class RateLimitedRestClient : RestClient
     {
+
+        #region Internal Properties and Fields
+
         public static int ApiRequestLimit { get; set; } = 10000;
         public static int ApiRequestCount { get; set; } = 0;
+        public static int ApiThrottleRate { get; set; } = 5;
 
-        private readonly int ThrottleRate = 6;
         private readonly DateTime EpochTime;
+
+        #endregion
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="baseUrl">The base URL of the CCB API.</param>
         public RateLimitedRestClient( string baseUrl ) : base( baseUrl )
         {
             EpochTime = new DateTime( 1970, 1, 1, 0, 0, 0, DateTimeKind.Utc );
@@ -41,6 +51,18 @@ namespace Slingshot.CCB.Utilities
         /// <returns></returns>
         public override IRestResponse Execute( IRestRequest restRequest )
         {
+            return ProcessExecute( restRequest, 0 );
+        }
+
+        /// <summary>
+        /// Private method to provide some resiliency in making API requests.  This method will attempt to repeat
+        /// the request three times before generating an error condition.
+        /// </summary>
+        /// <param name="restRequest">The <see cref="IRestRequest"/> request object.</param>
+        /// <param name="errorCount">The number of times an error has occurred.  This should begin at 0.</param>
+        /// <returns>The <see cref="IRestResponse"/> response from the API service.</returns>
+        private IRestResponse ProcessExecute( IRestRequest restRequest, int errorCount )
+        {
             if ( ApiRequestCount >= ApiRequestLimit )
             {
                 throw new Exception( "Exceeded API Request Limit." );
@@ -49,7 +71,26 @@ namespace Slingshot.CCB.Utilities
             var response = base.Execute( restRequest );
             ApiRequestCount++;
 
-            HandleError( response );
+            // HandleError will raise an error appropriate to the HTTP response type, but
+            // we will re-attempt the request until three errors have occurred, so that temporary
+            // issues with the CCB API service don't always crash an export.
+            try
+            {
+                HandleError( response );
+            }
+            catch ( Exception ex )
+            {
+                errorCount++;
+                if ( errorCount >= 3 )
+                {
+                    throw ex;
+                }
+                else
+                {
+                    return ProcessExecute( restRequest, errorCount );
+                }
+
+            }
 
             var remainingCalls = response.Headers
                 .Where( h => h.Name.Equals( "X-RATELIMIT-REMAINING", StringComparison.InvariantCultureIgnoreCase ) )
@@ -62,9 +103,15 @@ namespace Slingshot.CCB.Utilities
                 .FirstOrDefault();
 
             // allow the server to burst up to the throttle rate
-            if ( remainingCalls.HasValue && remainingCalls < ThrottleRate && resetTime.HasValue )
+            if ( remainingCalls.HasValue && ( remainingCalls <= ApiThrottleRate ) )
             {
-                var coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
+                int defaultWaitSeconds = 60;
+                var coolDownTime = new TimeSpan( 0, 0, defaultWaitSeconds );
+                if ( resetTime.HasValue )
+                {
+                    coolDownTime = EpochTime.AddSeconds( resetTime.Value ) - DateTime.Now.ToUniversalTime();
+                }
+
                 if ( coolDownTime.Seconds > 0 )
                 {
                     CcbApi.ErrorMessage = $"Throttling API requests for {coolDownTime.Seconds} seconds";
@@ -100,10 +147,13 @@ namespace Slingshot.CCB.Utilities
     }
 
     /// <summary>
-    /// API CCB Status
+    /// CCB API client.
     /// </summary>
     public static class CcbApi
     {
+
+        #region RateLimitedRestClient Properties and Fields
+
         private static RateLimitedRestClient _client;
 
         public static int ApiRequestLimit
@@ -116,6 +166,13 @@ namespace Slingshot.CCB.Utilities
             get { return RateLimitedRestClient.ApiRequestCount; }
             set { RateLimitedRestClient.ApiRequestCount = value; }
         }
+        public static int ApiThrottleRate
+        {
+            get { return RateLimitedRestClient.ApiThrottleRate; }
+            set { RateLimitedRestClient.ApiThrottleRate = value; }
+        }
+
+        #endregion
 
         /// <summary>
         /// A developer safety blanket to prevent eating all the api calls for the day.
@@ -147,14 +204,6 @@ namespace Slingshot.CCB.Utilities
         ///   <c>true</c> if [consolidate schedule names]; otherwise, <c>false</c>.
         /// </value>
         public static bool ConsolidateScheduleNames { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the last run date.
-        /// </summary>
-        /// <value>
-        /// The last run date.
-        /// </value>
-        public static DateTime LastRunDate { get; set; } = DateTime.MinValue;
 
         /// <summary>
         /// Gets or sets the daily limit.
@@ -231,7 +280,7 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         public const int GROUPTYPE_UNKNOWN_ID = 10000;
 
-        #region API Call Paths
+        #region API Call URL Paths
 
         private const string API_STATUS = "/api.php?srv=api_status";
         private const string API_INDIVIDUALS = "/api.php?srv=individual_profiles&modified_since={modifiedSince}&include_inactive=true&page={currentPage}&per_page={itemsPerPage}";
@@ -267,7 +316,10 @@ namespace Slingshot.CCB.Utilities
         /// <param name="apiPassword">The API password.</param>
         public static void Connect( string hostName, string apiUsername, string apiPassword )
         {
-            Hostname = hostName.Replace( "https://", string.Empty ).Replace( ".ccbchurch.com", string.Empty );
+            Hostname = hostName
+                        .Replace( "https://", string.Empty )
+                        .Replace( ".ccbchurch.com", string.Empty )
+                        .Replace ( "/", string.Empty );
             ApiUsername = apiUsername;
             ApiPassword = apiPassword;
 
@@ -1036,6 +1088,9 @@ namespace Slingshot.CCB.Utilities
             GetAttendance( modifiedSince, eventDetails );
         }
 
+        /// <summary>
+        /// Called by ExportAttendance after getting the event details.
+        /// </summary>
         private static void GetAttendance( DateTime? modifiedSince, List<EventDetail> eventDetails )
         {
             if ( !modifiedSince.HasValue )

@@ -1,40 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using Slingshot.CCB.Utilities;
+﻿using Slingshot.CCB.Utilities;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Slingshot.CCB
 {
     /// <summary>
-    /// Interaction logic for Main.xaml
+    /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Windows.Threading.DispatcherTimer _apiUpdateTimer = new System.Windows.Threading.DispatcherTimer();
-
-        private readonly BackgroundWorker exportWorker = new BackgroundWorker();
-
-        private bool _errorHasOccurred = false;
-
-        public List<GroupType> ExportGroupTypes { get; set; }
-
-        public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
-
-
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -48,7 +34,27 @@ namespace Slingshot.CCB
             exportWorker.WorkerReportsProgress = true;
         }
 
+        #region Internal Fields and Properties
+
+        private DispatcherTimer _apiUpdateTimer = new DispatcherTimer();
+
+        private readonly BackgroundWorker exportWorker = new BackgroundWorker();
+
+        private bool _errorHasOccurred = false;
+
+        private List<GroupType> ExportGroupTypes { get; set; }
+
+        private List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
+
+        #endregion
+
         #region Background Worker Events
+
+        /// <summary>
+        /// Handles the ProgressChanged event for the ExportWorker.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="ProgressChangedEventArgs"/> instance containing the event data.</param>
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
             string userState = e.UserState.ToString();
@@ -57,7 +63,7 @@ namespace Slingshot.CCB
 
             if ( _errorHasOccurred )
             {
-                if ( !string.IsNullOrWhiteSpace( userState ) )
+                if ( userState.IsNotNullOrWhitespace() )
                 {
                     txtMessages.Text += userState + Environment.NewLine;
                 }
@@ -66,6 +72,11 @@ namespace Slingshot.CCB
             }
         }
 
+        /// <summary>
+        /// Handles the RunWorkerCompleted event for the ExportWorker.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RunWorkerCompletedEventArgs"/> instance containing the event data.</param>
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
             btnDownloadPackage.IsEnabled = true;
@@ -76,6 +87,11 @@ namespace Slingshot.CCB
             }
         }
 
+        /// <summary>
+        /// Handles the DoWork event for the ExportWorker.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="DoWorkEventArgs"/> instance containing the event data.</param>
         private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
         {
             exportWorker.ReportProgress( 0, "" );
@@ -152,18 +168,16 @@ namespace Slingshot.CCB
                 }
             }
 
-            if ( !_errorHasOccurred )
-            {
-                // finalize the package
-                ImportPackage.FinalizePackage( "ccb-export.slingshot" );
+            // finalize the package
+            ImportPackage.FinalizePackage("ccb-export.slingshot");
 
-                // schedule the API status to update (the status takes a few mins to update)
-                _apiUpdateTimer.Start();
-            }
-
+            // schedule the API status to update (the status takes a few mins to update)
+            _apiUpdateTimer.Start();
         }
 
         #endregion
+
+        #region Window/Control Events
 
         /// <summary>
         /// Handles the Tick event of the _apiUpdateTimer control.
@@ -190,13 +204,13 @@ namespace Slingshot.CCB
 
             lblApiUsage.Text = $"API Usage: {CcbApi.Counter} / {CcbApi.DailyLimit}";
             txtItemsPerPage.Text = CcbApi.ItemsPerPage.ToString();
+            txtThrottleRate.Text = CcbApi.ApiThrottleRate.ToString();
 
             // add group types
-            ExportGroupTypes = CcbApi.GetGroupTypes();
+            ExportGroupTypes = CcbApi.GetGroupTypes().OrderBy( t => t.Name ).ToList();
 
             foreach ( var groupType in ExportGroupTypes )
             {
-                //cblGroupTypes.Items.Add( groupType );
                 GroupTypesCheckboxItems.Add( new CheckListItem { Id = groupType.Id, Text = groupType.Name, Checked = true } );
             }
 
@@ -220,11 +234,19 @@ namespace Slingshot.CCB
             // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
             CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
 
+            // Reset API Request Counter.
             CcbApi.ApiRequestCount = 0;
 
-            if ( txtItemsPerPage.Text.IsNotNullOrWhitespace() && txtItemsPerPage.Text.AsInteger() > 0 )
+            // Set ItemsPerPage value.
+            if ( InputIsValidInteger( txtItemsPerPage.Text, 1, 10000 ) )
             {
                 CcbApi.ItemsPerPage = txtItemsPerPage.Text.AsInteger();
+            }
+            
+            // Set ApiThrottleRate value.
+            if ( InputIsValidInteger( txtThrottleRate.Text, 0, 14 ) )
+            {
+                CcbApi.ApiThrottleRate = txtThrottleRate.Text.AsInteger();
             }
 
             // clear result from previous export
@@ -234,7 +256,7 @@ namespace Slingshot.CCB
             txtError.Visibility = Visibility.Collapsed;
             _errorHasOccurred = false;
 
-            // launch our background export
+            // create ExportSettings object for background worker.
             var exportSettings = new ExportSettings
             {
                 ModifiedSince = txtImportCutOff.Text.AsDateTime(),
@@ -250,11 +272,15 @@ namespace Slingshot.CCB
                 exportSettings.ExportGroupTypes.AddRange( selectedGroupTypes );
             }
 
+            // launch our background export
             exportWorker.RunWorkerAsync( exportSettings );
         }
 
-        #region Window Events
-
+        /// <summary>
+        /// Handles the Checked event of the cbGroups control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void cbGroups_Checked( object sender, RoutedEventArgs e )
         {
             if ( cbGroups.IsChecked.Value )
@@ -266,42 +292,100 @@ namespace Slingshot.CCB
                 gridMain.RowDefinitions[5].Height = new GridLength( 0 );
             }
         }
-        #endregion
 
-        private void TxtItemsPerPage_PreviewTextInput( object sender, TextCompositionEventArgs e )
+        /// <summary>
+        /// Handles the PreviewTextInput event of the txtItemsPerPage control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="TextCompositionEventArgs"/> instance containing the event data.</param>
+        private void txtItemsPerPage_PreviewTextInput( object sender, TextCompositionEventArgs e )
         {
-            e.Handled = !InputIsValidInteger( ( ( TextBox ) sender ).Text + e.Text );
+            var textBox = sender as TextBox;
+            string currentText = textBox.Text.Remove( textBox.SelectionStart, textBox.SelectionLength );
+            e.Handled = !InputIsValidInteger( currentText + e.Text, 1, 10000 );
         }
 
-        public static bool InputIsValidInteger( string input )
+        /// <summary>
+        /// Handles the PreviewTextInput event of the txtThrottleRate control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="TextCompositionEventArgs"/> instance containing the event data.</param>
+        private void txtThrottleRate_PreviewTextInput( object sender, TextCompositionEventArgs e )
         {
+            var textBox = sender as TextBox;
+            string currentText = textBox.Text.Remove( textBox.SelectionStart, textBox.SelectionLength );
+            e.Handled = !InputIsValidInteger( currentText + e.Text, 0, 14 );
+        }
+
+        /// <summary>
+        /// Validation function for TextBox inputs, ensures that input is an integer within a certain range.
+        /// </summary>
+        /// <param name="input">The input text.</param>
+        /// <param name="minValue">The minimum permitted value (inclusive).</param>
+        /// <param name="maxValue">The maximum permitted value (inclusive).</param>
+        /// <returns></returns>
+        public static bool InputIsValidInteger( string input, int minValue, int maxValue )
+        {
+            if ( input.IsNullOrWhiteSpace() )
+            {
+                return false;
+            }
+
             int? i = input.AsIntegerOrNull();
             bool isInteger = ( i != null );
-            bool isGreaterThanZero = ( i.Value > 0 );
-            bool isLessThanTenK = ( i < 10000 );
-            return isInteger && isGreaterThanZero && isLessThanTenK;
+            bool isGreaterThanMin = i.HasValue && ( i.Value >= minValue );
+            bool isLowerThanMax = i.HasValue && ( i <= maxValue );
+            return isInteger && isGreaterThanMin && isLowerThanMax;
         }
-    }
 
-    public class ExportSettings
-    {
-        public DateTime? ModifiedSince { get; set; }
+        #endregion
 
-        public bool ExportIndividuals { get; set; } = true;
+        #region Helper Classes
 
-        public bool ExportContributions { get; set; } = true;
+        /// <summary>
+        /// This class holds settings (populated from window controls) which are passed to the worker
+        /// process to control the export.
+        /// </summary>
+        private class ExportSettings
+        {
+            /// <summary>
+            /// The "Modified Since" date passed to the CCP API.
+            /// </summary>
+            public DateTime? ModifiedSince { get; set; }
 
-        public bool ExportAttendance { get; set; } = true;
+            /// <summary>
+            /// Indicates whether or not to request individual records from the CCB API.
+            /// </summary>
+            public bool ExportIndividuals { get; set; } = true;
 
-        public List<int> ExportGroupTypes { get; set; } = new List<int>();
-    }
+            /// <summary>
+            /// Indicates whether or not to request contribution records from the CCB API.
+            /// </summary>
+            public bool ExportContributions { get; set; } = true;
 
-    public class CheckListItem
-    {
-        public int Id { get; set; }
-        public string Text { get; set; }
+            /// <summary>
+            /// Indicates whether or not to request attendance records from the CCB API.
+            /// </summary>
+            public bool ExportAttendance { get; set; } = true;
 
-        public bool Checked { get; set; }
+            /// <summary>
+            /// A list of group types that indicates which group records to export from the CCB API.
+            /// </summary>
+            public List<int> ExportGroupTypes { get; set; } = new List<int>();
+        }
+
+        /// <summary>
+        /// This class is used to track group checkbox items.
+        /// </summary>
+        private class CheckListItem
+        {
+            public int Id { get; set; }
+            public string Text { get; set; }
+            public bool Checked { get; set; }
+        }
+
+        #endregion
+
     }
 
 }
