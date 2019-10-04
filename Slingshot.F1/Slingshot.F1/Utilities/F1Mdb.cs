@@ -29,6 +29,7 @@ namespace Slingshot.F1.Utilities
     {
 
         private static OleDbConnection _dbConnection;
+        private Dictionary<string, string> _RequirementNames;
 
         /// <summary>
         /// Gets or sets the file name.
@@ -717,6 +718,18 @@ FROM Company;
                 var dtCommunications = GetTableData( SQL_COMMUNICATIONS );
                 var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES );
                 var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES );
+                foreach (DataRow row in dtRequirementValues.Rows)
+                {
+                    string requirementName = row["requirement_name"].ToString();
+                    if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
+                    {
+                        if ( _RequirementNames[requirementName.ToLower()] != requirementName )
+                        {
+                            row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
+                        }
+                    }
+                }
+
                 var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
                 var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
                 
@@ -1149,11 +1162,12 @@ FROM Company;
             // Add F1 Requirements
             using ( var dtRequirements = GetTableData( SQL_REQUIREMENTS ) )
             {
-                
+                _RequirementNames = new Dictionary<string, string>();
                 foreach ( DataRow row in dtRequirements.Rows )
                 {
                     string requirementName = row.Field<string>( "requirement_name" );
-                    
+                    _RequirementNames.Add( requirementName.ToLower(), requirementName );
+
                     // status attribute
                     var requirementStatus = new PersonAttribute()
                     {
