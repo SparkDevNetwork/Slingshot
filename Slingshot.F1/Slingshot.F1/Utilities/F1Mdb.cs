@@ -1120,7 +1120,7 @@ FROM Company;
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
                 Name = "Default Tag Comment",
-                Key = "F1_Defatul_Tag_Comment",
+                Key = "F1_Default_Tag_Comment",
                 Category = "Childhood Information",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
