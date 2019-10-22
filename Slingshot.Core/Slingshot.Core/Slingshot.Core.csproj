@@ -58,7 +58,7 @@
     <Compile Include="Models\BusinessAttribute.cs" />
     <Compile Include="Models\BusinessAttributeValue.cs" />
     <Compile Include="Models\BusinessAddress.cs" />
-    <Compile Include="Models\Business-Contact.cs" />
+    <Compile Include="Models\BusinessContact.cs" />
     <Compile Include="Models\PersonSearchKey.cs" />
     <Compile Include="Models\PersonNote.cs" />
     <Compile Include="Models\FamilyNote.cs" />
