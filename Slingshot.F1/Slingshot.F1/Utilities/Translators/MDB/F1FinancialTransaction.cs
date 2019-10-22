@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Slingshot.Core.Model;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Slingshot.F1.Utilities.Translators.MDB
 {
@@ -20,13 +21,18 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 transaction.AuthorizedPersonId = individualId.Value;
             }
-            else if ( isCompany )
+            else
             {
-                transaction.AuthorizedPersonId = F1Company.GetCompanyAsPersonId( householdId.Value );
-            }
-            else if ( householdId.HasValue && headOfHouseHolds.TryGetValue( householdId.Value, out var headIndividual ) )
-            {
-                transaction.AuthorizedPersonId = headIndividual?.IndividualId;
+                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == row.Field<int?>( "household_id" ) ).FirstOrDefault().Value;
+
+                if ( headOfHousehold != null )
+                {
+                    transaction.AuthorizedPersonId = headOfHousehold.IndividualId;
+                }
+                else if ( isCompany )
+                {
+                    transaction.AuthorizedPersonId = F1Business.GetCompanyAsPersonId( row.Field<int>( "household_id" ) );
+                }
             }
 
             if ( row.Field<int?>( "BatchID" ).HasValue )
@@ -62,6 +68,19 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     break;
                 default:
                     transaction.CurrencyType = CurrencyType.Unknown;
+                    break;
+            }
+
+            switch ( row.Field<string>( "Fund_Type" ) )
+            {
+                case "Receipt":
+                    transaction.TransactionType = TransactionType.Receipt;
+                    break;
+                case "EventRegistration":
+                    transaction.TransactionType = TransactionType.EventRegistration;
+                    break;
+                default:
+                    transaction.TransactionType = TransactionType.Contribution;
                     break;
             }
 

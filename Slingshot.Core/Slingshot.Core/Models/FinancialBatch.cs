@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for FinancialBatch
+    /// ImportModel for Financial Batch
     /// </summary>
     public class FinancialBatch : IImportModel
     {
@@ -122,6 +122,9 @@ namespace Slingshot.Core.Model
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum BatchStatus
     {
         /// <summary>

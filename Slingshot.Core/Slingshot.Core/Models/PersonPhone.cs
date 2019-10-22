@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for PersonPhone
+    /// ImportModel for PersonPhone
     /// </summary>
     public class PersonPhone : IImportModel
     {
@@ -51,6 +51,10 @@ namespace Slingshot.Core.Model
         /// </value>
         public bool? IsUnlisted { get; set; }
 
+        /// <summary>
+        /// Gets the name of the file.
+        /// </summary>
+        /// <returns></returns>
         public string GetFileName()
         {
             return "person-phone.csv";

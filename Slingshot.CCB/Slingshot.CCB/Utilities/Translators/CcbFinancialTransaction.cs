@@ -11,7 +11,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbFinancialTransaction
     {
-        public static FinancialTransaction Translate(XElement inputTransaction, int batchId)
+        public static FinancialTransaction Translate( XElement inputTransaction, int batchId )
         {
             var financialTransaction = new FinancialTransaction();
 
@@ -20,22 +20,26 @@ namespace Slingshot.CCB.Utilities.Translators
             financialTransaction.Summary = inputTransaction.Element( "grouping" )?.Value;
             financialTransaction.TransactionCode = inputTransaction.Element( "check_number" )?.Value;
             financialTransaction.TransactionDate = inputTransaction.Element( "date" )?.Value.AsDateTime();
-            financialTransaction.AuthorizedPersonId = inputTransaction.Element( "individual" )?.Attribute("id")?.Value.AsIntegerOrNull();
-
-            // note the api doesn't tell us the currency type
-            financialTransaction.CurrencyType = CurrencyType.Unknown;
+            financialTransaction.AuthorizedPersonId = inputTransaction.Element( "individual" )?.Attribute( "id" )?.Value.AsIntegerOrNull();
 
             var source = inputTransaction.Element( "payment_type" )?.Value;
-            switch( source )
+            switch ( source )
             {
                 case "Online":
                     financialTransaction.TransactionSource = TransactionSource.Website;
+                    financialTransaction.CurrencyType = CurrencyType.CreditCard;
                     break;
                 case "Cash":
                     financialTransaction.TransactionSource = TransactionSource.OnsiteCollection;
+                    financialTransaction.CurrencyType = CurrencyType.Cash;
+                    break;
+                case "Check":
+                    financialTransaction.TransactionSource = TransactionSource.OnsiteCollection;
+                    financialTransaction.CurrencyType = CurrencyType.Check;
                     break;
                 default:
                     financialTransaction.TransactionSource = TransactionSource.OnsiteCollection; // best default?
+                    financialTransaction.CurrencyType = CurrencyType.Unknown;
                     break;
             }
 

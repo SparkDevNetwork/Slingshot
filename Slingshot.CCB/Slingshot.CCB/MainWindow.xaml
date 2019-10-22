@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot.CCB"
         mc:Ignorable="d"
-        Title="Slingshot - Church Community Builder" Height="600" Width="630" Loaded="Window_Loaded" Icon="icon.ico">
+        Title="Slingshot - Church Community Builder" Height="700" Width="730" Loaded="Window_Loaded" Icon="icon.ico">
     <Grid>
         <DockPanel>
             <!-- more on status bars: http://www.wpf-tutorial.com/common-interface-controls/statusbar-control/ -->
@@ -23,7 +23,7 @@
                         </Grid>
                     </ItemsPanelTemplate>
                 </StatusBar.ItemsPanel>
-            
+
                 <StatusBarItem>
                     <TextBlock Name="lblApiUsage" />
                 </StatusBarItem>
@@ -37,50 +37,84 @@
             </StatusBar>
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <Grid Margin="30" Name="gridMain">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <Label Content="Import Records Modified Since" Grid.Row="1" FontWeight="Bold" />
-                <TextBox Name="txtImportCutOff" Grid.Row="2"  Margin="0,0,0,10" Padding="3" />
 
-                <Label Content="Export Data Types" Grid.Row="3" FontWeight="Bold" />
-                <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="Individuals" Margin="0,10,0,10" />
-                <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Contributions" Margin="90,10,0,10" />
-                <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="195,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
-                <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Attendance" Margin="265,10,0,10" />
+                    <Label Content="Import Records Modified Since:" Grid.Row="1" FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="5,0,0,10">
+                        <TextBox Name="txtImportCutOff" VerticalContentAlignment="Center" Padding="3" MinWidth="100" MaxLength="10" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                        <TextBlock Name="lblImportCutoffInstruction" Text="(Leave blank to return all records.)" VerticalAlignment="Center" Padding="2,2,2,2" TextWrapping="Wrap" Foreground="Gray" />
+                    </StackPanel>
 
-                <Label Content="Group Types To Export" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
-                <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="5" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate >
-                            <StackPanel Orientation="Horizontal" Width="Auto" Margin="0,0,0,0" >
-                                <CheckBox Content="{Binding Text}" IsChecked="{Binding Checked, Mode=TwoWay}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-                <StackPanel Grid.Row="6">
-                    <Label Content="Advanced" FontWeight="Bold" Margin="0,0,0,0"/>
-                    <CheckBox Name="cbDumpResponseToXmlFile" Content="Dump Response to XmlFiles" Margin="0,10,0,10"  Padding="3,0,0,0"  />
-                </StackPanel>
+                    <Label Content="Export Data Types:" Grid.Row="3" FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" Width="Auto" Margin="0,5,0,10" Grid.Row="4" >
+                        <CheckBox Name="cbIndividuals" IsChecked="True" Content="Individuals" Margin="5,0,0,0" Width="100" />
+                        <CheckBox Name="cbContributions" IsChecked="True" Content="Contributions" Margin="5,0,0,0" Width="100" />
+                        <CheckBox Name="cbGroups" IsChecked="True" Content="Groups" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" Margin="5,0,0,0" Width="100" />
+                        <CheckBox Name="cbAttendance" IsChecked="True" Content="Attendance" Margin="5,0,0,0" Width="100" />
+                    </StackPanel>
 
-                <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">
-                    <Label Content="Create Download Package" />
-                </Button>
-                <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,10,0,0" />
-            </Grid>
+
+                    <Label Content="Group Types To Export:" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
+                    <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="5" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             MaxWidth="800">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Width="Auto" Margin="0,0,0,0">
+                                    <CheckBox Content="{Binding Text}" IsChecked="{Binding Checked, Mode=TwoWay}" Width="200" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="6">
+                        <Label Content="Advanced Options:" FontWeight="Bold" Margin="0,0,0,0"/>
+                        <CheckBox Name="cbDumpResponseToXmlFile" Content="Dump response to XML files" Margin="5,10,0,10"  Padding="3,0,0,0"  />
+                        <CheckBox Name="cbConsolidateSchedules" IsChecked="True" Content="Consolidate schedules to Day of Week and Time" Margin="5,0,0,10"  Padding="3,0,0,0"  />
+                        <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
+                            <Label Name="lblItemsPerPage" Content="Items Per Page:" HorizontalAlignment="Left" Padding="0,5,5,5" Width="100" />
+                            <TextBox x:Name="txtItemsPerPage"
+                                     VerticalContentAlignment="Center"
+                                     PreviewTextInput="txtItemsPerPage_PreviewTextInput" MinWidth="100" MaxLength="4" HorizontalAlignment="Left" />
+                            <TextBlock Name="lblItemsPerPageInstruction" Text="(Enter a value between 1 and 10,000.)" VerticalAlignment="Center" Padding="2,2,2,2" TextWrapping="Wrap" Foreground="Gray" />
+                        </StackPanel>
+                        <TextBlock Name="lblItemsPerPageExplanation" Text="A larger value will download more items per API request.  If this value is too large, it may result in timeout errors from the CCB API." Padding="0" TextWrapping="Wrap" Foreground="Gray" Margin="5,0,0,10" />
+
+                        <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
+                            <Label Name="lblThrottleRate" Content="API Throttle Limit:" HorizontalAlignment="Left" Padding="0,5,5,5" Width="100" />
+                            <TextBox x:Name="txtThrottleRate"
+                                     VerticalContentAlignment="Center"
+                                     PreviewTextInput="txtThrottleRate_PreviewTextInput"  MinWidth="100" MaxLength="4" HorizontalAlignment="Left" />
+                            <TextBlock Name="lblThrottleRateInstruction" Text="(Enter a value between 0 and 14.)" VerticalAlignment="Center" Padding="2,2,2,2" TextWrapping="Wrap" Foreground="Gray" />
+                        </StackPanel>
+                        <TextBlock Name="lblThrottleRateExplanation" Text="Slingshot will issue requests until the CCB API indicates that this many requests remain.  A lower value will result in a faster download, but may limit other services which need access to the API.  Enter a value between 0 and 15." Padding="0" TextWrapping="Wrap" Foreground="Gray" Margin="5,0,0,5" />
+
+                        <TextBlock Name="txtError" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,10,0,0" Text="Error:" Foreground="Red" FontWeight="Bold" Visibility="Collapsed" />
+                        <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,0,0,0" Padding="0,0,0,0" Visibility="Collapsed" />
+                    </StackPanel>
+
+                    <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click" Margin="0,10,0,0" >
+                        <Label Content="Create Download Package" />
+                    </Button>
+                </Grid>
             </ScrollViewer>
         </DockPanel>
     </Grid>

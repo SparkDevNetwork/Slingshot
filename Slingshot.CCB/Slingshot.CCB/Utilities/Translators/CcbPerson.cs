@@ -69,10 +69,9 @@ namespace Slingshot.CCB.Utilities.Translators
                                 phoneType = "Mobile";
                                 break;
 
-                            // no longer used in CCB as of 11/31/17
-                            //case "contact":
-                            //    phoneType = "Contact";
-                            //    break;
+                            case "contact":
+                                phoneType = "Contact";
+                                break;
 
                             case "work":
                                 phoneType = "Work";
@@ -100,7 +99,7 @@ namespace Slingshot.CCB.Utilities.Translators
                     {
                         var importAddress = new PersonAddress();
                         importAddress.PersonId = person.Id;
-                        importAddress.Street1 = address.Element( "street_address" ).Value;
+                        importAddress.Street1 = address.Element( "street_address" ).Value.RemoveCrLf();
                         importAddress.City = address.Element( "city" ).Value;
                         importAddress.State = address.Element( "state" ).Value;
                         importAddress.PostalCode = address.Element( "zip" ).Value;
@@ -227,7 +226,8 @@ namespace Slingshot.CCB.Utilities.Translators
                 if ( imageURI.IsNotNullOrWhitespace() && !imageURI.Contains( "profile-default.gif" ) )
                 {
                     // CCB encoded key expires too quickly, so download immediately instead of setting person.PersonPhotoUrl
-                    Task.Run( () => {
+                    Task.Run( () =>
+                    {
                         // save image locally
                         var imageResponse = WebRequest.Create( imageURI ).GetResponse();
                         var imageStream = imageResponse.GetResponseStream();
@@ -300,18 +300,18 @@ namespace Slingshot.CCB.Utilities.Translators
                 }
 
                 // dropdown fields
-                /*foreach ( var dropdownAttribute in inputPerson.Element( "user_defined_pulldown_fields" )?.Elements( "user_defined_pulldown_fields" ) )
+                foreach ( var dropdownAttribute in inputPerson.Element( "user_defined_pulldown_fields" )?.Elements( "user_defined_pulldown_field" ) )
                 {
-                    if ( dropdownAttribute.Element( "label" ).Value.IsNotNullOrWhitespace() && dropdownAttribute.Element( "text" ).Value.IsNotNullOrWhitespace() ) // not certain this is the correct key as discovery church did not have any...
+                    if ( dropdownAttribute.Element( "label" ).Value.IsNotNullOrWhitespace() && dropdownAttribute.Element( "selection" ).Value.IsNotNullOrWhitespace() )
                     {
                         person.Attributes.Add( new PersonAttributeValue
                         {
                             AttributeKey = dropdownAttribute.Element( "name" ).Value,
-                            AttributeValue = dropdownAttribute.Element( "text" ).Value, // not certain this is the correct key as discovery church did not have any...
-                            PersonId = person.PersonId
+                            AttributeValue = dropdownAttribute.Element( "selection" ).Value,
+                            PersonId = person.Id
                         } );
                     }
-                }*/
+                }
 
                 // write out person notes
                 if ( notes.Count > 0 )

@@ -22,7 +22,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
             group.Id = inputGroup.Attribute( "id" ).Value.AsInteger();
             group.Name = inputGroup.Element( "name" )?.Value;
-            group.Description = inputGroup.Element( "description" )?.Value;
+            group.Description = inputGroup.Element( "description" )?.Value.RemoveCrLf();
             group.GroupTypeId = inputGroup.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
             group.CampusId = inputGroup.Element( "campus" ).Attribute( "id" ).Value.AsIntegerOrNull();
             group.Capacity = inputGroup.Element( "group_capacity" ).Value.AsIntegerOrNull();
@@ -105,7 +105,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 {
                     var importAddress = new GroupAddress();
                     importAddress.GroupId = group.Id;
-                    importAddress.Street1 = address.Element( "street_address" ).Value;
+                    importAddress.Street1 = address.Element( "street_address" ).Value.RemoveCrLf();
                     importAddress.City = address.Element( "city" ).Value;
                     importAddress.State = address.Element( "state" ).Value;
                     importAddress.PostalCode = address.Element( "zip" ).Value;

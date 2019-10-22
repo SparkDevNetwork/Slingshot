@@ -2,6 +2,9 @@
 
 namespace Slingshot.Core.Data
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public abstract class EntityNote
     {
         /// <summary>

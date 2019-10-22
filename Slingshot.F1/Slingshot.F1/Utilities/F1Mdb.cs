@@ -29,6 +29,7 @@ namespace Slingshot.F1.Utilities
     {
 
         private static OleDbConnection _dbConnection;
+        private Dictionary<string, string> _RequirementNames;
 
         /// <summary>
         /// Gets or sets the file name.
@@ -152,16 +153,6 @@ FROM Individual_Household";
             }
         }
 
-        public static string SQL_COMPANIES
-        {
-            get
-            {
-                return $@"
-                    SELECT *
-                    FROM Company";
-            }
-        }
-
         public static string SQL_USERS
         {
             get
@@ -229,13 +220,32 @@ AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
             get
             {
                 return $@"
-Select DISTINCT
-individual_id
-, communication_type
-, communication_value
-, listed
-FROM Communication
-Where individual_id is not null
+Select a.* FROM
+( SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, c.LastUpdateDate
+     FROM Communication AS c INNER JOIN (SELECT Distinct
+          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
+          , c.Communication_Id
+          , c.Communication_Type
+          , c.LastUpdateDate
+     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
+     )  AS x ON c.Communication_Id = x.Communication_Id ) a
+INNER JOIN (
+SELECT
+          Max(LastUpdateDate) as LatestDate
+          , Individual_Id
+          , communication_type
+FROM (
+     SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, LastUpdateDate
+     FROM Communication AS c INNER JOIN (SELECT Distinct
+          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
+          , c.Communication_Id
+          , c.Communication_Type
+     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
+     )  AS x ON c.Communication_Id = x.Communication_Id
+     WHERE x.Individual_Id is not null
+) b
+Group by  Individual_Id , communication_type
+) d ON ( d.Individual_Id = a.Individual_Id AND d.Communication_Type = a.Communication_Type AND d.LatestDate = a.LastUpdateDate )
 ";
             }
         }
@@ -353,9 +363,9 @@ and c.individual_id is not null";
             get
             {
                 return $@"
-SELECT d.[Group_Name]
-      ,d.[Group_ID]
-	      , g.Group_Type_Id
+SELECT g.[Group_Name]
+      ,g.[Group_ID]
+	  , g.Group_Type_Id
       ,[Description]
       , IIF(d.is_open=0,0,1) as is_active
       ,[start_date]
@@ -370,12 +380,11 @@ SELECT d.[Group_Name]
       ,[PostalCode]
       ,[Country]
 	  , null as parentGroupId
-  FROM [GroupsDescription] d
-INNER JOIN
-(
-	SELECT DISTINCT Group_Id, Group_Type_Id 
+  FROM (
+	SELECT DISTINCT Group_Id, Group_Type_Id, Group_Name 
 	FROM Groups 
-) g on g.Group_ID = d.Group_ID";
+) g
+LEFT JOIN GroupsDescription d on g.Group_ID = d.Group_ID";
             }
         }
 
@@ -419,6 +428,26 @@ SELECT Distinct
 FROM [ActivityAssignment]
 Where [BreakoutGroup] is not null
 Order By Group_Id, Individual_ID";
+            }
+        }
+
+        public static string SQL_STAFFING
+        {
+            get
+            {
+                return @"
+                    SELECT 
+                        Staffing_Assignment.INDIVIDUAL_ID, 
+                        IIF( 
+                            ISNULL(Staffing_Assignment.RLC_ID), 
+                            Staffing_Assignment.Activity_ID, 
+                            Staffing_Assignment.RLC_ID
+                        ) AS Group_Id
+                    FROM 
+                        ActivityMinistry 
+                        INNER JOIN Staffing_Assignment ON 
+                            ActivityMinistry.Activity_ID = Staffing_Assignment.Activity_ID 
+                            AND ActivityMinistry.Ministry_ID = Staffing_Assignment.Ministry_ID;";
             }
         }
 
@@ -622,6 +651,7 @@ SELECT [Individual_ID]
       , Fund_Name
       , Sub_Fund_Name
       , Amount
+      , Fund_Type
 FROM [Contribution]";
             }
         }
@@ -652,6 +682,24 @@ and AttendanceDate is not null";
             }
         }
 
+        public static string SQL_COMPANY
+        {
+            get
+            {
+                return $@"
+SELECT 
+    HOUSEHOLD_ID, 
+    HOUSEHOLD_NAME, 
+    LAST_ACTIVITY_DATE, 
+    CompanyType, 
+    CONTACT_NAME, 
+    CREATED_DATE
+FROM Company;
+
+";
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -670,6 +718,18 @@ and AttendanceDate is not null";
                 var dtCommunications = GetTableData( SQL_COMMUNICATIONS );
                 var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES );
                 var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES );
+                foreach (DataRow row in dtRequirementValues.Rows)
+                {
+                    string requirementName = row["requirement_name"].ToString();
+                    if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
+                    {
+                        if ( _RequirementNames[requirementName.ToLower()] != requirementName )
+                        {
+                            row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
+                        }
+                    }
+                }
+
                 var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
                 var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
                 
@@ -742,23 +802,25 @@ and AttendanceDate is not null";
         {
             try
             {
+                WriteBusinessAttributes();
+
                 using ( var dtAddress = GetTableData( SQL_COMPANY_ADDRESSES ) )
                 using ( var dtCommunications = GetTableData( SQL_COMPANY_COMMUNICATIONS ) )
-                using ( var dtCompanies = GetTableData( SQL_COMPANIES ) )
+                using ( var dtCompanies = GetTableData( SQL_COMPANY ) )
                 {
                     foreach ( DataRow row in dtCompanies.Rows )
                     {
-                        var importCompanyAsPerson = F1Company.Translate( row, dtCommunications );
+                        var business = F1Business.Translate( row, dtCommunications );
 
-                        if ( importCompanyAsPerson != null )
+                        if ( business != null )
                         {
-                            ImportPackage.WriteToPackage( importCompanyAsPerson );
+                            ImportPackage.WriteToPackage( business );
                         }
                     }
 
                     foreach ( DataRow row in dtAddress.Rows )
                     {
-                        var importAddress = F1CompanyAddress.Translate( row );
+                        var importAddress = F1BusinessAddress.Translate( row );
 
                         if ( importAddress != null )
                         {
@@ -769,7 +831,7 @@ and AttendanceDate is not null";
                     // export Phone Numbers
                     foreach ( DataRow row in dtCommunications.Rows )
                     {
-                        var importNumber = F1CompanyPhone.Translate( row );
+                        var importNumber = F1BusinessPhone.Translate( row );
 
                         if ( importNumber != null )
                         {
@@ -916,7 +978,7 @@ and AttendanceDate is not null";
                 {
                     var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
 
-                    var dtCompanies = GetTableData( SQL_COMPANIES );
+                    var dtCompanies = GetTableData( SQL_COMPANY );
                     var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
 
                     foreach ( DataRow row in dtContributions.Rows )
@@ -965,7 +1027,7 @@ and AttendanceDate is not null";
                 var dtActivityMembers = GetTableData( SQL_ACTIVITY_MEMBERS );
 
                 // Add Group Ids for Break Out Groups
-                foreach( var member in dtActivityMembers.Select( "Group_Id is null" ) )
+                foreach ( var member in dtActivityMembers.Select( "Group_Id is null" ) )
                 {
                     MD5 md5Hasher = MD5.Create();
                     var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" ) ) );
@@ -976,12 +1038,13 @@ and AttendanceDate is not null";
                     }
                 }
 
+                using ( var dtStaffing = GetTableData( SQL_STAFFING ) )
                 using ( var dtActivites = GetTableData( SQL_ACTIVITIES ) )
                 {
                    
                     foreach ( DataRow row in dtActivites.Rows )
                     {
-                        var importGroup = F1Group.Translate( row, dtActivityMembers );
+                        var importGroup = F1Group.Translate( row, dtActivityMembers, dtStaffing );
 
                         if ( importGroup != null )
                         {
@@ -999,7 +1062,7 @@ and AttendanceDate is not null";
 
                 foreach ( DataRow row in dtGroups.Select( "Group_Type_Id in(" + group_Type_Ids + ")" ) )
                 {
-                    var importGroup = F1Group.Translate( row, dtGroupMembers );
+                    var importGroup = F1Group.Translate( row, dtGroupMembers, null );
 
                     if ( importGroup != null )
                     {
@@ -1056,6 +1119,14 @@ and AttendanceDate is not null";
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
+                Name = "Default Tag Comment",
+                Key = "F1_Defatul_Tag_Comment",
+                Category = "Childhood Information",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+            
+            ImportPackage.WriteToPackage( new PersonAttribute()
+            {
                 Name = "Employer",
                 Key = "Employer",
                 Category = "Employment",
@@ -1064,8 +1135,8 @@ and AttendanceDate is not null";
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
-                Name = "School",
-                Key = "School",
+                Name = "F1 School",
+                Key = "F1School",
                 Category = "Education",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
@@ -1086,24 +1157,17 @@ and AttendanceDate is not null";
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
 
-            ImportPackage.WriteToPackage( new PersonAttribute()
-            {
-                Name = "Bar Code",
-                Key = "BarCode",
-                Category = "Childhood Information",
-                FieldType = "Rock.Field.Types.TextFieldType"
-            } );
-
             var attributes = new List<PersonAttribute>();
 
             // Add F1 Requirements
             using ( var dtRequirements = GetTableData( SQL_REQUIREMENTS ) )
             {
-                
+                _RequirementNames = new Dictionary<string, string>();
                 foreach ( DataRow row in dtRequirements.Rows )
                 {
                     string requirementName = row.Field<string>( "requirement_name" );
-                    
+                    _RequirementNames.Add( requirementName.ToLower(), requirementName );
+
                     // status attribute
                     var requirementStatus = new PersonAttribute()
                     {
@@ -1208,6 +1272,29 @@ and AttendanceDate is not null";
 
 
             return attributes;
+        }
+
+        /// <summary>
+        /// Exports the person attributes.
+        /// </summary>
+        public void WriteBusinessAttributes()
+        {
+            // export business fields as attributes
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Company Type",
+                Key = "CompanyType",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new BusinessAttribute()
+            {
+                Name = "Contact Name",
+                Key = "ContactName",
+                Category = "Business",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
         }
 
         /// <summary>

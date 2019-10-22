@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Slingshot.Core.Model
 {
     /// <summary>
-    /// Model for GroupType
+    /// ImportModel for Business Contact
     /// </summary>
     public class BusinessContact : IImportModel
     {
@@ -33,7 +33,7 @@ namespace Slingshot.Core.Model
         /// <returns></returns>
         public string GetFileName()
         {
-            return "grouptype.csv";
+            return "business-contact.csv";
         }
     }
 }

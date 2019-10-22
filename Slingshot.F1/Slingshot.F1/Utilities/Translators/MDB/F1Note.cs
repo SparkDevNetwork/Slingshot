@@ -37,8 +37,8 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 // Determine who the author is by referencing the user table
                 var authorUserId = row.Field<int>( "NoteCreatedByUserID" );
-                var authorUser = users.FirstOrDefault( u => u.Field<int>( "UserID" ) == authorUserId );
-                var authorPersonId = authorUser?.Field<int>( "LinkedIndividualID" );
+                var authorUser = users.FirstOrDefault( u => u.Field<int?>( "UserID" ) == authorUserId );
+                var authorPersonId = authorUser?.Field<int?>( "LinkedIndividualID" );
 
                 // This field is used twice, so read it outside the literal declaration
                 var noteTypeName = row.Field<string>( "Note_Type_Name" );

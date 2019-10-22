@@ -716,7 +716,8 @@ namespace Slingshot.F1.Utilities
                         {
                             Id = parentGroupId,
                             Name = groups.Elements().FirstOrDefault().Element( "groupType" ).Element( "name" ).Value,
-                            GroupTypeId = groups.Elements().FirstOrDefault().Element( "groupType" ).Attribute( "id" ).Value.AsInteger()
+                            GroupTypeId = groups.Elements().FirstOrDefault().Element( "groupType" ).Attribute( "id" ).Value.AsInteger(),
+                            IsActive = true
                         } );
 
                         foreach ( var groupNode in groups.Elements() )
@@ -764,7 +765,7 @@ namespace Slingshot.F1.Utilities
 
         public override void ExportAttendance( DateTime modifiedSince )
         {
-            //No implementation
+            throw new NotImplementedException();
         }
 
         /// <summary>

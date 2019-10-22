@@ -8,11 +8,11 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle( "Slingshot.CCB" )]
-[assembly: AssemblyDescription( "" )]
+[assembly: AssemblyDescription( "Slingshot Data Exporter for Community Church Builder (CCB)." )]
 [assembly: AssemblyConfiguration( "" )]
-[assembly: AssemblyCompany( "" )]
+[assembly: AssemblyCompany( "Spark Development Network" )]
 [assembly: AssemblyProduct( "Slingshot.CCB" )]
-[assembly: AssemblyCopyright( "Copyright ©  2017" )]
+[assembly: AssemblyCopyright( "Copyright © 2019" )]
 [assembly: AssemblyTrademark( "" )]
 [assembly: AssemblyCulture( "" )]
 

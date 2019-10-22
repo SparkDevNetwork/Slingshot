@@ -24,6 +24,14 @@ namespace Slingshot.Core.Utilities
         private static Dictionary<string, CsvWriter> csvWriters = new Dictionary<string, CsvWriter>();
         private static Dictionary<string, TextWriter> textWriters = new Dictionary<string, TextWriter>();
 
+        private static List<FamilyAddress> _familyAddresses = new List<FamilyAddress>();
+
+        /// <summary>
+        /// Gets the package directory.
+        /// </summary>
+        /// <value>
+        /// The package directory.
+        /// </value>
         public static string PackageDirectory
         {
             get
@@ -32,6 +40,12 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets the image directory.
+        /// </summary>
+        /// <value>
+        /// The image directory.
+        /// </value>
         public static string ImageDirectory
         {
             get
@@ -110,6 +124,16 @@ namespace Slingshot.Core.Utilities
                         // person addresses
                         var personAddress = new PersonAddress();
                         textWriters.Add( personAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personAddress.GetFileName()}" ) );
+
+                        // person search key
+                        var personSearchKey = new PersonSearchKey();
+                        textWriters.Add( personSearchKey.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personSearchKey.GetFileName()}" ) );
+                    }
+
+                    if ( importModel is PersonAttributeValue )
+                    {
+                        var personAttributeValue = new PersonAttributeValue();
+                        textWriters.Add( personAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
                     }
 
                     // if model is for financial batch create related writers
@@ -199,6 +223,20 @@ namespace Slingshot.Core.Utilities
                         var newPersonAddressCsvWriter = new CsvWriter( textWriters[personAddress.GetType().Name] );
                         csvWriters.Add( personAddress.GetType().Name, newPersonAddressCsvWriter );
                         newPersonAddressCsvWriter.WriteHeader<PersonAddress>();
+
+                        // person search keys
+                        var personSearchKey = new PersonSearchKey();
+                        var newPersonSearchKeyCsvWriter = new CsvWriter( textWriters[personSearchKey.GetType().Name] );
+                        csvWriters.Add( personSearchKey.GetType().Name, newPersonSearchKeyCsvWriter );
+                        newPersonSearchKeyCsvWriter.WriteHeader<PersonSearchKey>();
+                    }
+
+                    if ( importModel is PersonAttributeValue )
+                    {
+                        var personAttributeValue = new PersonAttributeValue();
+                        var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[personAttributeValue.GetType().Name] );
+                        csvWriters.Add( personAttributeValue.GetType().Name, newPersonAttributeValueCsvWriter );
+                        newPersonAttributeValueCsvWriter.WriteHeader<PersonAttributeValue>();
                     }
 
                     // if model is for financial batch create related writers
@@ -262,19 +300,19 @@ namespace Slingshot.Core.Utilities
                         var businessPhone = new BusinessPhone();
                         var newBusinessPhoneCsvWriter = new CsvWriter( textWriters[businessPhone.GetType().Name] );
                         csvWriters.Add( businessPhone.GetType().Name, newBusinessPhoneCsvWriter );
-                        newBusinessPhoneCsvWriter.WriteHeader<PersonPhone>();
+                        newBusinessPhoneCsvWriter.WriteHeader<BusinessPhone>();
 
                         // business addresses
                         var businessAddress = new BusinessAddress();
                         var newBusinessAddressCsvWriter = new CsvWriter( textWriters[businessAddress.GetType().Name] );
                         csvWriters.Add( businessAddress.GetType().Name, newBusinessAddressCsvWriter );
-                        newBusinessAddressCsvWriter.WriteHeader<PersonAddress>();
+                        newBusinessAddressCsvWriter.WriteHeader<BusinessAddress>();
 
                         // business Contacts
                         var businessContacts = new BusinessContact();
                         var newBusinessContactsCsvWriter = new CsvWriter( textWriters[businessContacts.GetType().Name] );
                         csvWriters.Add( businessContacts.GetType().Name, newBusinessContactsCsvWriter );
-                        newBusinessContactsCsvWriter.WriteHeader<PersonAddress>();
+                        newBusinessContactsCsvWriter.WriteHeader<BusinessContact>();
                     }
                 }
 
@@ -291,7 +329,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAttributeValueWriter != null )
                     {
-                        foreach ( var attribute in ( (Person)importModel ).Attributes )
+                        foreach ( var attribute in ( ( Person ) importModel ).Attributes )
                         {
                             csvPersonAttributeValueWriter.WriteRecord( attribute );
                         }
@@ -303,7 +341,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonPhoneWriter != null )
                     {
-                        foreach ( var phone in ( (Person)importModel ).PhoneNumbers )
+                        foreach ( var phone in ( ( Person ) importModel ).PhoneNumbers )
                         {
                             csvPersonPhoneWriter.WriteRecord( phone );
                         }
@@ -315,9 +353,44 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvPersonAddressWriter != null )
                     {
-                        foreach ( var address in ( (Person)importModel ).Addresses )
+                        foreach ( var address in ( ( Person ) importModel ).Addresses )
                         {
-                            csvPersonAddressWriter.WriteRecord( address );
+                            if ( ( ( Person ) importModel ).FamilyId.HasValue )
+                            {
+                                var familyAddress = new FamilyAddress
+                                {
+                                    FamilyId = ( ( Person ) importModel ).FamilyId.Value,
+                                    Street1 = address.Street1,
+                                    PostalCode = address.PostalCode.Left( 5 )
+                                };
+
+                                var index = _familyAddresses.FindIndex( a => 
+                                    a.FamilyId == ( ( Person ) importModel ).FamilyId.Value && 
+                                    a.Street1.Equals( address.Street1, StringComparison.OrdinalIgnoreCase ) && 
+                                    a.PostalCode.Equals( address.PostalCode.Left( 5 ) ) );
+
+                                if ( index == -1 )
+                                {
+                                    _familyAddresses.Add( familyAddress );
+                                    csvPersonAddressWriter.WriteRecord( address );
+                                }
+                            }
+                            else
+                            {
+                                csvPersonAddressWriter.WriteRecord( address );
+                            }
+                        }
+                    }
+
+                    // person search keys
+                    var personSearchKey = new PersonSearchKey();
+                    var csvPersonSearchKeyWriter = csvWriters[personSearchKey.GetType().Name];
+
+                    if ( csvPersonSearchKeyWriter != null )
+                    {
+                        foreach ( var searchKey in ( ( Person ) importModel ).PersonSearchKeys )
+                        {
+                            csvPersonSearchKeyWriter.WriteRecord( searchKey );
                         }
                     }
                 }
@@ -334,7 +407,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvFinancialTransactionWriter != null && csvFinancialTransactionDetailWriter != null )
                     {
-                        foreach ( var transaction in ( (FinancialBatch)importModel ).FinancialTransactions )
+                        foreach ( var transaction in ( ( FinancialBatch ) importModel ).FinancialTransactions )
                         {
                             csvFinancialTransactionWriter.WriteRecord( transaction );
 
@@ -354,7 +427,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvFinancialTransactionDetailWriter != null )
                     {
-                        foreach ( var transactionDetail in ( (FinancialTransaction)importModel ).FinancialTransactionDetails )
+                        foreach ( var transactionDetail in ( ( FinancialTransaction ) importModel ).FinancialTransactionDetails )
                         {
                             csvFinancialTransactionDetailWriter.WriteRecord( transactionDetail );
                         }
@@ -370,7 +443,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupMemberWriter != null )
                     {
-                        foreach ( var groupMemberItem in ( (Group)importModel ).GroupMembers )
+                        foreach ( var groupMemberItem in ( ( Group ) importModel ).GroupMembers )
                         {
                             csvGroupMemberWriter.WriteRecord( groupMemberItem );
                         }
@@ -378,13 +451,13 @@ namespace Slingshot.Core.Utilities
 
                     // group attributes
                     var groupAttributeValue = new GroupAttributeValue();
-                    var csvPersonAttributeValueWriter = csvWriters[groupAttributeValue.GetType().Name];
+                    var csvGroupAttributeValueWriter = csvWriters[groupAttributeValue.GetType().Name];
 
-                    if ( csvPersonAttributeValueWriter != null )
+                    if ( csvGroupAttributeValueWriter != null )
                     {
-                        foreach ( var attribute in ( (Group)importModel ).Attributes )
+                        foreach ( var attribute in ( ( Group ) importModel ).Attributes )
                         {
-                            csvPersonAttributeValueWriter.WriteRecord( attribute );
+                            csvGroupAttributeValueWriter.WriteRecord( attribute );
                         }
                     }
 
@@ -394,7 +467,7 @@ namespace Slingshot.Core.Utilities
 
                     if ( csvGroupAddressWriter != null )
                     {
-                        foreach ( var address in ( (Group)importModel ).Addresses )
+                        foreach ( var address in ( ( Group ) importModel ).Addresses )
                         {
                             csvGroupAddressWriter.WriteRecord( address );
                         }
@@ -455,6 +528,10 @@ namespace Slingshot.Core.Utilities
             }
         }
 
+        /// <summary>
+        /// Finalizes the package.
+        /// </summary>
+        /// <param name="exportFilename">The export filename.</param>
         public static void FinalizePackage( string exportFilename )
         {
             // close all csvWriters
@@ -543,6 +620,13 @@ namespace Slingshot.Core.Utilities
             {
                 Directory.Delete( _imageDirectory, true );
             }
+        }
+
+        private class FamilyAddress
+        {
+            public int FamilyId { get; set; }
+            public string Street1 { get; set; }
+            public string PostalCode { get; set; }
         }
     }
 }

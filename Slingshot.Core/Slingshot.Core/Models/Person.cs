@@ -7,6 +7,10 @@ using System.Xml.Linq;
 
 namespace Slingshot.Core.Model
 {
+    /// <summary>
+    /// ImportModel for Person
+    /// </summary>
+    /// <seealso cref="Slingshot.Core.Model.IImportModel" />
     public class Person : IImportModel
     {
         /// <summary>
@@ -123,7 +127,7 @@ namespace Slingshot.Core.Model
 
         /// <summary>
         /// Gets or sets the birthdate.
-        /// Magic Year of 9999
+        /// Magic Year of 9999 (see <see cref="BirthdateNoYearMagicYear"/>) if only Month and Day are known 
         /// </summary>
         /// <value>
         /// The birthdate.
@@ -131,7 +135,7 @@ namespace Slingshot.Core.Model
         public DateTime? Birthdate { get; set; }
 
         /// <summary>
-        /// Set the BirthDate.Year to this if only Month and Day are specified
+        /// A BirthDate.Year of 9999 indicates that only Month and Day are known. 
         /// </summary>
         public readonly int BirthdateNoYearMagicYear = 9999;
 
@@ -224,6 +228,14 @@ namespace Slingshot.Core.Model
         public string Grade { get; set; }
 
         /// <summary>
+        /// Gets or sets the person search keys.
+        /// </summary>
+        /// <value>
+        /// The person search keys.
+        /// </value>
+        public List<PersonSearchKey> PersonSearchKeys { get; set; } = new List<PersonSearchKey>();
+
+        /// <summary>
         /// Gets or sets the attributes.
         /// </summary>
         /// <value>
@@ -263,44 +275,118 @@ namespace Slingshot.Core.Model
         /// </value>
         public bool IsDeceased { get; set; }
 
+        /// <summary>
+        /// Gets the name of the file.
+        /// </summary>
+        /// <returns></returns>
         public string GetFileName()
         {
             return "person.csv";
         }
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum EmailPreference
     {
+        /// <summary>
+        /// An email preference of Email Allowed
+        /// </summary>
         EmailAllowed,
+
+        /// <summary>
+        /// An email preference of No Mass Emails
+        /// </summary>
         NoMassEmails,
+
+        /// <summary>
+        /// An email preference of Do Not Email
+        /// </summary>
         DoNotEmail
     }
 
-public enum FamilyRole
+    /// <summary>
+    /// 
+    /// </summary>
+    public enum FamilyRole
     {
+        /// <summary>
+        /// Adult
+        /// </summary>
         Adult,
+
+        /// <summary>
+        /// Child
+        /// </summary>
         Child
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum Gender
     {
+        /// <summary>
+        /// Unknown
+        /// </summary>
         Unknown,
+
+        /// <summary>
+        /// Male
+        /// </summary>
         Male,
+
+        /// <summary>
+        /// Femail
+        /// </summary>
         Female
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum MaritalStatus
     {
+        /// <summary>
+        /// married
+        /// </summary>
         Married,
+
+        /// <summary>
+        /// divorced
+        /// </summary>
         Divorced,
+
+        /// <summary>
+        /// single
+        /// </summary>
         Single,
+
+        /// <summary>
+        /// unknown
+        /// </summary>
         Unknown
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum RecordStatus
     {
+        /// <summary>
+        /// active
+        /// </summary>
         Active,
+
+        /// <summary>
+        /// inactive
+        /// </summary>
         Inactive,
+
+        /// <summary>
+        /// pending
+        /// </summary>
         Pending
     }
 }

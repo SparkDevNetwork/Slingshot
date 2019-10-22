@@ -1,19 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Slingshot.CCB.Utilities;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
-using Slingshot.CCB.Utilities;
 
 namespace Slingshot.CCB
 {
@@ -25,9 +12,14 @@ namespace Slingshot.CCB
         public Login()
         {
             InitializeComponent();
+            txtHostname.Focus();
         }
 
         private void btnLogin_Click( object sender, RoutedEventArgs e )
+        {
+            ProcessLogin();
+        }
+        private void ProcessLogin()
         {
             lblMessage.Text = string.Empty;
 
@@ -51,5 +43,28 @@ namespace Slingshot.CCB
                 lblMessage.Text = "Please provide the information needed to connect.";
             }
         }
+
+        private void TxtHostname_KeyDown( object sender, KeyEventArgs e )
+        {
+            ProcessKeyDownEvent( e );
+        }
+        private void TxtApiUsername_KeyDown( object sender, KeyEventArgs e )
+        {
+            ProcessKeyDownEvent( e );
+        }
+        private void TxtApiPassword_KeyDown(object sender, KeyEventArgs e)
+        {
+            ProcessKeyDownEvent( e );
+        }
+
+        private void ProcessKeyDownEvent( KeyEventArgs e )
+        {
+            if ( e.Key == Key.Enter )
+            {
+                ProcessLogin();
+            }
+            return;
+        }
+
     }
 }

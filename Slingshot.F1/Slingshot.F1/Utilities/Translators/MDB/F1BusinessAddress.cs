@@ -1,22 +1,25 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using System.Linq;
 
 using Slingshot.Core;
 using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.MDB
 {
-    public static class F1CompanyAddress
+    public static class F1BusinessAddress
     {
-        public static PersonAddress Translate( DataRow row )
+        public static BusinessAddress Translate( DataRow row )
         {
-            var address = new PersonAddress();
+
+            var address = new BusinessAddress();
 
             try
             {
-                var householdId = row.Field<int>( "household_id" );
-                var companyAsPersonId = F1Company.GetCompanyAsPersonId( householdId );
-
-                address.PersonId = companyAsPersonId;
+                address.BusinessId = F1Business.GetCompanyAsPersonId( row.Field<int>( "HOUSEHOLD_ID" ) );
                 address.Street1 = row.Field<string>( "address_1" );
                 address.Street2 = row.Field<string>( "address_2" );
                 address.City = row.Field<string>( "city" );
@@ -28,31 +31,31 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 switch ( addressType )
                 {
                     case "Primary":
-                        {
-                            address.AddressType = AddressType.Home;
-                            address.IsMailing = true;
-                            break;
-                        }
+                    {
+                        address.AddressType = AddressType.Home;
+                        address.IsMailing = true;
+                        break;
+                    }
                     case "Previous":
-                        {
-                            address.AddressType = AddressType.Previous;
-                            break;
-                        }
+                    {
+                        address.AddressType = AddressType.Previous;
+                        break;
+                    }
                     case "Business":
-                        {
-                            address.AddressType = AddressType.Work;
-                            break;
-                        }
+                    {
+                        address.AddressType = AddressType.Work;
+                        break;
+                    }
                     case "Mail Returned / Incorrect":
-                        {
-                            address.AddressType = AddressType.Other;
-                            break;
-                        }
+                    {
+                        address.AddressType = AddressType.Other;
+                        break;
+                    }
                     default:
-                        {
-                            address.AddressType = AddressType.Other;
-                            break;
-                        }
+                    {
+                        address.AddressType = AddressType.Other;
+                        break;
+                    }
                 }
 
                 // only add the address if we have a valid address
