@@ -35,7 +35,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 // names
                 // Limit the Name fields to 50 characters because the Rock DB has a limit of 50 characters.
-                string firstName = row.Field<string>( "first_name" ).Left(50);
+                string firstName = row.Field<string>( "first_name" ).Left( 50 );
                 if ( firstName.IsNotNullOrWhitespace() )
                 {
                     person.FirstName = firstName;
@@ -59,7 +59,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     person.LastName = lastName;
                 }
 
-                System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo("en-US", false).TextInfo;
+                System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo( "en-US", false ).TextInfo;
                 string salutation = row.Field<string>( "prefix" );
                 if ( salutation.IsNotNullOrWhitespace() )
                 {
@@ -71,7 +71,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     person.Salutation = textInfo.ToTitleCase( person.Salutation.ToLower() );
                 }
 
-                string suffix = row.Field<string>("suffix");
+                string suffix = row.Field<string>( "suffix" );
                 if ( !string.IsNullOrWhiteSpace( suffix ) )
                 {
                     suffix = suffix.Trim();
@@ -396,7 +396,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
 
             }
-            catch(Exception ex)
+            catch( Exception ex )
             {
                 notes.Add( "ERROR in Export: " + ex.Message + ": " + ex.StackTrace );
             }

@@ -310,21 +310,21 @@ namespace Slingshot.F1.Utilities.Translators.API
                         string attributeId = attribute.Element( "attributeGroup" ).Element( "attribute" ).Attribute( "id" ).Value;
 
                         // Add the attribute value for start date (if not empty) 
-                        var startDateAttributeKey = attributeId + "_" + attribute.Element("attributeGroup").Element("attribute").Element("name").Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
-                        DateTime? startDate = attribute.Element("startDate")?.Value.AsDateTime();
+                        var startDateAttributeKey = attributeId + "_" + attribute.Element( "attributeGroup" ).Element( "attribute" ).Element( "name" ).Value.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
+                        DateTime? startDate = attribute.Element( "startDate" )?.Value.AsDateTime();
 
-                        if (personAttributes.Where(p => startDateAttributeKey.Equals(p.Key)).Any() && startDate != null)
+                        if ( personAttributes.Where( p => startDateAttributeKey.Equals( p.Key ) ).Any() && startDate != null )
                         {
-                            usedAttributeKeys.Add(startDateAttributeKey);
+                            usedAttributeKeys.Add( startDateAttributeKey );
 
-                            if (usedAttributeKeys.Where(a => startDateAttributeKey.Equals(a)).Count() <= 1)
+                            if ( usedAttributeKeys.Where( a => startDateAttributeKey.Equals( a ) ).Count() <= 1 )
                             {
-                                person.Attributes.Add(new PersonAttributeValue
+                                person.Attributes.Add( new PersonAttributeValue
                                 {
                                     AttributeKey = startDateAttributeKey,
                                     AttributeValue = startDate.Value.ToString( "o" ), // save as UTC date format
                                     PersonId = person.Id
-                                });
+                                } );
                             }
                         }
 

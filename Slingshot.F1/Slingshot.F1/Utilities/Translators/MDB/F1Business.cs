@@ -65,7 +65,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     } );
                 }
             }
-            catch(Exception ex)
+            catch( Exception ex )
             {
                 notes.Add( "ERROR in Export: " + ex.Message + ": " + ex.StackTrace );
             }

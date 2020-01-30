@@ -101,7 +101,7 @@ namespace Slingshot.F1
             }
         }
 
-       private void rbImportType_CheckedChanged (object sender, EventArgs e)
+       private void rbImportType_CheckedChanged ( object sender, EventArgs e )
        {
             if ( gbAPILogin != null && gbMDFUpload != null )
             {

@@ -73,7 +73,7 @@ namespace Slingshot.F1
             exportWorker.ReportProgress( 0, "" );
             _apiUpdateTimer.Start();
 
-            var exportSettings = (ExportSettings)e.Argument;
+            var exportSettings = ( ExportSettings ) e.Argument;
 
             // clear filesystem directories
             F1Api.InitializeExport();
@@ -238,7 +238,7 @@ namespace Slingshot.F1
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportNotes = cbNotes.IsChecked.Value,
