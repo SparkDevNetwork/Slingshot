@@ -87,7 +87,7 @@
                     </ListBox>
 
                     <Label Content="Contribution Options" Grid.Row="6" FontWeight="Bold" />
-                    <CheckBox Name="cbExportContribImages" Grid.Row="6" IsChecked="True" Content="Export Contribution Images" Margin="0,30,0,10" />
+                    <CheckBox Name="cbExportContribImages" Grid.Row="6" IsChecked="True" Content="Export Contribution Images (Not Implemented)" Margin="0,30,0,10" />
 
                     <StackPanel Grid.Row="7">
                         <Label Content="Advanced" FontWeight="Bold" Margin="0,0,0,0" />

@@ -1,35 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Xml.Linq;
-
-using System.Data;
-using System.Data.OleDb;
-
-using OrcaMDF;
-using OrcaMDF.Core.Engine;
-using OrcaMDF.Framework;
-using Slingshot.Core;
+﻿using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
-using Slingshot.F1.Utilities.Translators.MDB;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Linq;
 
 namespace Slingshot.F1.Utilities
 {
     /// <summary>
-    /// API F1 Status
+    /// F1 MDB Translator.
     /// </summary>
 
-    public class F1Mdb : F1Translator
+    public partial class F1Mdb : F1Translator
     {
+
+        #region Private Fields
 
         private static OleDbConnection _dbConnection;
         private Dictionary<string, string> _RequirementNames;
+        private static Dictionary<string, DataTable> _TableDataCache = new Dictionary<string, DataTable>();
+        private static Dictionary<int, HeadOfHousehold> _HeadOfHouseholdMapCache = null;
+
+        #endregion Private Fields
+
+        #region Public Properties
 
         /// <summary>
         /// Gets or sets the file name.
@@ -49,16 +45,21 @@ namespace Slingshot.F1.Utilities
         {
             get
             {
+                if ( Environment.Is64BitProcess )
+                {
+                    return $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={FileName}";
+                }
+
                 return $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={FileName}";
             }
         }
 
-        /// <summary>
-        /// Connects the specified host name.
-        /// </summary>
-        /// <param name="hostName">Name of the host.</param>
-        /// <param name="apiUsername">The API username.</param>
-        /// <param name="apiPassword">The API password.</param>
+        #endregion Public Properties
+
+        #region Public Methods
+
+        // NOTE:  More public methods are located in F1Mdb.ExportMethods.cs.
+
         /// <summary>
         /// Opens the specified MS Access database.
         /// </summary>
@@ -70,1037 +71,6 @@ namespace Slingshot.F1.Utilities
             _dbConnection = new OleDbConnection { ConnectionString = ConnectionString };
 
             F1Mdb.IsConnected = true;
-        }
-
-        #region SQL Queries
-
-        public static string SQL_GROUP_TYPES
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	Group_Type_ID as Id
-	, Group_Type_Name as [Name]
-FROM 
-	Groups";
-            }
-        }
-
-        public static string SQL_PEOPLE
-        {
-            get
-            {
-                return $@"
-SELECT *
-FROM Individual_Household";
-            }
-        }
-
-        /// <summary>
-        /// Access flavor SQL to get the "highest ranking" representative of each household.
-        /// The first Head is returned. If no Head, then Spouse, Child, Other, and then Visitor.
-        /// </summary>
-        public static string SQL_HEAD_OF_HOUSEHOLD
-        {
-            get
-            {
-                return @"
-                    SELECT
-                        HeadOfHousehold.household_id,
-                        FIRST(HeadOfHousehold.SubStatus_Name) AS SubStatus_Name,
-                        FIRST(HeadOfHousehold.individual_id) AS individual_id
-                    FROM
-                        (
-                            SELECT
-                                household_id,
-                                MAX(SWITCH(
-                                    household_position = 'Head', 10,
-                                    household_position = 'Spouse', 8,
-                                    household_position = 'Child', 6,
-                                    household_position = 'Other', 4,
-                                    household_position = 'Visitor', 2)) AS role_index
-                            FROM Individual_Household
-                            GROUP BY household_id
-                        ) AS MaxRoleOfHousehold
-                        INNER JOIN (
-                            SELECT
-                                household_id,
-                                individual_id,
-                                SubStatus_Name,
-                                SWITCH(
-                                    household_position = 'Head', 10,
-                                    household_position = 'Spouse', 8,
-                                    household_position = 'Child', 6,
-                                    household_position = 'Other', 4,
-                                    household_position = 'Visitor', 2) AS role_index
-                            FROM Individual_Household
-                        ) AS HeadOfHousehold ON
-                            HeadOfHousehold.household_id = MaxRoleOfHousehold.household_id
-                            AND HeadOfHousehold.role_index = MaxRoleOfHousehold.role_index
-                    GROUP BY
-                        HeadOfHousehold.household_id;";
-            }
-        }
-
-        public static string SQL_NOTES
-        {
-            get
-            {
-                return $@"
-                    SELECT *
-                    FROM Notes";
-            }
-        }
-
-        public static string SQL_USERS
-        {
-            get
-            {
-                return $@"
-                    SELECT *
-                    FROM Users";
-            }
-        }
-
-        public static string SQL_ADDRESSES
-        {
-            get
-            {
-                return $@"
-Select *
-FROM Household_Address";
-            }
-        }
-
-        public static string SQL_COMPANY_ADDRESSES
-        {
-            get
-            {
-                return $@"
-                    SELECT 
-                        Household_Address.*
-                    FROM 
-                        Company 
-                        INNER JOIN Household_Address ON Company.HOUSEHOLD_ID = Household_Address.household_id;";
-            }
-        }
-
-        public static string SQL_PHONE_NUMBERS
-        {
-            get
-            {
-                return $@"
-Select DISTINCT
-individual_id
-, communication_type
-, communication_value
-, listed
-FROM Communication
-Where individual_id is not null
-AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
-            }
-        }
-
-        public static string SQL_COMPANY_COMMUNICATIONS
-        {
-            get
-            {
-                return $@"
-                    SELECT 
-                        Communication.*
-                    FROM 
-                        Company 
-                        INNER JOIN Communication ON Company.HOUSEHOLD_ID = Communication.household_id;";
-            }
-        }
-
-        public static string SQL_COMMUNICATIONS
-        {
-            get
-            {
-                return $@"
-Select a.* FROM
-( SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, c.LastUpdateDate
-     FROM Communication AS c INNER JOIN (SELECT Distinct
-          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
-          , c.Communication_Id
-          , c.Communication_Type
-          , c.LastUpdateDate
-     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
-     )  AS x ON c.Communication_Id = x.Communication_Id ) a
-INNER JOIN (
-SELECT
-          Max(LastUpdateDate) as LatestDate
-          , Individual_Id
-          , communication_type
-FROM (
-     SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, LastUpdateDate
-     FROM Communication AS c INNER JOIN (SELECT Distinct
-          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
-          , c.Communication_Id
-          , c.Communication_Type
-     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
-     )  AS x ON c.Communication_Id = x.Communication_Id
-     WHERE x.Individual_Id is not null
-) b
-Group by  Individual_Id , communication_type
-) d ON ( d.Individual_Id = a.Individual_Id AND d.Communication_Type = a.Communication_Type AND d.LatestDate = a.LastUpdateDate )
-";
-            }
-        }
-
-        public static string SQL_ATTRIBUTES
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	Attribute_Group_Name
-	, Attribute_Name
-	, Attribute_Id
-FROM [Attribute]";
-            }
-        }
-
-        public static string SQL_REQUIREMENTS
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-      [requirement_name]
-  FROM [Requirement]";
-            }
-        }
-
-        public static string SQL_ATTRIBUTEVALUES
-        {
-            get
-            {
-                return $@"
-SELECT
-	a.*
-FROM
-[Attribute] a
-INNER JOIN (
-SELECT
-	Individual_Id
-	, Attribute_Id
-	, Max(Individual_attribute_Id) As Id
-FROM.[Attribute]
-Group By Individual_Id, Attribute_Id, Attribute_Name
-) b on a.Individual_attribute_Id = b.Id";
-            }
-        }
-
-        public static string SQL_REQUIREMENTVALUES
-        {
-            get
-            {
-                return $@"
-SELECT 
-	r.individual_id
-	, r.Individual_Requirement_ID
-	, r.requirement_date
-	, r.requirement_status_name
-    , r.[requirement_name]
-  FROM [Requirement] r
-INNER JOIN (
-SELECT
-individual_id,
-[requirement_name]
-, Max(Individual_Requirement_ID) as Id
- FROM [Requirement]
-Group By individual_id,
-[requirement_name]
-) b on r.Individual_Requirement_ID = b.Id
-
-";
-            }
-        }
-
-        public static string SQL_COMMUNCATION_TYPES_FOR_ATTRIBUTES
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	communication_type
-FROM Communication
-Where not communication_type in('Mobile', 'Email')
-and communication_type not like '%Phone%'";
-            }
-        }
-
-        public static string SQL_COMMUNCATION_ATTRIBUTE_VALUES
-        {
-            get
-            {
-                return $@"
-SELECT
-	c.communication_type
-	, c.individual_id
-	, c.communication_value
-, c.communication_Id
-FROM Communication c
-Inner Join
-( SELECT 
-communication_type
-	,individual_id
-, MAX(communication_Id) as Id
-FROM Communication
-Group By communication_type, individual_id
-) b on c.Communication_Id = b.id
-Where not c.communication_type in('Mobile', 'Email')
-and c.communication_type not like '%Phone%'
-and c.individual_id is not null";
-            }
-        }
-
-        public static string SQL_GROUPS
-        {
-            get
-            {
-                return $@"
-SELECT g.[Group_Name]
-      ,g.[Group_ID]
-	  , g.Group_Type_Id
-      ,[Description]
-      , IIF(d.is_open=0,0,1) as is_active
-      ,[start_date]
-      ,[is_public]
-      ,[Location_Name]
-      ,[ScheduleDay]
-      ,[StartHour]
-      ,[Address1]
-      ,[Address2]
-      ,[City]
-      ,[StProvince]
-      ,[PostalCode]
-      ,[Country]
-	  , null as parentGroupId
-  FROM (
-	SELECT DISTINCT Group_Id, Group_Type_Id, Group_Name 
-	FROM Groups 
-) g
-LEFT JOIN GroupsDescription d on g.Group_ID = d.Group_ID";
-            }
-        }
-
-        public static string SQL_GROUP_MEMBERS
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT 
-	Group_Id
-	, Individual_ID
-	, Group_Member_Type
-  FROM [Groups]";
-            }
-        }
-
-        public static string SQL_ACTIVITY_MEMBERS
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	AA.Individual_ID
-	,AA.RLC_ID AS Group_Id
-	,'Member' AS Group_Member_Type
-	, AA.BreakoutGroup
-	, null as ParentGroupId 
-
-FROM ActivityAssignment AA
-
-WHERE
-AA.RLC_ID IS NOT NULL
-
-UNION ALL
-SELECT Distinct
-	 Individual_ID
-	, null as Group_Id
-	, 'Member' as Group_Member_Type
-	,  BreakoutGroup
-	, IIF(isnull(RLC_ID),Activity_ID,RLC_ID) as ParentGroupId
-FROM [ActivityAssignment]
-Where [BreakoutGroup] is not null
-Order By Group_Id, Individual_ID";
-            }
-        }
-
-        public static string SQL_STAFFING
-        {
-            get
-            {
-                return @"
-                    SELECT 
-                        Staffing_Assignment.INDIVIDUAL_ID, 
-                        IIF( 
-                            ISNULL(Staffing_Assignment.RLC_ID), 
-                            Staffing_Assignment.Activity_ID, 
-                            Staffing_Assignment.RLC_ID
-                        ) AS Group_Id
-                    FROM 
-                        ActivityMinistry 
-                        INNER JOIN Staffing_Assignment ON 
-                            ActivityMinistry.Activity_ID = Staffing_Assignment.Activity_ID 
-                            AND ActivityMinistry.Ministry_ID = Staffing_Assignment.Ministry_ID;";
-            }
-        }
-
-        public static string SQL_ACTIVITIES
-        {
-            get
-            {
-                return $@"
-SELECT DISTINCT
-	G1.Ministry_Name as [Group_Name]
-	, G1.Ministry_ID AS [Group_Id]
-	, 99999904 as Group_Type_ID
-	,null as description
-	, IIF(Ministry_Active=0,0,1) as is_active
-	, null as start_date
-	, -1 as is_public
-	, '' as Location_Name
-	,'' as [ScheduleDay]
-    ,null as [StartHour]
-    ,'' as [Address1]
-    ,'' as [Address2]
-    ,'' as [City]
-    ,'' as [StProvince]
-    ,null as [PostalCode]
-    ,'' as [Country]
-	,0 AS [ParentGroupId]
-FROM ActivityMinistry G1
-
-
-UNION ALL
-
-SELECT DISTINCT
-	G2.Activity_Name as [Group_Name]
-	,G2.Activity_ID AS [Group_Id]
-	,99999904 AS [Group_Type_Id]
-	,null as description
-	, Activity_Active as is_active
-	, null as start_date
-	, -1 as is_public
-	, '' as Location_Name
-	,'' as [ScheduleDay]
-    ,null as [StartHour]
-    ,'' as [Address1]
-    ,'' as [Address2]
-    ,'' as [City]
-    ,'' as [StProvince]
-    ,'' as [PostalCode]
-    ,'' as [Country]
-	, G2.Ministry_ID AS [ParentGroupId]
-FROM ActivityMinistry G2
-
-
-UNION ALL
-
-SELECT DISTINCT
-	G3.Activity_Group_Name as [Group_Name]
-	, G3.Activity_Group_ID AS [Id]
-	, 99999904 AS [GroupTypeId]
-	,null as description
-	, 1 as is_active
-	, null as start_date
-	, -1 as is_public
-	, '' as Location_Name
-	,'' as [ScheduleDay]
-    ,null as [StartHour]
-    ,'' as [Address1]
-    ,'' as [Address2]
-    ,'' as [City]
-    ,'' as [StProvince]
-    ,null as [PostalCode]
-    ,'' as [Country]
-	,G3.Activity_ID AS [ParentGroupId]
-FROM Activity_Group G3
-
-UNION ALL
-
-SELECT DISTINCT
-	[RLC_Name] AS [Group_Name]
-	, RLC.RLC_ID AS [Group_Id]
-	,99999904 AS [GroupTypeId]
-	,null as description
-	, Is_Active
-	, null as start_date
-	, -1 as is_public
-	, RoomName as Location_Name
-	,'' as [ScheduleDay]
-    ,null as [StartHour]
-    ,'' as [Address1]
-    ,'' as [Address2]
-    ,'' as [City]
-    ,'' as [StProvince]
-    ,'' as [PostalCode]
-    ,'' as [Country]
-	, IIF(ISNull( Activity_Group_ID ), Activity_ID, Activity_Group_Id) as ParentGroupId
-FROM RLC
-
-UNION ALL
-
-SELECT Distinct
-	[BreakoutGroup] as [Name]
-	, null as Group_Id
-	, 99999904 as GroupTypeId
-	,null as description
-	, 1 as is_active
-	, null as start_date
-	, -1 as is_public
-	, '' as Location_Name
-	,'' as [ScheduleDay]
-    ,null as [StartHour]
-    ,'' as [Address1]
-    ,'' as [Address2]
-    ,'' as [City]
-    ,'' as [StProvince]
-    ,null as [PostalCode]
-    ,'' as [Country]
-	, IIF(isnull(RLC_ID),Activity_ID,RLC_ID) as ParentGroupId
-FROM [ActivityAssignment]
-Where [BreakoutGroup] is not null";
-            }
-        }
-
-        public static string SQL_FUNDS
-        {
-            get
-            {
-                return $@"
-SELECT Distinct
-	fund_name
-	, taxDeductible
-	, null as sub_fund_name
-FROM Contribution
-
-UNION ALL
-
-SELECT Distinct
-	fund_name
-	, taxDeductible
-	, sub_fund_name
-From Contribution
-where sub_fund_name is not null";
-            }
-        }
-
-        public static string SQL_PLEDGES
-        {
-            get
-            {
-                return $@"
-SELECT Distinct
-	individual_id
-	, household_id
-	, Pledge_id
-	, fund_name
-	, sub_fund_name
-	, pledge_frequency_name
-	, total_pledge
-	, start_date
-	, end_date
-From Pledge";
-            }
-        }
-
-        public static string SQL_BATCHES
-        {
-            get
-            {
-                return $@"
-SELECT
-BatchId
-, BatchName
-, BatchDate
-, BatchAmount
-FROM [Batch]
-
-UNION ALL
-
-SELECT 
-	90000000 + CLng(format(Received_Date, 'yyyyMMdd')) as [BatchID]
-	, 'Batch: ' + format(Received_Date, 'MMM dd, yyyy') as [BatchName]
-	, Min(Received_Date) as [BatchDate]
-	, SUM(Amount) as [BatchAmount]
-  FROM [Contribution]
-  Where BatchId is null
-  group by CLng(format(Received_Date, 'yyyyMMdd')), format(Received_Date, 'MMM dd, yyyy')";
-            }
-        }
-
-        public static string SQL_CONTRIBUTIONS
-        {
-            get
-            {
-                return $@"
-SELECT [Individual_ID]
-      ,[Household_ID]
-      ,[Received_Date]
-      ,[Check_Number]
-      ,[Memo]
-      ,[Contribution_Type_Name]
-      ,[ContributionID]
-      ,[BatchID]
-      , Fund_Name
-      , Sub_Fund_Name
-      , Amount
-      , Fund_Type
-FROM [Contribution]";
-            }
-        }
-
-        public static string SQL_ATTENDANCE
-        {
-            get
-            {
-                return $@"
-SELECT [Individual_ID]
-      ,[RLC_ID] as [GroupId]
-      ,[Check_In_Time] as [StartDateTime]
-	  ,[Check_Out_Time] as [EndDateTime]
-	  ,'Checked in as ' + [CheckedInAs] + '( ' + [Job_Title] + ' )' as [Note]
-  FROM [Attendance]
-  where Check_In_Time is not null
-
-  UNION ALL
-
-  SELECT  [IndividualID] as [Individual_ID]
-	  ,[GroupID]
-      ,AttendanceDate as StartDateTime
-      ,null as EndDateTime
-      ,[Comments] as [Note]
-  FROM [Groups_Attendance]
-where IsPresent <> 0
-and AttendanceDate is not null";
-            }
-        }
-
-        public static string SQL_COMPANY
-        {
-            get
-            {
-                return $@"
-SELECT 
-    HOUSEHOLD_ID, 
-    HOUSEHOLD_NAME, 
-    LAST_ACTIVITY_DATE, 
-    CompanyType, 
-    CONTACT_NAME, 
-    CREATED_DATE
-FROM Company;
-
-";
-            }
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Exports the individuals.
-        /// </summary>
-        /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="peoplePerPage">The people per page.</param>
-        public override void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 )
-        {
-            try
-            {
-                // write out the person attributes
-                var personAttributes = WritePersonAttributes();
-
-                var dtAddress = GetTableData( SQL_ADDRESSES );
-                var dtCommunications = GetTableData( SQL_COMMUNICATIONS );
-                var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES );
-                var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES );
-                foreach (DataRow row in dtRequirementValues.Rows)
-                {
-                    string requirementName = row["requirement_name"].ToString();
-                    if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
-                    {
-                        if ( _RequirementNames[requirementName.ToLower()] != requirementName )
-                        {
-                            row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
-                        }
-                    }
-                }
-
-                var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
-                var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
-                
-                // export people
-                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
-                using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
-                {
-                    var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
-                    
-                    foreach ( DataRow row in dtPeople.Rows )
-                    {
-                        var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
-
-                        if ( importPerson != null )
-                        {
-                            ImportPackage.WriteToPackage( importPerson );
-                        }
-                    }
-
-                    // export people addresses
-                    foreach ( DataRow row in dtAddress.Rows )
-                    {
-                        var importAddress = F1PersonAddress.Translate( row, dtPeople );
-
-                        if ( importAddress != null )
-                        {
-                            ImportPackage.WriteToPackage( importAddress );
-                        }
-                    }
-
-                    // export Attribute Values
-                    foreach ( DataRow row in dtAttributeValues.Rows )
-                    {
-                        var importAttributes = F1PersonAttributeValue.Translate( row );
-
-                        if ( importAttributes != null )
-                        {
-                            foreach ( PersonAttributeValue value in importAttributes )
-                            {
-                                ImportPackage.WriteToPackage( value );
-                            }
-                        }
-                    }
-
-                    // export Phone Numbers
-                    foreach ( DataRow row in dtPhoneNumbers.Rows )
-                    {
-                        var importNumber = F1PersonPhone.Translate( row );
-                        if ( importNumber != null )
-                        {
-                            ImportPackage.WriteToPackage( importNumber );
-                        }
-                    }
-
-                }
-
-                
-            }
-            catch( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-        }
-
-        /// <summary>
-        /// Exports the companies.
-        /// </summary>
-        public override void ExportCompanies()
-        {
-            try
-            {
-                WriteBusinessAttributes();
-
-                using ( var dtAddress = GetTableData( SQL_COMPANY_ADDRESSES ) )
-                using ( var dtCommunications = GetTableData( SQL_COMPANY_COMMUNICATIONS ) )
-                using ( var dtCompanies = GetTableData( SQL_COMPANY ) )
-                {
-                    foreach ( DataRow row in dtCompanies.Rows )
-                    {
-                        var business = F1Business.Translate( row, dtCommunications );
-
-                        if ( business != null )
-                        {
-                            ImportPackage.WriteToPackage( business );
-                        }
-                    }
-
-                    foreach ( DataRow row in dtAddress.Rows )
-                    {
-                        var importAddress = F1BusinessAddress.Translate( row );
-
-                        if ( importAddress != null )
-                        {
-                            ImportPackage.WriteToPackage( importAddress );
-                        }
-                    }
-
-                    // export Phone Numbers
-                    foreach ( DataRow row in dtCommunications.Rows )
-                    {
-                        var importNumber = F1BusinessPhone.Translate( row );
-
-                        if ( importNumber != null )
-                        {
-                            ImportPackage.WriteToPackage( importNumber );
-                        }
-                    }
-                }
-
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Export the people and household notes
-        /// </summary>
-        public override void ExportNotes()
-        {
-            try
-            {
-                using ( var dtUsers = GetTableData( SQL_USERS ) )
-                using ( var dtNotes = GetTableData( SQL_NOTES ) )
-                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
-                {
-                    var headOfHouseHoldMap = GetHeadOfHouseholdMap( dtHoh );
-                    var users = dtUsers.AsEnumerable().ToArray();
-
-                    foreach ( DataRow row in dtNotes.Rows )
-                    {
-                        var importNote = F1Note.Translate( row, headOfHouseHoldMap, users );
-
-                        if ( importNote != null )
-                        {
-                            ImportPackage.WriteToPackage( importNote );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Exports the accounts.
-        /// </summary>
-        public override void ExportFinancialAccounts()
-        {
-            try
-            {
-                using ( var dtFunds = GetTableData( SQL_FUNDS ) )
-                {
-                    foreach ( DataRow row in dtFunds.Rows )
-                    {
-                        var importAccount = F1FinancialAccount.Translate( row );
-
-                        if ( importAccount != null )
-                        {
-                            ImportPackage.WriteToPackage( importAccount );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-        }
-
-        /// <summary>
-        /// Exports the pledges.
-        /// </summary>
-        public override void ExportFinancialPledges()
-        {
-
-            try
-            {
-                using ( var dtPledges = GetTableData( SQL_PLEDGES ) )
-                {
-                    //Get head of house holds because in F1 pledges can be tied to indiviuals or households
-                    var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SQL_HEAD_OF_HOUSEHOLD ) );
-
-                    foreach ( DataRow row in dtPledges.Rows )
-                    {
-                        var importPledge = F1FinancialPledge.Translate( row, headOfHouseHolds );
-
-                        if ( importPledge != null )
-                        {
-                            ImportPackage.WriteToPackage( importPledge );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-        }
-
-        /// <summary>
-        /// Exports the batches.
-        /// </summary>
-        /// <param name="modifiedSince">The modified since.</param>
-        public override void ExportFinancialBatches( DateTime modifiedSince )
-        {
-            try
-            {
-                using ( var dtBatches = GetTableData( SQL_BATCHES ) )
-                {
-                    foreach ( DataRow row in dtBatches.Rows )
-                    {
-                        var importBatch = F1FinancialBatch.Translate( row );
-
-                        if ( importBatch != null )
-                        {
-                            ImportPackage.WriteToPackage( importBatch );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Exports the contributions.
-        /// </summary>
-        /// <param name="modifiedSince">The modified since.</param>
-        public override void ExportContributions( DateTime modifiedSince, bool exportContribImages )
-        {
-
-            try
-            {
-                using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
-                using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
-                using ( var dtContributions = GetTableData( SQL_CONTRIBUTIONS ) )
-                {
-                    var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
-
-                    var dtCompanies = GetTableData( SQL_COMPANY );
-                    var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
-
-                    foreach ( DataRow row in dtContributions.Rows )
-                    {
-                        var importTransaction = F1FinancialTransaction.Translate( row, headOfHouseholdMap, companyIds );
-
-                        if ( importTransaction != null )
-                        {
-                            ImportPackage.WriteToPackage( importTransaction );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Exports the groups.
-        /// </summary>
-        /// <param name="selectedGroupTypes">The selected group types.</param>
-        /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="perPage">The people per page.</param>
-        public override void ExportGroups( List<int> selectedGroupTypes )
-        {
-            // write out the group types
-            WriteGroupTypes( selectedGroupTypes );
-
-            foreach( var groupType in GetGroupTypes().Where( g => selectedGroupTypes.Contains(g.Id) ) )
-            {
-                int parentGroupId = 90000000 + groupType.Id ;
-
-                ImportPackage.WriteToPackage( new Group()
-                {
-                    Id = parentGroupId,
-                    Name = groupType.Name,
-                    GroupTypeId = groupType.Id
-                } );
-            }
-
-            // Export F1 Activites
-            if( selectedGroupTypes.Contains( 99999904 ) )
-            {
-                var dtActivityMembers = GetTableData( SQL_ACTIVITY_MEMBERS );
-
-                // Add Group Ids for Break Out Groups
-                foreach ( var member in dtActivityMembers.Select( "Group_Id is null" ) )
-                {
-                    MD5 md5Hasher = MD5.Create();
-                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" ) ) );
-                    var groupId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
-                    if ( groupId > 0 )
-                    {
-                        member.SetField<int>( "Group_Id", groupId );
-                    }
-                }
-
-                using ( var dtStaffing = GetTableData( SQL_STAFFING ) )
-                using ( var dtActivites = GetTableData( SQL_ACTIVITIES ) )
-                {
-                   
-                    foreach ( DataRow row in dtActivites.Rows )
-                    {
-                        var importGroup = F1Group.Translate( row, dtActivityMembers, dtStaffing );
-
-                        if ( importGroup != null )
-                        {
-                            ImportPackage.WriteToPackage( importGroup );
-                        }
-                    }
-                }
-            }
-
-            using ( var dtGroups = GetTableData( SQL_GROUPS ) )
-            {
-                var group_Type_Ids = string.Join( ",", selectedGroupTypes.Select( n => n.ToString() ).ToArray() );
-
-                var dtGroupMembers = GetTableData( SQL_GROUP_MEMBERS );
-
-                foreach ( DataRow row in dtGroups.Select( "Group_Type_Id in(" + group_Type_Ids + ")" ) )
-                {
-                    var importGroup = F1Group.Translate( row, dtGroupMembers, null );
-
-                    if ( importGroup != null )
-                    {
-                        ImportPackage.WriteToPackage( importGroup );
-                    }
-                }
-            }
-
-
-
-        }
-
-        /// <summary>
-        /// Exports the contributions.
-        /// </summary>
-        /// <param name="modifiedSince">The modified since.</param>
-        public override void ExportAttendance( DateTime modifiedSince )
-        {
-
-            try
-            {
-                using ( var dtAttendance = GetTableData( SQL_ATTENDANCE ) )
-                {
-                    foreach ( DataRow row in dtAttendance.Rows )
-                    {
-                        var importAttendance = F1Attendance.Translate( row );
-
-                        if ( importAttendance != null )
-                        {
-                            ImportPackage.WriteToPackage( importAttendance );
-                        }
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
         }
 
         /// <summary>
@@ -1120,7 +90,7 @@ FROM Company;
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
                 Name = "Default Tag Comment",
-                Key = "F1_Defatul_Tag_Comment",
+                Key = "F1_Default_Tag_Comment",
                 Category = "Childhood Information",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
@@ -1160,7 +130,7 @@ FROM Company;
             var attributes = new List<PersonAttribute>();
 
             // Add F1 Requirements
-            using ( var dtRequirements = GetTableData( SQL_REQUIREMENTS ) )
+            using ( var dtRequirements = GetTableData( SqlQueries.REQUIREMENTS ) )
             {
                 _RequirementNames = new Dictionary<string, string>();
                 foreach ( DataRow row in dtRequirements.Rows )
@@ -1192,12 +162,15 @@ FROM Company;
                     ImportPackage.WriteToPackage( requirementDate );
                     attributes.Add( requirementDate );
                 }
+
+                // Cleanup - Remember not to Clear() any cached tables.
+                dtRequirements.Clear();
+                GC.Collect();
             }
 
             // Add F1 Attributes
-            using ( var dtAttributes = GetTableData( SQL_ATTRIBUTES ) )
+            using ( var dtAttributes = GetTableData( SqlQueries.ATTRIBUTES ) )
             {
-
                 foreach ( DataRow row in dtAttributes.Rows )
                 {
                     string attributeGroup = row.Field<string>( "Attribute_Group_Name" );
@@ -1242,12 +215,15 @@ FROM Company;
                     attributes.Add( personAttributeStartDate );
                     attributes.Add( personAttributeEndDate );
                 }
+
+                // Cleanup - Remember not to Clear() any cached tables.
+                dtAttributes.Clear();
+                GC.Collect();
             }
 
             // Add F1 Communications that aren't email and phone numbers
-            using ( var dtCommunications = GetTableData( SQL_COMMUNCATION_TYPES_FOR_ATTRIBUTES ) )
+            using ( var dtCommunications = GetTableData( SqlQueries.COMMUNCATION_TYPES_FOR_ATTRIBUTES ) )
             {
-
                 foreach ( DataRow row in dtCommunications.Rows )
                 {
                     string attributeGroup = "Communications";
@@ -1262,14 +238,13 @@ FROM Company;
                     };
 
                     ImportPackage.WriteToPackage( personAttribute );
-
-                    
                     attributes.Add( personAttribute );
-
                 }
+
+                // Cleanup - Remember not to Clear() any cached tables.
+                dtCommunications.Clear();
+                GC.Collect();
             }
-
-
 
             return attributes;
         }
@@ -1304,17 +279,15 @@ FROM Company;
         public override List<GroupType> GetGroupTypes()
         {
             List<GroupType> groupTypes = new List<GroupType>();
-
             groupTypes.Add( new GroupType
             {
                 Id = 99999904,
                 Name = "F1 Activities"
             } );
 
-
             try
             {
-                using ( var dtGroupTypes = GetTableData( SQL_GROUP_TYPES ) )
+                using ( var dtGroupTypes = GetTableData( SqlQueries.GROUP_TYPES, true ) )
                 {
                     foreach ( DataRow row in dtGroupTypes.Rows )
                     {
@@ -1326,7 +299,6 @@ FROM Company;
                     }
                 }
             }
-
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
@@ -1358,65 +330,20 @@ FROM Company;
             return null;
         }
 
-        private static Dictionary<string, DataTable> TableDataCache = new Dictionary<string, DataTable>();
-
         /// <summary>
-        /// Gets the table data.
+        /// Cleans up cached data to release it to the operating system when the export is complete.
         /// </summary>
-        /// <param name="command">The SQL command to run.</param>
-        /// <returns></returns>
-        public static DataTable GetTableData( string command )
+        public override void Cleanup()
         {
-            if ( TableDataCache.TryGetValue( command, out var dataTable ) )
+            foreach ( var dataTable in _TableDataCache.Values )
             {
-                return dataTable;
+                dataTable.Clear();
             }
-
-            DataSet dataSet = new DataSet();
-            dataTable = new DataTable();
-            OleDbCommand dbCommand = new OleDbCommand( command, _dbConnection );
-            OleDbDataAdapter adapter = new OleDbDataAdapter();
-
-            adapter.SelectCommand = dbCommand;
-            adapter.Fill( dataSet );
-
-            dataTable = dataSet.Tables["Table"];
-            TableDataCache[command] = dataTable;
-
-            return dataTable;
+            GC.Collect();
         }
 
-        private static Dictionary<int, HeadOfHousehold> HeadOfHouseholdMapCache = null;
+        #endregion Public Methods
 
-        private static Dictionary<int, HeadOfHousehold> GetHeadOfHouseholdMap( DataTable dtHoh )
-        {
-            if ( HeadOfHouseholdMapCache != null)
-            {
-                return HeadOfHouseholdMapCache;
-            }
-
-            HeadOfHouseholdMapCache = new Dictionary<int, HeadOfHousehold>();
-
-            foreach ( DataRow headOfHousehold in dtHoh.Rows )
-            {
-                var individualId = headOfHousehold.Field<int>( "individual_id" );
-                var householdId = headOfHousehold.Field<int>( "household_id" );
-                var subStatusName = headOfHousehold.Field<string>( "SubStatus_Name" );
-
-                HeadOfHouseholdMapCache[householdId] = new HeadOfHousehold
-                {
-                    IndividualId = individualId,
-                    SubStatusName = subStatusName
-                };
-            }
-
-            return HeadOfHouseholdMapCache;
-        }
     }
 
-    public class HeadOfHousehold
-    {
-        public int IndividualId { get; set; }
-        public string SubStatusName { get; set; }
-    }
 }

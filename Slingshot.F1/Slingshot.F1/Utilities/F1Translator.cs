@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Slingshot.Core.Model;
+﻿using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
+using System;
+using System.Collections.Generic;
 
 namespace Slingshot.F1.Utilities
 {
@@ -13,6 +10,8 @@ namespace Slingshot.F1.Utilities
         protected static int loopThreshold = 100000000;
         protected static List<int> AccountIds;
         protected static List<FamilyMember> familyMembers = new List<FamilyMember>();
+
+        public virtual void Cleanup() { }
 
         /// <summary>
         ///  Set F1Api.DumpResponseToXmlFile to true to save all API Responses
@@ -55,8 +54,6 @@ namespace Slingshot.F1.Utilities
             ImportPackage.InitalizePackageFolder();
         }
 
-
-
         public abstract void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 );
 
         public abstract void ExportNotes();
@@ -85,9 +82,7 @@ namespace Slingshot.F1.Utilities
     }
 
     /// <summary>
-    /// The Family Member.
-    ///
-    /// Used to determine head of household and household campus.
+    /// The Family Member.  Used to determine head of household and household campus.
     /// </summary>
     public class FamilyMember
     {

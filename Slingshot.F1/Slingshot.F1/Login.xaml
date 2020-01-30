@@ -19,7 +19,7 @@
         <Label Name="lblImportType" Grid.Row="0" Margin="8,0" Content="Import Type" />
         <StackPanel Name="spImportType" Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
             <RadioButton Name="rbAPI" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged" IsChecked="True">API</RadioButton>
-            <RadioButton Name="rbMDF" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged">MDF</RadioButton>
+            <RadioButton Name="rbMDB" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged">MDB</RadioButton>
         </StackPanel>
 
         <!-- API Interface -->
@@ -59,12 +59,12 @@
                     <Label>Login</Label>
                 </Button>
 
-                <TextBlock Name="lblMessage" Grid.Row="7" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+                <TextBlock Name="lblMessage_API" Grid.Row="7" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
             </Grid>
         </GroupBox>
 
-        <!--MDF Interface-->
-        <GroupBox Name="gbMDFUpload" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
+        <!--MDB Interface-->
+        <GroupBox Name="gbMDBUpload" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
             <Grid Margin="0,5,0,5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120" />
@@ -75,10 +75,12 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Label Name="lblUploader" Grid.Row="0" Content="Select an MDF" />
-                <Button Name="btnFileUpload" Grid.Row="0" Grid.Column="1" IsDefault="True" Click="btnUpload_Click">
+                <Label Name="lblUploader" Grid.Row="0" Content="Select an MDB" />
+                <Button Name="btnFileUpload" Grid.Row="0" Grid.Column="1" IsDefault="True" Click="btnFileUpload_Click">
                     <Label>Upload</Label>
                 </Button>
+
+                <TextBlock Name="lblMessage_MDB" Grid.Row="7" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
             </Grid>
         </GroupBox>
     </Grid>

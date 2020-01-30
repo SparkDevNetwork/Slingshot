@@ -5,22 +5,22 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Slingshot.Core")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Slingshot.Core")]
-[assembly: AssemblyCopyright("Copyright © 2019")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+[assembly: AssemblyTitle( "Slingshot.Core" )]
+[assembly: AssemblyDescription( "" )]
+[assembly: AssemblyConfiguration( "" )]
+[assembly: AssemblyCompany( "" )]
+[assembly: AssemblyProduct( "Slingshot.Core" )]
+[assembly: AssemblyCopyright( "Copyright © 2019" )]
+[assembly: AssemblyTrademark( "" )]
+[assembly: AssemblyCulture( "" )]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 
 // COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(false)]
+[assembly: ComVisible( false )]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b6072804-dc94-473f-a7e9-e175db03cad4")]
+[assembly: Guid( "b6072804-dc94-473f-a7e9-e175db03cad4" )]
 
 // Version information for an assembly consists of the following four values:
 //

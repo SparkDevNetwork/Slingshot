@@ -99,7 +99,7 @@ namespace Slingshot.Core.Utilities
 
             if ( model is IImportModel )
             {
-                var importModel = (IImportModel)model;
+                var importModel = ( IImportModel ) model;
                 // check if a textwriter is needed for this model type
                 if ( !textWriters.ContainsKey( typeName ) )
                 {
@@ -108,26 +108,26 @@ namespace Slingshot.Core.Utilities
                         InitalizePackageFolder();
                     }
 
-                    textWriters.Add( typeName, (TextWriter)File.CreateText( $@"{_packageDirectory}\{importModel.GetFileName()}" ) );
+                    textWriters.Add( typeName, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{importModel.GetFileName()}" ) );
 
                     // if model is for person create related writers
                     if ( importModel is Person )
                     {
                         // person attributes
                         var personAttributeValue = new PersonAttributeValue();
-                        textWriters.Add( personAttributeValue.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
+                        textWriters.Add( personAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
 
                         // person phones
                         var personPhone = new PersonPhone();
-                        textWriters.Add( personPhone.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personPhone.GetFileName()}" ) );
+                        textWriters.Add( personPhone.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personPhone.GetFileName()}" ) );
 
                         // person addresses
                         var personAddress = new PersonAddress();
-                        textWriters.Add( personAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personAddress.GetFileName()}" ) );
+                        textWriters.Add( personAddress.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAddress.GetFileName()}" ) );
 
                         // person search key
                         var personSearchKey = new PersonSearchKey();
-                        textWriters.Add( personSearchKey.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{personSearchKey.GetFileName()}" ) );
+                        textWriters.Add( personSearchKey.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personSearchKey.GetFileName()}" ) );
                     }
 
                     if ( importModel is PersonAttributeValue )
@@ -141,11 +141,11 @@ namespace Slingshot.Core.Utilities
                     {
                         // financial transactions
                         var financialTransaction = new FinancialTransaction();
-                        textWriters.Add( financialTransaction.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{financialTransaction.GetFileName()}" ) );
+                        textWriters.Add( financialTransaction.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{financialTransaction.GetFileName()}" ) );
 
                         // financial transation details
                         var financialTransactionDetail = new FinancialTransactionDetail();
-                        textWriters.Add( financialTransactionDetail.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
+                        textWriters.Add( financialTransactionDetail.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{financialTransactionDetail.GetFileName()}" ) );
                     }
 
                     // if model is for financial transaction create related writers
@@ -161,15 +161,15 @@ namespace Slingshot.Core.Utilities
                     {
                         // group member
                         var groupMember = new GroupMember();
-                        textWriters.Add( groupMember.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupMember.GetFileName()}" ) );
+                        textWriters.Add( groupMember.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{groupMember.GetFileName()}" ) );
 
                         // group attributes
                         var groupAttributeValue = new GroupAttributeValue();
-                        textWriters.Add( groupAttributeValue.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAttributeValue.GetFileName()}" ) );
+                        textWriters.Add( groupAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{groupAttributeValue.GetFileName()}" ) );
 
                         // group addresses
                         var groupAddress = new GroupAddress();
-                        textWriters.Add( groupAddress.GetType().Name, (TextWriter)File.CreateText( $@"{_packageDirectory}\{groupAddress.GetFileName()}" ) );
+                        textWriters.Add( groupAddress.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{groupAddress.GetFileName()}" ) );
                     }
 
                     // if model is for business create related writers

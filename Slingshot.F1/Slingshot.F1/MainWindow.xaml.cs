@@ -1,22 +1,12 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using Slingshot.Core.Utilities;
+using Slingshot.F1.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
-using Slingshot.F1.Utilities;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.Core.Utilities;
 
 namespace Slingshot.F1
 {
@@ -26,6 +16,8 @@ namespace Slingshot.F1
     public partial class MainWindow : Window
     {
         //public Translator F1Translator;
+
+        private DateTime _workStarted;
 
         public bool DumpResponseToXmlFile = false;
 
@@ -64,16 +56,19 @@ namespace Slingshot.F1
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
-            txtExportMessage.Text = "Export Complete";
+            var tsTicks = DateTime.Now.Ticks - _workStarted.Ticks;
+            var ts = new TimeSpan( tsTicks );
+            txtExportMessage.Text = string.Format( "Export Completed in {0}", ts.ToString( "g" ) );
             pbProgress.Value = 100;
         }
 
         private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
         {
+            _workStarted = DateTime.Now;
             exportWorker.ReportProgress( 0, "" );
             _apiUpdateTimer.Start();
 
-            var exportSettings = (ExportSettings)e.Argument;
+            var exportSettings = ( ExportSettings ) e.Argument;
 
             // clear filesystem directories
             F1Api.InitializeExport();
@@ -187,6 +182,8 @@ namespace Slingshot.F1
                 }
             }
 
+            exporter.Cleanup();
+
             // finalize the package
             ImportPackage.FinalizePackage( "f1-export.slingshot" );
 
@@ -238,7 +235,7 @@ namespace Slingshot.F1
             // launch our background export
             var exportSettings = new ExportSettings
             {
-                ModifiedSince = (DateTime)txtImportCutOff.Text.AsDateTime(),
+                ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportNotes = cbNotes.IsChecked.Value,

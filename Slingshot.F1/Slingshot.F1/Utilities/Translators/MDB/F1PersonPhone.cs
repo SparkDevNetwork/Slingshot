@@ -26,7 +26,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     phone.PhoneType = phoneType;
                     phone.PhoneNumber = phoneNumber.Left( 20 );
                     phone.IsMessagingEnabled = false;
-                    if( row.Field<int>("listed") == 255)
+                    if( row.Field<Int16>( "listed" ) == 255 )
                     {
                         phone.IsUnlisted = false;
                         if( phoneType == "Mobile" || phoneType == "Cell" )

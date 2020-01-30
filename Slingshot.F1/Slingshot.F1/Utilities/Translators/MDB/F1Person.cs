@@ -35,7 +35,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 // names
                 // Limit the Name fields to 50 characters because the Rock DB has a limit of 50 characters.
-                string firstName = row.Field<string>( "first_name" ).Left(50);
+                string firstName = row.Field<string>( "first_name" ).Left( 50 );
                 if ( firstName.IsNotNullOrWhitespace() )
                 {
                     person.FirstName = firstName;
@@ -59,16 +59,38 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     person.LastName = lastName;
                 }
 
+                System.Globalization.TextInfo textInfo = new System.Globalization.CultureInfo( "en-US", false ).TextInfo;
                 string salutation = row.Field<string>( "prefix" );
                 if ( salutation.IsNotNullOrWhitespace() )
                 {
-                    person.Salutation = salutation;
+                    person.Salutation = salutation.Trim();
+                }
+
+                if ( !String.IsNullOrWhiteSpace( person.Salutation ) )
+                {
+                    person.Salutation = textInfo.ToTitleCase( person.Salutation.ToLower() );
                 }
 
                 string suffix = row.Field<string>( "suffix" );
-                if ( suffix.IsNotNullOrWhitespace() )
+                if ( !string.IsNullOrWhiteSpace( suffix ) )
                 {
-                    person.Suffix = suffix;
+                    suffix = suffix.Trim();
+                    if ( suffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )
+                    {
+                        person.Suffix = "Sr.";
+                    }
+                    else if ( suffix.Equals( "Jr.", StringComparison.OrdinalIgnoreCase ) )
+                    {
+                        person.Suffix = "Jr.";
+                    }
+                    else if ( suffix.Equals( "Ph.D.", StringComparison.OrdinalIgnoreCase ) )
+                    {
+                        person.Suffix = "Ph.D.";
+                    }
+                    else
+                    {
+                        person.Suffix = suffix;
+                    }
                 }
 
                 string email = null;
@@ -328,7 +350,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // Default Tag Comment
-                string defaultTagComment = row.Field<string>( "Defatul_Tag_Commment" );
+                string defaultTagComment = row.Field<string>( "Default_Tag_Comment" );
                 if ( defaultTagComment.IsNotNullOrWhitespace() )
                 {
                     person.Attributes.Add( new PersonAttributeValue
@@ -374,7 +396,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
 
             }
-            catch(Exception ex)
+            catch( Exception ex )
             {
                 notes.Add( "ERROR in Export: " + ex.Message + ": " + ex.StackTrace );
             }
