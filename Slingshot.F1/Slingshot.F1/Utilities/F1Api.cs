@@ -1,4 +1,11 @@
-﻿using System;
+﻿using RestSharp;
+using RestSharp.Authenticators;
+using RestSharp.Extensions.MonoHttp;
+using Slingshot.Core;
+using Slingshot.Core.Model;
+using Slingshot.Core.Utilities;
+using Slingshot.F1.Utilities.Translators.API;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -8,15 +15,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-
-using RestSharp;
-using RestSharp.Authenticators;
-using RestSharp.Authenticators.OAuth;
-using RestSharp.Extensions.MonoHttp;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.Core.Utilities;
-using Slingshot.F1.Utilities.Translators.API;
 
 namespace Slingshot.F1.Utilities
 {

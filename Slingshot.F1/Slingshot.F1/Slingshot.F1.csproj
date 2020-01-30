@@ -89,6 +89,9 @@
     </Compile>
     <Compile Include="Utilities\F1Mdb.cs" />
     <Compile Include="Utilities\F1Api.cs" />
+    <Compile Include="Utilities\F1Mdb.HeadOfHousehold.cs" />
+    <Compile Include="Utilities\F1Mdb.ExportMethods.cs" />
+    <Compile Include="Utilities\F1Mdb.SqlQueries.cs" />
     <Compile Include="Utilities\F1Translator.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialBatch.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialAccount.cs" />
@@ -180,6 +183,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Utilities\GetTableData_CallOrder.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

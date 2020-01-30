@@ -1,0 +1,61 @@
+﻿This is the order that methods which utilize the GetTableData() method are called, and the order they retrieve tables.
+This is useful information for deciding whether a table should be cached or not.  If a table is used many times, and
+is not likely to be excessively large, go ahead and cache it.
+
+Please note:  Clear() is called on non-cached tables to release their references and allow the garbage collector to free
+up memory.  You should not Clear() cached tables, as that will remove the data for any methods that try to use them
+later, potentially interfering with the logic of the method.
+
+GetGroupTypes
+	GetTableData( SqlQueries.GROUP_TYPES, true ) -- Cached (called and reused by several other methods.)
+
+WritePersonAttributes
+	GetTableData( SqlQueries.REQUIREMENTS )
+	GetTableData( SqlQueries.ATTRIBUTES )
+	GetTableData( SqlQueries.COMMUNCATION_TYPES_FOR_ATTRIBUTES )
+
+ExportIndividuals
+	GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) -- Cached (likely to be used again in ExportContributions().)
+	GetTableData( SqlQueries.PEOPLE, true ) -- Cached (likely to be used again in ExportContributions().)
+	GetTableData( SqlQueries.COMMUNICATIONS )
+	GetTableData( SqlQueries.COMMUNCATION_ATTRIBUTE_VALUES )
+	GetTableData( SqlQueries.REQUIREMENTVALUES )
+	GetTableData( SqlQueries.ADDRESSES )
+	GetTableData( SqlQueries.ATTRIBUTEVALUES )
+	GetTableData( SqlQueries.PHONE_NUMBERS )
+
+ExportCompanies
+	GetTableData( SqlQueries.COMPANY_COMMUNICATIONS )
+	GetTableData( SqlQueries.COMPANY, true ) -- Cached (likely to be used again in ExportContributions().)
+	GetTableData( SqlQueries.COMPANY_ADDRESSES )
+
+ExportNotes
+	GetTableData( SqlQueries.USERS )
+	GetTableData( SqlQueries.NOTES )
+	GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) -- Cached (likely to be used again in ExportContributions().)
+
+ExportFinancialAccounts
+	GetTableData( SqlQueries.FUNDS )
+
+ExportFinancialPledges
+	GetTableData( SqlQueries.PLEDGES )
+	GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) -- Cached (likely to be used again in ExportContributions().)
+
+ExportFinancialBatches
+	GetTableData( SqlQueries.BATCHES )
+
+ExportContributions
+	GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) -- Cached
+	GetTableData( SqlQueries.PEOPLE, true ) -- Cached
+	GetTableData( SqlQueries.CONTRIBUTIONS )
+	GetTableData( SqlQueries.COMPANY, true ) -- Cached
+
+ExportGroups
+	GetTableData( SqlQueries.ACTIVITY_MEMBERS )
+	GetTableData( SqlQueries.STAFFING )
+	GetTableData( SqlQueries.ACTIVITIES )
+	GetTableData( SqlQueries.GROUPS )
+	GetTableData( SqlQueries.GROUP_MEMBERS )
+
+ExportAttendance
+	GetTableData( SqlQueries.ATTENDANCE )
