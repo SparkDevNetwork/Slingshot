@@ -282,7 +282,7 @@ namespace Slingshot.Core
         /// <returns></returns>
         public static long ToJavascriptMilliseconds( this DateTime dateTime )
         {
-            return (long)( dateTime.ToUniversalTime() - new DateTime( 1970, 1, 1 ) ).TotalMilliseconds;
+            return ( long ) ( dateTime.ToUniversalTime() - new DateTime( 1970, 1, 1 ) ).TotalMilliseconds;
         }
 
         /// <summary>
@@ -344,8 +344,8 @@ namespace Slingshot.Core
             }
             else
             {
-                int intDayofWeek = (int)dt.DayOfWeek;
-                int diff = 7 - (int)dt.DayOfWeek;
+                int intDayofWeek = ( int ) dt.DayOfWeek;
+                int diff = 7 - ( int ) dt.DayOfWeek;
                 return dt.AddDays( diff ).Date;
             }
         }

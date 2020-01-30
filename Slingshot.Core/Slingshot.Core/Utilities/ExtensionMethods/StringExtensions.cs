@@ -73,7 +73,7 @@ namespace Slingshot.Core
         /// </summary>
         /// <param name="str">The string.</param>
         /// <returns></returns>
-        public static bool IsNullOrWhiteSpace(this string str )
+        public static bool IsNullOrWhiteSpace( this string str )
         {
             return string.IsNullOrWhiteSpace( str );
         }
@@ -116,7 +116,7 @@ namespace Slingshot.Core
                 Int64 hashCodeEnd = BitConverter.ToInt64( hashText, 24 );
                 hashCode = hashCodeStart ^ hashCodeMedium ^ hashCodeEnd;
             }
-            return (hashCode);
+            return ( hashCode );
         }
 
         /// <summary>
@@ -585,7 +585,7 @@ namespace Slingshot.Core
         {
             var converter = TypeDescriptor.GetConverter( typeof( T ) );
             return converter.IsValid( value )
-                ? (T)converter.ConvertFrom( value )
+                ? ( T ) converter.ConvertFrom( value )
                 : default( T );
         }
 
