@@ -49,7 +49,8 @@ namespace Slingshot.F1.Utilities
         {
             get
             {
-                return $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={FileName}";
+                return $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={FileName}";
+                //return $"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={FileName}";
             }
         }
 
@@ -195,7 +196,7 @@ Select DISTINCT
 individual_id
 , communication_type
 , communication_value
-, listed
+, CInt(listed) AS listed
 FROM Communication
 Where individual_id is not null
 AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
@@ -712,33 +713,31 @@ FROM Company;
             try
             {
                 // write out the person attributes
-                var personAttributes = WritePersonAttributes();
+                //var personAttributes = WritePersonAttributes();
+                WritePersonAttributes();
 
-                var dtAddress = GetTableData( SQL_ADDRESSES );
-                var dtCommunications = GetTableData( SQL_COMMUNICATIONS );
-                var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES );
-                var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES );
-                foreach (DataRow row in dtRequirementValues.Rows)
-                {
-                    string requirementName = row["requirement_name"].ToString();
-                    if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
-                    {
-                        if ( _RequirementNames[requirementName.ToLower()] != requirementName )
-                        {
-                            row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
-                        }
-                    }
-                }
-
-                var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES );
-                var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS );
-                
-                // export people
+                // export people with addresses
                 using ( var dtHoh = GetTableData( SQL_HEAD_OF_HOUSEHOLD ) )
                 using ( var dtPeople = GetTableData( SQL_PEOPLE ) )
+                using ( var dtCommunications = GetTableData( SQL_COMMUNICATIONS ) )
+                using ( var dtCommunicationValues = GetTableData( SQL_COMMUNCATION_ATTRIBUTE_VALUES ) )
+                using ( var dtRequirementValues = GetTableData( SQL_REQUIREMENTVALUES ) )
                 {
+                    // Make Requirement Names match case, as they may be in mixed cases in the F1 database.
+                    foreach ( DataRow row in dtRequirementValues.Rows )
+                    {
+                        string requirementName = row["requirement_name"].ToString();
+                        if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
+                        {
+                            if ( _RequirementNames[requirementName.ToLower()] != requirementName )
+                            {
+                                row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
+                            }
+                        }
+                    }
+
+                    // export people
                     var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
-                    
                     foreach ( DataRow row in dtPeople.Rows )
                     {
                         var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
@@ -750,31 +749,41 @@ FROM Company;
                     }
 
                     // export people addresses
-                    foreach ( DataRow row in dtAddress.Rows )
+                    using ( var dtAddress = GetTableData( SQL_ADDRESSES ) )
                     {
-                        var importAddress = F1PersonAddress.Translate( row, dtPeople );
-
-                        if ( importAddress != null )
+                        foreach ( DataRow row in dtAddress.Rows )
                         {
-                            ImportPackage.WriteToPackage( importAddress );
-                        }
-                    }
+                            var importAddress = F1PersonAddress.Translate( row, dtPeople );
 
-                    // export Attribute Values
-                    foreach ( DataRow row in dtAttributeValues.Rows )
-                    {
-                        var importAttributes = F1PersonAttributeValue.Translate( row );
-
-                        if ( importAttributes != null )
-                        {
-                            foreach ( PersonAttributeValue value in importAttributes )
+                            if ( importAddress != null )
                             {
-                                ImportPackage.WriteToPackage( value );
+                                ImportPackage.WriteToPackage( importAddress );
                             }
                         }
                     }
 
-                    // export Phone Numbers
+                }
+
+                // export Attribute Values
+                using ( var dtAttributeValues = GetTableData( SQL_ATTRIBUTEVALUES ) )
+                {
+                    foreach ( DataRow row in dtAttributeValues.Rows )
+                        {
+                            var importAttributes = F1PersonAttributeValue.Translate( row );
+
+                            if ( importAttributes != null )
+                            {
+                                foreach ( PersonAttributeValue value in importAttributes )
+                                {
+                                    ImportPackage.WriteToPackage( value );
+                                }
+                            }
+                        }
+                }
+
+                // export Phone Numbers
+                using ( var dtPhoneNumbers = GetTableData( SQL_PHONE_NUMBERS ) )
+                {
                     foreach ( DataRow row in dtPhoneNumbers.Rows )
                     {
                         var importNumber = F1PersonPhone.Translate( row );
@@ -783,10 +792,8 @@ FROM Company;
                             ImportPackage.WriteToPackage( importNumber );
                         }
                     }
-
                 }
 
-                
             }
             catch( Exception ex )
             {
@@ -1009,7 +1016,7 @@ FROM Company;
             // write out the group types
             WriteGroupTypes( selectedGroupTypes );
 
-            foreach( var groupType in GetGroupTypes().Where( g => selectedGroupTypes.Contains(g.Id) ) )
+            foreach( var groupType in GetGroupTypes().Where( g => selectedGroupTypes.Contains( g.Id ) ) )
             {
                 int parentGroupId = 90000000 + groupType.Id ;
 
