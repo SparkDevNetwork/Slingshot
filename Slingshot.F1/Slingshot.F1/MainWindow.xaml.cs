@@ -255,6 +255,9 @@ namespace Slingshot.F1
             }
 
             F1Api.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
+
+            btnDownloadPackage.IsEnabled = false;
+
             exportWorker.RunWorkerAsync( exportSettings );
         }
 
