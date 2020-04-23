@@ -977,7 +977,7 @@ namespace Slingshot.CCB.Utilities
 
                     responseData = xdoc.Element( "ccb_api" )?.Element( "response" );
                 }
-                catch ( Exception ex )
+                catch
                 {
                     ErrorMessage = response.Content;
                 }
