@@ -187,33 +187,13 @@ AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
                 get
                 {
                     return $@"
-Select a.* FROM
-( SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, c.LastUpdateDate
-     FROM Communication AS c INNER JOIN (SELECT Distinct
-          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
-          , c.Communication_Id
-          , c.Communication_Type
-          , c.LastUpdateDate
-     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
-     )  AS x ON c.Communication_Id = x.Communication_Id ) a
-INNER JOIN (
-SELECT
-          Max(LastUpdateDate) as LatestDate
-          , Individual_Id
-          , communication_type
-FROM (
-     SELECT DISTINCT x.Individual_Id, c.communication_type, c.communication_value, c.listed, LastUpdateDate
-     FROM Communication AS c INNER JOIN (SELECT Distinct
-          IIF(c.Individual_Id is null, h.Individual_Id, c.Individual_Id ) as Individual_Id
-          , c.Communication_Id
-          , c.Communication_Type
-     FROM Communication AS c LEFT JOIN Individual_Household h ON c.household_id = h.household_id
-     )  AS x ON c.Communication_Id = x.Communication_Id
-     WHERE x.Individual_Id is not null
-) b
-Group by  Individual_Id , communication_type
-) d ON ( d.Individual_Id = a.Individual_Id AND d.Communication_Type = a.Communication_Type AND d.LatestDate = a.LastUpdateDate )
-";
+SELECT  Individual_Id,
+        household_id,
+        communication_type,
+        communication_value,
+        listed,
+        LastUpdateDate
+FROM    Communication";
                 }
             }
 

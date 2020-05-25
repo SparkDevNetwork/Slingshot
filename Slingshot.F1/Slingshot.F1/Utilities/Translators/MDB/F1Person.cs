@@ -24,7 +24,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             try
             {
 
-                var houseHouldId = row.Field<int>( "household_id" );
+                var householdId = row.Field<int>( "household_id" );
 
                 // person id
                 int? personId = row.Field<int?>( "individual_id" );
@@ -93,25 +93,6 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     }
                 }
 
-                string email = null;
-                // email
-                var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'" ).FirstOrDefault();
-                if( emailrow == null )
-                {
-                    emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'" ).FirstOrDefault();
-                }
-                if( emailrow != null )
-                {
-                    email = emailrow.Field<string>( "communication_value" );
-                }
-                   
-                if ( email.IsNotNullOrWhitespace() )
-                {
-                    person.Email = email;
-                }
-
-               
-
                 // gender 
                 string gender = row.Field<string>( "Gender" );
                 if ( gender.IsNotNullOrWhitespace() )
@@ -173,13 +154,12 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                         break;
                 }
 
-
                 // dates
                 person.Birthdate = row.Field<DateTime?>( "date_of_birth" );
                 person.CreatedDateTime = row.Field<DateTime?>( "first_record" );
 
                 //family
-                person.FamilyId = houseHouldId;
+                person.FamilyId = householdId;
 
                 string familyName = row.Field<string>( "household_name" );
                 if ( familyName.IsNotNullOrWhitespace() )
@@ -224,13 +204,34 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                         break;
                 }
 
+                // email
+                string email = null;
+                var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                if ( emailrow == null )
+                {
+                    emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'", "LastUpdateDate DESC" ).FirstOrDefault();
+                }
+                if ( emailrow == null && person.FamilyRole == FamilyRole.Adult )
+                {
+                    emailrow = Communications.Select( "individual_id is null and household_id = " + person.FamilyId + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                }
+                if( emailrow != null )
+                {
+                    email = emailrow.Field<string>( "communication_value" );
+                }
+
+                if ( email.IsNotNullOrWhitespace() )
+                {
+                    person.Email = email;
+                }
+
                 // campus
                 Campus campus = new Campus();
                 person.Campus = campus;
 
                 // Family members of the same family can have different campuses in F1 and Slingshot will set the family campus to the first family
                 // member it see. To be consistent, we'll use the head of household's campus for the whole family.
-                if ( headOfHouseHolds.TryGetValue( houseHouldId, out var headOfHousehold ) )
+                if ( headOfHouseHolds.TryGetValue( householdId, out var headOfHousehold ) )
                 {
                     campus.CampusName = headOfHousehold?.SubStatusName;
                 }
