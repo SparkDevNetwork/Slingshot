@@ -52,7 +52,7 @@ namespace Slingshot.CCB
         {
             ProcessKeyDownEvent( e );
         }
-        private void TxtApiPassword_KeyDown(object sender, KeyEventArgs e)
+        private void TxtApiPassword_KeyDown( object sender, KeyEventArgs e )
         {
             ProcessKeyDownEvent( e );
         }
