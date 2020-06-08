@@ -238,6 +238,11 @@ namespace Slingshot.CCB.Utilities
         public static string ErrorMessage { get; set; }
 
         /// <summary>
+        /// Gets or sets the list incomplete groups.
+        /// </summary>
+        public static List<int> IncompleteGroups { get; set; } = new List<int>();
+
+        /// <summary>
         /// Gets the API URL.
         /// </summary>
         /// <value>
@@ -291,6 +296,9 @@ namespace Slingshot.CCB.Utilities
         private const string API_GROUP_TYPES = "/api.php?srv=group_type_list";
         private const string API_GROUPS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=true&page={currentPage}&per_page={itemsPerPage}";
         private const string API_GROUPS_ALL = "/api.php?srv=group_profiles&include_participants=true&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_GROUPS_NO_PARTICIPANTS = "/api.php?srv=group_profiles&modified_since={modifiedSince}&include_participants=false&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_GROUPS_ALL_NO_PARTICIPANTS = "/api.php?srv=group_profiles&include_participants=false&page={currentPage}&per_page={itemsPerPage}";
+        private const string API_GROUPS_INDIVIDUAL = "api.php?srv=group_profile_from_id&id={groupId}";
         private const string API_DEPARTMENTS = "/api.php?srv=group_grouping_list";
         private const string API_EVENTS = "/api.php?srv=event_profiles&modified_since={modifiedSince}&page={currentPage}&per_page={itemsPerPage}";
         private const string API_EVENTS_ALL = "/api.php?srv=event_profiles&page={currentPage}&per_page={itemsPerPage}";
@@ -305,6 +313,7 @@ namespace Slingshot.CCB.Utilities
         /// </summary>
         public static void InitializeExport()
         {
+            IncompleteGroups = new List<int>();
             ImportPackage.InitalizePackageFolder();
         }
 
@@ -392,85 +401,234 @@ namespace Slingshot.CCB.Utilities
             try
             {
                 int currentPage = 1;
-                //int loopCounter = 0;
                 bool moreExist = true;
                 while ( moreExist )
                 {
-                    RestRequest request = new RestRequest( API_GROUPS_ALL, Method.GET );
-                    if ( modifiedSince.HasValue )
+                    try
                     {
-                        request = new RestRequest( API_GROUPS, Method.GET );
-                        request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+                        moreExist = GetGroupProfiles( selectedGroupTypes, modifiedSince, currentPage );
                     }
-                    request.AddUrlSegment( "currentPage", currentPage.ToString() );
-                    request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
-
-                    var response = _client.Execute( request );
-
-                    XDocument xdoc = XDocument.Parse( response.Content );
-
-                    if ( CcbApi.DumpResponseToXmlFile )
+                    catch
                     {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{currentPage}.xml" ) );
+                        /* June 5, 2020 - Shaun
+                         * ----------------------------------------
+                         * If an error is caught here, it is most likely because the group data is too large and has exceeded
+                         * the maximum response limit of the CCB API server.  This is common because CCB has a "Churchwide"
+                         * group with every individual as a member, so we will try downloading the groups in this page one at
+                         * a time.
+                         * 
+                         * Reason:  CCB API server limitation.
+                         * */
+                        moreExist = GetGroupProfilesWorkaround( selectedGroupTypes, modifiedSince, currentPage );
                     }
-
-                    var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
-
-                    if ( groups != null )
-                    {
-                        var returnCount = groups.Attribute( "count" )?.Value.AsIntegerOrNull();
-
-                        if ( returnCount.HasValue )
-                        {
-                            foreach ( var groupNode in groups.Elements() )
-                            {
-                                // write out the group if its type was selected for export
-                                var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
-                                if ( groupTypeId == 0 )
-                                {
-                                    groupTypeId = GROUPTYPE_UNKNOWN_ID;
-                                }
-
-                                if ( selectedGroupTypes.Contains( groupTypeId ) )
-                                {
-                                    var importGroups = CcbGroup.Translate( groupNode );
-
-                                    if ( importGroups != null )
-                                    {
-                                        foreach ( var group in importGroups )
-                                        {
-                                            ImportPackage.WriteToPackage( group );
-                                        }
-                                    }
-                                }
-                            }
-
-                            if ( returnCount != ItemsPerPage )
-                            {
-                                moreExist = false;
-                            }
-                            else
-                            {
-                                currentPage++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        moreExist = false;
-                    }
-
-                    //// developer safety blanket (prevents eating all the api calls for the day)
-                    //if ( loopCounter > LoopThreshold )
-                    //{
-                    //    break;
-                    //}
-                    //loopCounter++;
+                    currentPage++;
                 }
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Gets the Group Profiles from the API.
+        /// </summary>
+        /// <param name="selectedGroupTypes">The selected group types.</param>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <param name="currentPage">The result page to request (should start with 1).</param>
+        /// <returns></returns>
+        private static bool GetGroupProfiles( List<int> selectedGroupTypes, DateTime? modifiedSince, int currentPage )
+        {
+            bool moreExist = true;
+
+            RestRequest request = new RestRequest( API_GROUPS_ALL, Method.GET );
+            if ( modifiedSince.HasValue )
+            {
+                request = new RestRequest( API_GROUPS, Method.GET );
+                request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+            }
+            request.AddUrlSegment( "currentPage", currentPage.ToString() );
+            request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
+
+            IRestResponse response;
+            response = _client.Execute( request );
+
+            XDocument xdoc = XDocument.Parse( response.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{currentPage}.xml" ) );
+            }
+
+            var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
+
+            if ( groups != null )
+            {
+                var returnCount = groups.Attribute( "count" )?.Value.AsIntegerOrNull();
+
+                if ( returnCount.HasValue )
+                {
+                    foreach ( var groupNode in groups.Elements() )
+                    {
+                        // write out the group if its type was selected for export
+                        var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
+                        if ( groupTypeId == 0 )
+                        {
+                            groupTypeId = GROUPTYPE_UNKNOWN_ID;
+                        }
+
+                        if ( selectedGroupTypes.Contains( groupTypeId ) )
+                        {
+                            var importGroups = CcbGroup.Translate( groupNode );
+
+                            if ( importGroups != null )
+                            {
+                                foreach ( var group in importGroups )
+                                {
+                                    ImportPackage.WriteToPackage( group );
+                                }
+                            }
+                        }
+                    }
+
+                    if ( returnCount != ItemsPerPage )
+                    {
+                        moreExist = false;
+                    }
+                }
+            }
+            else
+            {
+                moreExist = false;
+            }
+
+            return moreExist;
+        }
+
+        /// <summary>
+        /// Gets the Group Profiles from the API.  This method is a fallback for GetGroupProfiles(), which may fail if
+        /// the result from the API exceeds the maximum response size of the API server (50MB).  It attempts to read the
+        /// groups without participants and then read each group individually.
+        /// </summary>
+        /// <param name="selectedGroupTypes">The selected group types.</param>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <param name="currentPage">The result page to request (should start with 1).</param>
+        /// <returns></returns>
+        private static bool GetGroupProfilesWorkaround( List<int> selectedGroupTypes, DateTime? modifiedSince, int currentPage )
+        {
+            bool moreExist = true;
+
+            RestRequest request = new RestRequest( API_GROUPS_ALL_NO_PARTICIPANTS, Method.GET );
+            if ( modifiedSince.HasValue )
+            {
+                request = new RestRequest( API_GROUPS_NO_PARTICIPANTS, Method.GET );
+                request.AddUrlSegment( "modifiedSince", modifiedSince.Value.ToString( "yyyy-MM-dd" ) );
+            }
+            request.AddUrlSegment( "currentPage", currentPage.ToString() );
+            request.AddUrlSegment( "itemsPerPage", ItemsPerPage.ToString() );
+
+            IRestResponse response;
+            response = _client.Execute( request );
+
+            XDocument xdoc = XDocument.Parse( response.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_NO_PARTICIPANTS_ResponseLog_{currentPage}.xml" ) );
+            }
+
+            var groups = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" );
+
+            if ( groups != null )
+            {
+                var returnCount = groups.Attribute( "count" )?.Value.AsIntegerOrNull();
+
+                if ( returnCount.HasValue )
+                {
+                    foreach ( var groupNode in groups.Elements() )
+                    {
+                        // write out the group if its type was selected for export
+                        var groupTypeId = groupNode.Element( "group_type" ).Attribute( "id" ).Value.AsInteger();
+                        if ( groupTypeId == 0 )
+                        {
+                            groupTypeId = GROUPTYPE_UNKNOWN_ID;
+                        }
+
+                        if ( selectedGroupTypes.Contains( groupTypeId ) )
+                        {
+                            var groupId = groupNode.Attribute( "id" ).Value.AsInteger();
+                            try
+                            {
+                                GetGroupProfileById( groupId );
+                            }
+                            catch
+                            {
+                                // If the individual group cannot be retrieved, this will write the group without
+                                // any participants.
+                                IncompleteGroups.Add( groupId );
+
+                                var importGroups = CcbGroup.Translate( groupNode );
+
+                                if ( importGroups != null )
+                                {
+                                    foreach ( var group in importGroups )
+                                    {
+                                        ImportPackage.WriteToPackage( group );
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if ( returnCount != ItemsPerPage )
+                    {
+                        moreExist = false;
+                    }
+                }
+            }
+            else
+            {
+                moreExist = false;
+            }
+
+            return moreExist;
+        }
+
+        /// <summary>
+        /// Gets a single Group Profile from the API.  This method is utilized by GetGroupProfilesWorkaround().
+        /// </summary>
+        /// <param name="groupId">The Id of the Group to request.</param>
+        /// <returns></returns>
+        private static void GetGroupProfileById( int groupId )
+        {
+            RestRequest request = new RestRequest( API_GROUPS_INDIVIDUAL, Method.GET );
+            request.AddUrlSegment( "groupId", groupId.ToString() );
+
+            var response = _client.Execute( request );
+
+            XDocument xdoc = XDocument.Parse( response.Content );
+
+            if ( CcbApi.DumpResponseToXmlFile )
+            {
+                xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_INDIVIDUAL_ResponseLog_{groupId}.xml" ) );
+            }
+
+            var groupNode = xdoc.Element( "ccb_api" )?.Element( "response" )?.Element( "groups" )?.Element( "group" );
+
+            if ( groupNode == null )
+            {
+                return;
+            }
+
+            var importGroups = CcbGroup.Translate( groupNode );
+            if ( importGroups == null )
+            {
+                return;
+            }
+
+            foreach ( var group in importGroups )
+            {
+                ImportPackage.WriteToPackage( group );
             }
         }
 

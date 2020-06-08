@@ -84,6 +84,29 @@ namespace Slingshot.CCB
             {
                 txtExportMessage.Text = "Export Complete";
                 pbProgress.Value = 100;
+
+                if ( CcbApi.IncompleteGroups.Any() )
+                {
+                    string incompleteGroupIds = string.Empty;
+                    foreach( int groupId in CcbApi.IncompleteGroups )
+                    {
+                        if ( !string.IsNullOrWhiteSpace( incompleteGroupIds ) )
+                        {
+                            incompleteGroupIds += ", ";
+                        }
+                        incompleteGroupIds += groupId.ToString();
+                    }
+
+                    txtError.Visibility = Visibility.Visible;
+                    txtMessages.Visibility = Visibility.Visible;
+                    if ( !string.IsNullOrWhiteSpace( txtMessages.Text ) )
+                    {
+                        txtMessages.Text += Environment.NewLine;
+                    }
+                    txtMessages.Text += "The following groups could not be downloaded from the CCB API: "
+                        + incompleteGroupIds + ".  This error will not prevent the rest of the export from functioning correctly.";
+                }
+
             }
         }
 
@@ -216,7 +239,7 @@ namespace Slingshot.CCB
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
 
-            txtImportCutOff.Text = new DateTime(1998, 1, 1).ToShortDateString();
+            txtImportCutOff.Text = new DateTime( 1998, 1, 1 ).ToShortDateString();
         }
 
         /// <summary>
