@@ -192,7 +192,7 @@ namespace Slingshot.CCB
             }
 
             // finalize the package
-            ImportPackage.FinalizePackage("ccb-export.slingshot");
+            ImportPackage.FinalizePackage( "ccb-export.slingshot" );
 
             // schedule the API status to update (the status takes a few mins to update)
             _apiUpdateTimer.Start();

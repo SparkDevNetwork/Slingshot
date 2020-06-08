@@ -175,11 +175,6 @@ namespace Slingshot.CCB.Utilities
         #endregion
 
         /// <summary>
-        /// A developer safety blanket to prevent eating all the api calls for the day.
-        /// </summary>
-        public static int LoopThreshold { get; set; } = 100;
-
-        /// <summary>
         /// Gets or sets the items per page (for paged API requests).
         /// </summary>
         /// <value>
@@ -745,13 +740,6 @@ namespace Slingshot.CCB.Utilities
                     {
                         moreIndividualsExist = false;
                     }
-
-                    //// developer safety blanket (prevents eating all the api calls for the day)
-                    //if ( loopCounter > LoopThreshold )
-                    //{
-                    //    break;
-                    //}
-                    //loopCounter++;
                 }
 
                 WriteSignificantEvents( modifiedSince );
@@ -1093,13 +1081,6 @@ namespace Slingshot.CCB.Utilities
                 {
                     moreItemsExist = false;
                 }
-
-                //// developer safety blanket (prevents eating all the api calls for the day)
-                //if ( loopCounter > LoopThreshold )
-                //{
-                //    break;
-                //}
-                //loopCounter++;
             }
         }
 
@@ -1253,8 +1234,8 @@ namespace Slingshot.CCB.Utilities
         {
             if ( !modifiedSince.HasValue )
             {
-                // only test since 2000 so not as many api hits as DateTime.MinValue
-                modifiedSince = new DateTime(2000, 1, 1);
+                // only test since 1998 so not as many api hits as DateTime.MinValue
+                modifiedSince = new DateTime( 1998, 1, 1 );
             }
 
             // we'll make an api call for each month until the modifiedSince date
@@ -1394,13 +1375,6 @@ namespace Slingshot.CCB.Utilities
                             currentPage++;
                         }
                     }
-
-                    //// developer safety blanket (prevents eating all the api calls for the day)
-                    //if ( loopCounter > LoopThreshold )
-                    //{
-                    //    break;
-                    //}
-                    //loopCounter++;
                 }
             }
             catch ( Exception ex )
