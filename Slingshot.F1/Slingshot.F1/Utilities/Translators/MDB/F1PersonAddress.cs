@@ -28,7 +28,17 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 // Check if the address has a person tied to if. If not, set the head of household PersonId to the personId
                 if ( !personId.HasValue )
                 {
-                    var person = dtPeople.Select( "household_id = " + houseHoldId ).FirstOrDefault();
+                    var person = dtPeople.Select( " household_position = 'Head' AND household_id = " + houseHoldId ).FirstOrDefault();
+                    if ( person == null )
+                    {
+                        // We didn't find a household 'Head', so look for anyone else who isn't a visitor.
+                        person = dtPeople.Select( " household_position <> 'Visitor' AND household_id = " + houseHoldId ).FirstOrDefault();
+                    }
+                    if ( person == null )
+                    {
+                        // We didn't find anyone who isn't a visitor, so it's okay to assign this address to the visitor.
+                        person = dtPeople.Select( "household_id = " + houseHoldId ).FirstOrDefault();
+                    }
                     if ( person != null )
                     {
                         personId = person.Field<int>( "individual_id" );
