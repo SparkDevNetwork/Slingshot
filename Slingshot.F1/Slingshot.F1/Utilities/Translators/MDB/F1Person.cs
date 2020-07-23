@@ -14,7 +14,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
     {
         public static Person Translate(
             DataRow row
-            , DataTable Communications
+            , DataTable dtCommunications_IndividualEmails
+            , DataTable dtCommunications_InfellowshipLogins
+            , DataTable dtCommunications_HouseholdEmails
             , Dictionary<int, HeadOfHousehold> headOfHouseHolds
             , DataTable dtRequirementValues
             , DataTable dtCommunicationValues )
@@ -206,16 +208,20 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 // email
                 string email = null;
-                var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                // Communications table should be sorted by LastUpdateDate (in descending order) before this occurs.
+                //var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                var emailrow = dtCommunications_IndividualEmails.Select( "individual_id = " +  person.Id ).FirstOrDefault();
                 if ( emailrow == null )
                 {
-                    emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    //emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    emailrow = dtCommunications_InfellowshipLogins.Select( "individual_id = " + person.Id ).FirstOrDefault();
                 }
                 if ( emailrow == null && person.FamilyRole == FamilyRole.Adult )
                 {
-                    emailrow = Communications.Select( "individual_id is null and household_id = " + person.FamilyId + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    //emailrow = Communications.Select( "individual_id is null and household_id = " + person.FamilyId + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    emailrow = dtCommunications_HouseholdEmails.Select( "household_id = " + person.FamilyId ).FirstOrDefault();
                 }
-                if( emailrow != null )
+                if ( emailrow != null )
                 {
                     email = emailrow.Field<string>( "communication_value" );
                 }
