@@ -186,6 +186,7 @@ AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
             {
                 get
                 {
+                    //It's important to sort this table so that we get the most recently updated record first, in case there are multiples.
                     return $@"
 SELECT  Individual_Id,
         household_id,
@@ -193,7 +194,9 @@ SELECT  Individual_Id,
         communication_value,
         listed,
         LastUpdateDate
-FROM    Communication";
+FROM    Communication
+ORDER BY LastUpdateDate DESC 
+";
                 }
             }
 

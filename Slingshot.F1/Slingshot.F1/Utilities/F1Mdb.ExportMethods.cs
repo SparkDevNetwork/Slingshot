@@ -155,9 +155,20 @@ namespace Slingshot.F1.Utilities
                     }
 
                     var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
+
+                    //Split communications into basic elements to make subsequent queries faster.
+                    var dtCommunications_IndividualEmails =
+                        dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Email'" ).CopyToDataTable();
+
+                    var dtCommunications_InfellowshipLogins =
+                        dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Infellowship Login'" ).CopyToDataTable();
+
+                    var dtCommunications_HouseholdEmails =
+                        dtCommunications.Select( "individual_id IS NULL AND household_id IS NOT NULL AND communication_type = 'Email'" ).CopyToDataTable();
+
                     foreach ( DataRow row in dtPeople.Rows )
                     {
-                        var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
+                        var importPerson = F1Person.Translate( row, dtCommunications_IndividualEmails, dtCommunications_InfellowshipLogins, dtCommunications_HouseholdEmails, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
 
                         if ( importPerson != null )
                         {
