@@ -43,10 +43,6 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                     {
                         personId = person.Field<int>( "individual_id" );
                     }
-                    
-                    /*
-                    .FirstOrDefault()
-                        .Field<int?>( "indiviual_id" ); */
                 }
 
                 if ( !personId.HasValue )
