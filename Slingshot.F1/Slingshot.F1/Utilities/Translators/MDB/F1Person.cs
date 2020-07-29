@@ -209,14 +209,14 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 // email
                 string email = null;
                 // Communications table should be sorted by LastUpdateDate (in descending order) before this occurs.
-                var emailrow = dtCommunications_IndividualEmails.Select( "individual_id = " +  person.Id ).FirstOrDefault();
+                var emailrow = dtCommunications_IndividualEmails.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 if ( emailrow == null )
                 {
-                    emailrow = dtCommunications_InfellowshipLogins.Select( "individual_id = " + person.Id ).FirstOrDefault();
+                    emailrow = dtCommunications_InfellowshipLogins.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 }
                 if ( emailrow == null && person.FamilyRole == FamilyRole.Adult )
                 {
-                    emailrow = dtCommunications_HouseholdEmails.Select( "household_id = " + person.FamilyId ).FirstOrDefault();
+                    emailrow = dtCommunications_HouseholdEmails.Select( $"household_id = { person.FamilyId }" ).FirstOrDefault();
                 }
                 if ( emailrow != null )
                 {
@@ -256,7 +256,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // person requirements. 
-                var requirements = dtRequirementValues.Select( "individual_id = " + person.Id );
+                var requirements = dtRequirementValues.Select( $"individual_id = { person.Id }" );
                 foreach ( var requirement in requirements )
                 {
                     string requirementName = requirement.Field<string>( "requirement_name" );
@@ -379,7 +379,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
 
                 // Communications That aren't phone or email
-                var communicationAttributeValues = dtCommunicationValues.Select( "individual_id = " + person.Id );
+                var communicationAttributeValues = dtCommunicationValues.Select( $"individual_id = { person.Id }" );
 
                 foreach ( var attributeValue in communicationAttributeValues )
                 {

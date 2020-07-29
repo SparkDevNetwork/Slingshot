@@ -502,7 +502,7 @@ namespace Slingshot.F1.Utilities
             {
                 var group_Type_Ids = string.Join( ",", selectedGroupTypes.Select( n => n.ToString() ).ToArray() );
 
-                foreach ( DataRow row in dtGroups.Select( "Group_Type_Id in(" + group_Type_Ids + ")" ) )
+                foreach ( DataRow row in dtGroups.Select( $"Group_Type_Id in({ group_Type_Ids })" ) )
                 {
                     var importGroup = F1Group.Translate( row, dtGroupMembers, null );
 

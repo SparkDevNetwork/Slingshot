@@ -75,7 +75,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
             }
 
-            foreach( var member in members.Select( "Group_Id =" + group.Id ) )
+            foreach( var member in members.Select( $"Group_Id ={ group.Id }" ) )
             {
                 var groupMember = new GroupMember();
                 groupMember.GroupId = group.Id;
@@ -87,7 +87,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
             if ( staffing != null )
             {
-                foreach ( var staff in staffing.Select( "Group_Id =" + group.Id ) )
+                foreach ( var staff in staffing.Select( $"Group_Id = { group.Id }" ) )
                 {
                     var groupMember = new GroupMember();
                     groupMember.GroupId = group.Id;
