@@ -60,7 +60,14 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
             // if phone number does not have an individual_id, it must have a household_id to be exported.
             var houseHoldId = row.Field<int>( "household_id" );
-            var householdMembers = dtPeople.Select( $"household_id = { houseHoldId }" ).CopyToDataTable();
+            var householdRows = dtPeople.Select( $"household_id = { houseHoldId }" );
+            if ( !householdRows.Any() )
+            {
+                // If there are no household members for this row, we can't export it.  Just return an empty list.
+                return new List<int>();
+            }
+
+            var householdMembers = householdRows.CopyToDataTable();
 
             var personIds = new List<int>();
 
