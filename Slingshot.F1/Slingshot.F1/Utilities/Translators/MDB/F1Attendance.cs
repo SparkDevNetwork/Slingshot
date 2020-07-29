@@ -22,17 +22,18 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             attendance.EndDateTime = row.Field<DateTime?>( "EndDateTime" );
             attendance.Note = row.Field<string>( "Note" );
 
-            if ( row.Field<int?>( "Individual_ID" ) != null )
+            if ( row.Field<int?>( "Attendance_ID" ) != null )
             {
                 //If F1 specifies the AttendanceId, try that, first.
-                attendance.AttendanceId = row.Field<int>( "Individual_ID" );
+                attendance.AttendanceId = row.Field<int>( "Attendance_ID" );
             }
 
             if ( attendance.AttendanceId == default( int ) || uniqueAttendanceIds.Contains( attendance.AttendanceId ) )
             {
                 //Use Hash to create Attendance ID
                 MD5 md5Hasher = MD5.Create();
-                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( attendance.PersonId + attendance.GroupId + attendance.StartDateTime.ToString() ) );
+                string valueToHash = $"{ attendance.PersonId }{ attendance.GroupId }{ attendance.StartDateTime }";
+                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                 var attendanceId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( attendanceId > 0 )
                 {

@@ -24,7 +24,8 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 if ( !string.IsNullOrWhiteSpace( row.Field<string>( "Group_Name" ) ) && row.Field<int?>( "ParentGroupId" ).HasValue )
                 {
                     MD5 md5Hasher = MD5.Create();
-                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "Group_Name" ) + row.Field<int?>( "ParentGroupId" ).Value ) );
+                    string valueToHash = $"{ row.Field<string>( "Group_Name" ) }{ row.Field<int>( "ParentGroupId" ) }";
+                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                     var groupId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                     if ( groupId > 0 )
                     {

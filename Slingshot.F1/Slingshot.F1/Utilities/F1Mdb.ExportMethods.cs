@@ -464,7 +464,8 @@ namespace Slingshot.F1.Utilities
                     foreach ( var member in dtActivityMembers.Select( "Group_Id is null" ) )
                     {
                         MD5 md5Hasher = MD5.Create();
-                        var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" ) ) );
+                        string valueToHash = member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" );
+                        var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                         var groupId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                         if ( groupId > 0 )
                         {
