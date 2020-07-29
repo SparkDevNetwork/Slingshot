@@ -160,12 +160,14 @@ FROM Household_Address";
                     return $@"
 Select DISTINCT
 individual_id
+, household_id
 , communication_type
 , communication_value
-, CInt(listed) AS listed
+, CInt( listed ) AS listed
 FROM Communication
-Where individual_id is not null
-AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )";
+Where ( individual_id IS NOT NULL OR household_id IS NOT NULL )
+AND ( communication_type = 'Mobile' OR communication_type like '%Phone%' )
+";
                 }
             }
 

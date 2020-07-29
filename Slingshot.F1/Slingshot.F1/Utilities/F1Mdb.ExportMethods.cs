@@ -200,6 +200,28 @@ namespace Slingshot.F1.Utilities
                     dtAddress.Clear();
                     GC.Collect();
                 }
+
+                // export Phone Numbers
+                using ( var dtPhoneNumbers = GetTableData( SqlQueries.PHONE_NUMBERS ) )
+                {
+                    foreach ( DataRow row in dtPhoneNumbers.Rows )
+                    {
+                        //Household phone numbers may be assigned to multiple person records (i.e., "Head" and "Spouse").
+                        var personIds = F1PersonPhone.GetPhonePersonIds( row, dtPeople );
+                        foreach ( int personId in personIds )
+                        {
+                            var importNumber = F1PersonPhone.Translate( row, personId );
+                            if ( importNumber != null )
+                            {
+                                ImportPackage.WriteToPackage( importNumber );
+                            }
+                        }
+                    }
+
+                    // Cleanup - Remember not to Clear() any cached tables.
+                    dtPhoneNumbers.Clear();
+                    GC.Collect();
+                }
             }
 
             // export Attribute Values
@@ -220,23 +242,6 @@ namespace Slingshot.F1.Utilities
 
                 // Cleanup - Remember not to Clear() any cached tables.
                 dtAttributeValues.Clear();
-                GC.Collect();
-            }
-
-            // export Phone Numbers
-            using ( var dtPhoneNumbers = GetTableData( SqlQueries.PHONE_NUMBERS ) )
-            {
-                foreach ( DataRow row in dtPhoneNumbers.Rows )
-                {
-                    var importNumber = F1PersonPhone.Translate( row );
-                    if ( importNumber != null )
-                    {
-                        ImportPackage.WriteToPackage( importNumber );
-                    }
-                }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtPhoneNumbers.Clear();
                 GC.Collect();
             }
         }
