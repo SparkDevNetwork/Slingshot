@@ -611,24 +611,25 @@ FROM [Contribution]";
                 get
                 {
                     return $@"
-SELECT [Individual_ID]
-      ,[RLC_ID] as [GroupId]
-      ,[Check_In_Time] as [StartDateTime]
-	  ,[Check_Out_Time] as [EndDateTime]
-	  ,'Checked in as ' + [CheckedInAs] + '( ' + [Job_Title] + ' )' as [Note]
-  FROM [Attendance]
-  where Check_In_Time is not null
+SELECT DISTINCT ([Start_Date_Time]) AS [StartDateTime]
+ ,[Individual_ID]
+ ,[Attendance_ID]
+ ,[RLC_ID] AS [GroupId]
+ ,[Check_Out_Time] AS [EndDateTime]
+ ,'Checked in as ' + [CheckedInAs] + '( ' + [Job_Title] + ' )' AS [Note]
+FROM [Attendance]
+WHERE [Start_Date_Time] IS NOT NULL
 
-  UNION ALL
+UNION ALL
 
-  SELECT  [IndividualID] as [Individual_ID]
-	  ,[GroupID]
-      ,AttendanceDate as StartDateTime
-      ,null as EndDateTime
-      ,[Comments] as [Note]
-  FROM [Groups_Attendance]
-where IsPresent <> 0
-and AttendanceDate is not null";
+SELECT [AttendanceDate] AS [StartDateTime]
+ ,[IndividualID] AS [Individual_ID]
+ ,NULL AS [AttendanceId]
+ ,[GroupID]
+ ,NULL AS EndDateTime
+ ,[Comments] AS [Note]
+FROM [Groups_Attendance]
+WHERE IsPresent <> 0";
                 }
             }
 

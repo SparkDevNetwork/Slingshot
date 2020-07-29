@@ -522,9 +522,10 @@ namespace Slingshot.F1.Utilities
         {
             using ( var dtAttendance = GetTableData( SqlQueries.ATTENDANCE ) )
             {
+                var uniqueAttendanceIds = new List<int>();
                 foreach ( DataRow row in dtAttendance.Rows )
                 {
-                    var importAttendance = F1Attendance.Translate( row );
+                    var importAttendance = F1Attendance.Translate( row, uniqueAttendanceIds );
 
                     if ( importAttendance != null )
                     {
