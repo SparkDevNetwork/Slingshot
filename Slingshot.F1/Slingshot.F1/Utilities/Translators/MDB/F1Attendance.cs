@@ -34,6 +34,9 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 MD5 md5Hasher = MD5.Create();
                 string valueToHash = $"{ attendance.PersonId }{ attendance.GroupId }{ attendance.StartDateTime }";
                 var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
+
+                // This conversion turns the 128-bit hash into a 32-bit integer and then converts the value to
+                // a positive number.  This drastically increases the odds of a collision.
                 var attendanceId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( attendanceId > 0 )
                 {
@@ -43,8 +46,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
             if ( uniqueAttendanceIds.Contains( attendance.AttendanceId ) )
             {
-                //ToDo: Should review this funtionality.  The randomly assigned Attendance ID will NOT be the same if this data is re-exported.
-                //As an, alternative, we could simply exclude this attendance row (return null).
+                //Hash collision, use a random number.
                 var random = new Random();
                 attendance.AttendanceId = GetNewRandomAttendanceId(uniqueAttendanceIds, random);
             }

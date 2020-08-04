@@ -626,7 +626,7 @@ UNION ALL
 
 SELECT [AttendanceDate] AS [StartDateTime]
  ,[IndividualID] AS [Individual_ID]
- ,NULL AS [AttendanceId]
+ ,NULL AS [Attendance_ID]
  ,[GroupID]
  ,NULL AS EndDateTime
  ,[Comments] AS [Note]
