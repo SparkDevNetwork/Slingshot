@@ -96,4 +96,13 @@ namespace Slingshot.F1.Utilities
 
         public int? HouseholdCampusId { get; set; }
     }
+
+    /// <summary>
+    /// The Head of Household.
+    /// </summary>
+    public class HeadOfHousehold
+    {
+        public int IndividualId { get; set; }
+        public string SubStatusName { get; set; }
+    }
 }

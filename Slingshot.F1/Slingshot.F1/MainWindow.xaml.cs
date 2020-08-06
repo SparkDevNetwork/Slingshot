@@ -71,7 +71,14 @@ namespace Slingshot.F1
             var exportSettings = ( ExportSettings ) e.Argument;
 
             // clear filesystem directories
-            F1Api.InitializeExport();
+            F1Translator.InitializeExport();
+
+            var sqlExporter = exporter as F1Sql;
+            if ( sqlExporter != null )
+            {
+                exportWorker.ReportProgress( 1, "Reading MDF Data.  Please wait, this may take a while." );
+                sqlExporter.OpenDatabase();
+            }
 
             // export individuals
             if ( exportSettings.ExportIndividuals )
