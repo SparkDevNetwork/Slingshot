@@ -31,7 +31,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 business.CreatedDateTime = row.Field<DateTime>( "CREATED_DATE" );
 
                 // Get communication values
-                var emailRow = communications.Select( "household_id = " + householdId + " AND communication_type = 'Email'" ).FirstOrDefault();
+                var emailRow = communications.Select( $"household_id = { householdId } AND communication_type = 'Email'" ).FirstOrDefault();
 
                 if ( emailRow != null )
                 {

@@ -35,7 +35,8 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                
                 //Use Hash to get parent Account ID
                 MD5 md5Hasher = MD5.Create();
-                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) ) );
+                string valueToHash = row.Field<string>( "fund_name" );
+                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                 var ParentAccountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( ParentAccountId > 0 )
                 {
@@ -44,7 +45,8 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
                 //Use Hash to create Account ID
                 md5Hasher = MD5.Create();
-                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" ) ) );
+                valueToHash = row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" );
+                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                 var accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( accountId > 0 )
                 {

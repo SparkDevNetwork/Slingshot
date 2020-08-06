@@ -266,7 +266,8 @@ namespace Slingshot.F1.Utilities.Translators.API
                          person.MiddleName.IsNotNullOrWhitespace() || person.NickName.IsNotNullOrWhitespace() )
                     {
                         MD5 md5Hasher = MD5.Create();
-                        var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( person.FirstName + person.NickName + person.MiddleName + person.LastName ) );
+                        string valueToHash = person.FirstName + person.NickName + person.MiddleName + person.LastName;
+                        var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                         var familyId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                         if ( familyId > 0 )
                         {

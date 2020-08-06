@@ -191,14 +191,15 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                              person.MiddleName.IsNotNullOrWhitespace() || person.NickName.IsNotNullOrWhitespace() )
                         {
                             MD5 md5Hasher = MD5.Create();
-                            var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( person.FirstName + person.NickName + person.MiddleName + person.LastName ) );
+                            string valueToHash = person.FirstName + person.NickName + person.MiddleName + person.LastName;
+                            var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                             var familyId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                             if ( familyId > 0 )
                             {
                                 person.FamilyId = familyId;
                             }
                         }
-                        notes.Add( "F1 Visitor of the " + person.FamilyName + "(" + person.FamilyId + ")" );
+                        notes.Add( $"F1 Visitor of the { person.FamilyName } ({ person.FamilyId })" );
                         break;
                     default:
                         person.FamilyRole = FamilyRole.Child;
@@ -209,17 +210,14 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 // email
                 string email = null;
                 // Communications table should be sorted by LastUpdateDate (in descending order) before this occurs.
-                //var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
-                var emailrow = dtCommunications_IndividualEmails.Select( "individual_id = " +  person.Id ).FirstOrDefault();
+                var emailrow = dtCommunications_IndividualEmails.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 if ( emailrow == null )
                 {
-                    //emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'", "LastUpdateDate DESC" ).FirstOrDefault();
-                    emailrow = dtCommunications_InfellowshipLogins.Select( "individual_id = " + person.Id ).FirstOrDefault();
+                    emailrow = dtCommunications_InfellowshipLogins.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 }
                 if ( emailrow == null && person.FamilyRole == FamilyRole.Adult )
                 {
-                    //emailrow = Communications.Select( "individual_id is null and household_id = " + person.FamilyId + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
-                    emailrow = dtCommunications_HouseholdEmails.Select( "household_id = " + person.FamilyId ).FirstOrDefault();
+                    emailrow = dtCommunications_HouseholdEmails.Select( $"household_id = { person.FamilyId }" ).FirstOrDefault();
                 }
                 if ( emailrow != null )
                 {
@@ -259,7 +257,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // person requirements. 
-                var requirements = dtRequirementValues.Select( "individual_id = " + person.Id );
+                var requirements = dtRequirementValues.Select( $"individual_id = { person.Id }" );
                 foreach ( var requirement in requirements )
                 {
                     string requirementName = requirement.Field<string>( "requirement_name" );
@@ -382,7 +380,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
 
 
                 // Communications That aren't phone or email
-                var communicationAttributeValues = dtCommunicationValues.Select( "individual_id = " + person.Id );
+                var communicationAttributeValues = dtCommunicationValues.Select( $"individual_id = { person.Id }" );
 
                 foreach ( var attributeValue in communicationAttributeValues )
                 {

@@ -181,7 +181,7 @@ namespace Slingshot.F1.Utilities
                     var personAttributeComment = new PersonAttribute()
                     {
                         Name = attributeName + " Comment",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment",
+                        Key = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment",
                         Category = attributeGroup,
                         FieldType = "Rock.Field.Types.TextFieldType"
                     };
@@ -192,7 +192,7 @@ namespace Slingshot.F1.Utilities
                     var personAttributeStartDate = new PersonAttribute()
                     {
                         Name = attributeName + " Start Date",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate",
+                        Key = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate",
                         Category = attributeGroup,
                         FieldType = "Rock.Field.Types.DateFieldType"
                     };
@@ -203,7 +203,7 @@ namespace Slingshot.F1.Utilities
                     var personAttributeEndDate = new PersonAttribute()
                     {
                         Name = attributeName + " End Date",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate",
+                        Key = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate",
                         Category = attributeGroup,
                         FieldType = "Rock.Field.Types.DateFieldType"
                     };
