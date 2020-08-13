@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Slingshot.Core.Model;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Slingshot.Core.Model;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -63,7 +63,8 @@ namespace Slingshot.F1.Utilities.Translators.SQL
             {
                 //Use Hash to create Account ID
                 MD5 md5Hasher = MD5.Create();
-                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) ) );
+                string valueToHash = row.Field<string>( "fund_name" );
+                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                 var accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( accountId > 0 )
                 {
@@ -74,7 +75,8 @@ namespace Slingshot.F1.Utilities.Translators.SQL
             {
                 //Use Hash to create Account ID
                 MD5 md5Hasher = MD5.Create();
-                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" ) ) );
+                string valueToHash = row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" );
+                var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                 var accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( accountId > 0 )
                 {

@@ -130,11 +130,11 @@ namespace Slingshot.Core.Utilities
                         textWriters.Add( personSearchKey.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personSearchKey.GetFileName()}" ) );
                     }
 
-                    if ( importModel is PersonAttributeValue )
-                    {
-                        var personAttributeValue = new PersonAttributeValue();
-                        textWriters.Add( personAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
-                    }
+                    //if ( importModel is PersonAttributeValue )
+                    //{
+                    //    var personAttributeValue = new PersonAttributeValue();
+                    //    textWriters.Add( personAttributeValue.GetType().Name, ( TextWriter ) File.CreateText( $@"{_packageDirectory}\{personAttributeValue.GetFileName()}" ) );
+                    //}
 
                     // if model is for financial batch create related writers
                     if ( importModel is FinancialBatch  )
@@ -231,13 +231,13 @@ namespace Slingshot.Core.Utilities
                         newPersonSearchKeyCsvWriter.WriteHeader<PersonSearchKey>();
                     }
 
-                    if ( importModel is PersonAttributeValue )
-                    {
-                        var personAttributeValue = new PersonAttributeValue();
-                        var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[personAttributeValue.GetType().Name] );
-                        csvWriters.Add( personAttributeValue.GetType().Name, newPersonAttributeValueCsvWriter );
-                        newPersonAttributeValueCsvWriter.WriteHeader<PersonAttributeValue>();
-                    }
+                    //if ( importModel is PersonAttributeValue )
+                    //{
+                    //    var personAttributeValue = new PersonAttributeValue();
+                    //    var newPersonAttributeValueCsvWriter = new CsvWriter( textWriters[personAttributeValue.GetType().Name] );
+                    //    csvWriters.Add( personAttributeValue.GetType().Name, newPersonAttributeValueCsvWriter );
+                    //    newPersonAttributeValueCsvWriter.WriteHeader<PersonAttributeValue>();
+                    //}
 
                     // if model is for financial batch create related writers
                     if ( importModel is FinancialBatch )

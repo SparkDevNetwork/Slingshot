@@ -5,7 +5,6 @@ using Slingshot.F1.Utilities.SQL;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.OleDb;
 using System.Linq;
 
 
@@ -21,10 +20,9 @@ namespace Slingshot.F1.Utilities
         #region Private Fields
 
         private static F1SqlDatabase _db;
-
-        private Dictionary<string, string> _RequirementNames;
-        private static Dictionary<string, DataTable> _TableDataCache = new Dictionary<string, DataTable>();
+        private static Dictionary<string, string> _RequirementNames;
         private static Dictionary<int, HeadOfHousehold> _HeadOfHouseholdMapCache = null;
+        private static List<GroupType> _groupTypes;
 
         #endregion Private Fields
 
@@ -42,10 +40,10 @@ namespace Slingshot.F1.Utilities
 
         #region Public Methods
 
-        // NOTE:  More public methods are located in F1Mdb.ExportMethods.cs.
+        // NOTE:  More public methods are located in F1Sql.ExportMethods.cs.
 
         /// <summary>
-        /// Opens the specified MS Access database.
+        /// Opens the specified SQL Database (MDF) file and reads and validates the schema without reading the data.
         /// </summary>
         /// <param name="fileName">Name of the file</param>
         public static void OpenConnection( string fileName )
@@ -63,7 +61,10 @@ namespace Slingshot.F1.Utilities
                 F1Sql.IsConnected = false;
             }
         }
-        
+
+        /// <summary>
+        /// Opens the SQL Database (MDF) file and reads the data into memory.
+        /// </summary>
         public void OpenDatabase()
         {
             _db = new F1SqlDatabase( FileName, true );
@@ -79,6 +80,14 @@ namespace Slingshot.F1.Utilities
             {
                 Name = "Position",
                 Key = "Position",
+                Category = "Employment",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new PersonAttribute()
+            {
+                Name = "Position Description",
+                Key = "Position_Description",
                 Category = "Employment",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
@@ -126,127 +135,112 @@ namespace Slingshot.F1.Utilities
             var attributes = new List<PersonAttribute>();
 
             // Add F1 Requirements
-            using ( var dtRequirements = GetTableData( SqlQueries.REQUIREMENTS ) )
+            var requirementNames = _db.Table( "Requirement" ).Data.AsEnumerable()
+                .Select( r => r.Field<string>( "requirement_name" ) ).Distinct().ToList();
+
+            _RequirementNames = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
+            foreach ( var requirementName in requirementNames )
             {
-                _RequirementNames = new Dictionary<string, string>();
-                foreach ( DataRow row in dtRequirements.Rows )
+                _RequirementNames.Add( requirementName, requirementName );
+
+                // status attribute
+                var requirementStatus = new PersonAttribute()
                 {
-                    string requirementName = row.Field<string>( "requirement_name" );
-                    _RequirementNames.Add( requirementName.ToLower(), requirementName );
+                    Name = requirementName + " Status",
+                    Key = ( requirementName + "Status" ).RemoveSpaces().RemoveSpecialCharacters(),
+                    Category = "Requirements",
+                    FieldType = "Rock.Field.Types.TextFieldType"
+                };
 
-                    // status attribute
-                    var requirementStatus = new PersonAttribute()
-                    {
-                        Name = requirementName + " Status",
-                        Key = ( requirementName + "Status" ).RemoveSpaces().RemoveSpecialCharacters(),
-                        Category = "Requirements",
-                        FieldType = "Rock.Field.Types.TextFieldType"
-                    };
+                ImportPackage.WriteToPackage( requirementStatus );
+                attributes.Add( requirementStatus );
 
-                    ImportPackage.WriteToPackage( requirementStatus );
-                    attributes.Add( requirementStatus );
+                // date attribute
+                var requirementDate = new PersonAttribute()
+                {
+                    Name = requirementName + " Date",
+                    Key = ( requirementName + "Date" ).RemoveSpaces().RemoveSpecialCharacters(),
+                    Category = "Requirements",
+                    FieldType = "Rock.Field.Types.DateFieldType"
+                };
 
-                    // date attribute
-                    var requirementDate = new PersonAttribute()
-                    {
-                        Name = requirementName + " Date",
-                        Key = ( requirementName + "Date" ).RemoveSpaces().RemoveSpecialCharacters(),
-                        Category = "Requirements",
-                        FieldType = "Rock.Field.Types.DateFieldType"
-                    };
-
-                    ImportPackage.WriteToPackage( requirementDate );
-                    attributes.Add( requirementDate );
-                }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtRequirements.Clear();
-                GC.Collect();
+                ImportPackage.WriteToPackage( requirementDate );
+                attributes.Add( requirementDate );
             }
 
             // Add F1 Attributes
-            using ( var dtAttributes = GetTableData( SqlQueries.ATTRIBUTES ) )
+            var databaseAttributes = _db.Table( "Attribute" ).Data.AsEnumerable()
+                .Select( r => new {
+                    AttributeGroupName = r.Field<string>( "Attribute_Group_Name" ),
+                    AttributeName = r.Field<string>( "Attribute_Name" ),
+                    AttributeId = r.Field<int>( "Attribute_Id" )
+                } ).Distinct().ToList();
+
+            foreach ( var attribute in databaseAttributes )
             {
-                foreach ( DataRow row in dtAttributes.Rows )
+                // comment attribute
+                var personAttributeComment = new PersonAttribute()
                 {
-                    string attributeGroup = row.Field<string>( "Attribute_Group_Name" );
-                    string attributeName = row.Field<string>( "Attribute_Name" );
-                    int attributeId = row.Field<int>( "Attribute_Id" );
+                    Name = attribute.AttributeName + " Comment",
+                    Key = attribute.AttributeId + "_" + attribute.AttributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment",
+                    Category = attribute.AttributeGroupName,
+                    FieldType = "Rock.Field.Types.TextFieldType"
+                };
+                ImportPackage.WriteToPackage( personAttributeComment );
 
-                    // comment attribute
-                    var personAttributeComment = new PersonAttribute()
-                    {
-                        Name = attributeName + " Comment",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment",
-                        Category = attributeGroup,
-                        FieldType = "Rock.Field.Types.TextFieldType"
-                    };
+                // start date attribute
+                var personAttributeStartDate = new PersonAttribute()
+                {
+                    Name = attribute.AttributeName + " Start Date",
+                    Key = attribute.AttributeId + "_" + attribute.AttributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate",
+                    Category = attribute.AttributeGroupName,
+                    FieldType = "Rock.Field.Types.DateFieldType"
+                };
+                ImportPackage.WriteToPackage( personAttributeStartDate );
 
-                    ImportPackage.WriteToPackage( personAttributeComment );
+                // end date attribute
+                var personAttributeEndDate = new PersonAttribute()
+                {
+                    Name = attribute.AttributeName + " End Date",
+                    Key = attribute.AttributeId + "_" + attribute.AttributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate",
+                    Category = attribute.AttributeGroupName,
+                    FieldType = "Rock.Field.Types.DateFieldType"
+                };
+                ImportPackage.WriteToPackage( personAttributeEndDate );
 
-                    // start date attribute
-                    var personAttributeStartDate = new PersonAttribute()
-                    {
-                        Name = attributeName + " Start Date",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate",
-                        Category = attributeGroup,
-                        FieldType = "Rock.Field.Types.DateFieldType"
-                    };
-
-                    ImportPackage.WriteToPackage( personAttributeStartDate );
-
-                    // end date attribute
-                    var personAttributeEndDate = new PersonAttribute()
-                    {
-                        Name = attributeName + " End Date",
-                        Key = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate",
-                        Category = attributeGroup,
-                        FieldType = "Rock.Field.Types.DateFieldType"
-                    };
-
-                    ImportPackage.WriteToPackage( personAttributeEndDate );
-
-                    // Add the attributes to the list
-                    attributes.Add( personAttributeComment );
-                    attributes.Add( personAttributeStartDate );
-                    attributes.Add( personAttributeEndDate );
-                }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtAttributes.Clear();
-                GC.Collect();
+                // Add the attributes to the list
+                attributes.Add( personAttributeComment );
+                attributes.Add( personAttributeStartDate );
+                attributes.Add( personAttributeEndDate );
             }
 
+
             // Add F1 Communications that aren't email and phone numbers
-            using ( var dtCommunications = GetTableData( SqlQueries.COMMUNCATION_TYPES_FOR_ATTRIBUTES ) )
+            var communicationAttributes = _db.Table( "Communication" ).Data.AsEnumerable()
+                .Where( r => r.Field<string>( "communication_type" ).ToLower() != "mobile" )
+                .Where( r => r.Field<string>( "communication_type" ).ToLower() != "email" )
+                .Where( r => !r.Field<string>( "communication_type" ).ToLower().Contains( "phone" ) )
+                .Select( r => r.Field<string>( "communication_type" ) ).Distinct().ToList();
+
+            foreach ( var communicationType in communicationAttributes )
             {
-                foreach ( DataRow row in dtCommunications.Rows )
+                var personAttribute = new PersonAttribute()
                 {
-                    string attributeGroup = "Communications";
-                    string attributeName = row.Field<string>( "communication_type" );
+                    Name = communicationType,
+                    Key = "F1" + communicationType.RemoveSpaces().RemoveSpecialCharacters(),
+                    Category = "Communications",
+                    FieldType = "Rock.Field.Types.TextFieldType"
+                };
 
-                    var personAttribute = new PersonAttribute()
-                    {
-                        Name = attributeName,
-                        Key = "F1" + attributeName.RemoveSpaces().RemoveSpecialCharacters(),
-                        Category = attributeGroup,
-                        FieldType = "Rock.Field.Types.TextFieldType"
-                    };
-
-                    ImportPackage.WriteToPackage( personAttribute );
-                    attributes.Add( personAttribute );
-                }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtCommunications.Clear();
-                GC.Collect();
+                ImportPackage.WriteToPackage( personAttribute );
+                attributes.Add( personAttribute );
             }
 
             return attributes;
         }
 
         /// <summary>
-        /// Exports the person attributes.
+        /// Exports the business attributes.
         /// </summary>
         public void WriteBusinessAttributes()
         {
@@ -274,33 +268,36 @@ namespace Slingshot.F1.Utilities
         /// <returns></returns>
         public override List<GroupType> GetGroupTypes()
         {
-            List<GroupType> groupTypes = new List<GroupType>();
-            groupTypes.Add( new GroupType
+            if ( _groupTypes != null )
             {
-                Id = 99999904,
-                Name = "F1 Activities"
-            } );
+                return _groupTypes;
+            }
+
+            _groupTypes = new List<GroupType>();
 
             try
             {
-                using ( var dtGroupTypes = GetTableData( SqlQueries.GROUP_TYPES, true ) )
-                {
-                    foreach ( DataRow row in dtGroupTypes.Rows )
-                    {
-                        groupTypes.Add( new GroupType
-                        {
-                            Id = row.Field<int>( "Id" ),
-                            Name = row.Field<string>( "Name" )
-                        } );
-                    }
-                }
+                var dvGroups = new DataView( _db.Table( "Groups").Data );
+                var dtDistinctGroupTypes = dvGroups.ToTable( true, "Group_Type_Name", "Group_Type_ID" );
+                _groupTypes = dtDistinctGroupTypes.AsEnumerable()
+                    .Where( r => r.Field<int?>( "Group_Type_ID" ) != null )
+                    .Select( r => new GroupType {
+                        Name = r.Field<string>( "Group_Type_Name" ),
+                        Id = r.Field<int>( "Group_Type_ID" )
+                    } ).Distinct().ToList();
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
 
-            return groupTypes;
+            _groupTypes.Add( new GroupType
+            {
+                Id = 99999904,
+                Name = "F1 Activities"
+            } );
+
+            return _groupTypes;
         }
 
         /// <summary>
@@ -321,20 +318,11 @@ namespace Slingshot.F1.Utilities
             }
         }
 
-        public override List<FamilyMember> GetFamilyMembers()
-        {
-            return null;
-        }
-
         /// <summary>
         /// Cleans up cached data to release it to the operating system when the export is complete.
         /// </summary>
         public override void Cleanup()
         {
-            foreach ( var dataTable in _TableDataCache.Values )
-            {
-                dataTable.Clear();
-            }
             GC.Collect();
         }
 

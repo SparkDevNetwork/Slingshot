@@ -88,6 +88,7 @@
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\DataTableExtensionMethods.cs" />
     <Compile Include="Utilities\MDB\F1Mdb.cs" />
     <Compile Include="Utilities\API\F1Api.cs" />
     <Compile Include="Utilities\MDB\F1Mdb.HeadOfHousehold.cs" />
@@ -97,7 +98,6 @@
     <Compile Include="Utilities\SQL\F1Sql.HeadOfHousehold.cs" />
     <Compile Include="Utilities\SQL\F1Sql.cs" />
     <Compile Include="Utilities\SQL\F1Sql.ExportMethods.cs" />
-    <Compile Include="Utilities\SQL\F1Sql.SqlQueries.cs" />
     <Compile Include="Utilities\SQL\F1SqlDatabase.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialBatch.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialAccount.cs" />
@@ -176,6 +176,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <Compile Include="Utilities\SQL\DTO\F1Sql.DTO.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

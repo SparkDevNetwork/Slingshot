@@ -67,7 +67,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 return new List<int>();
             }
 
-            var householdMembers = householdRows.CopyToDataTable();
+            var householdMembers = householdRows.CopyToDataTable_Safe( dtPeople );
 
             var personIds = new List<int>();
 

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Security.Cryptography;
-using System.Text;
-using System.Linq;
-
-using Slingshot.Core;
+﻿using Slingshot.Core;
 using Slingshot.Core.Model;
+using System.Data;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -24,7 +18,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 address.Street2 = row.Field<string>( "address_2" );
                 address.City = row.Field<string>( "city" );
                 address.State = row.Field<string>( "state" );
-                address.PostalCode = row.Field<string>( "zip_code" );
+                address.PostalCode = row.Field<string>( "Postal_Code" );
                 address.Country = row.Field<string>( "country" );
 
                 var addressType = row.Field<string>( "address_type" );

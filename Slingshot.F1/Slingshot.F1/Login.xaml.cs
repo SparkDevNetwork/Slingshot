@@ -1,5 +1,6 @@
 ﻿using Slingshot.F1.Utilities;
 using System;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Slingshot.F1
@@ -126,10 +127,28 @@ namespace Slingshot.F1
 
                     if ( F1Sql.IsConnected )
                     {
-                        MainWindow mainWindow = new MainWindow();
-                        mainWindow.exporter = new F1Sql();
-                        mainWindow.Show();
-                        this.Close();
+                        var exporter = new F1Sql();
+
+                        BackgroundWorker exportWorker = new BackgroundWorker();
+
+                        // Fetch group types now to avoid awkward delay when loading the next window.
+                        exportWorker.DoWork += delegate ( object s2, DoWorkEventArgs e2 )
+                        {
+                            exporter.GetGroupTypes();
+                        };
+
+                        // Load the next window.
+                        exportWorker.RunWorkerCompleted += delegate ( object s2, RunWorkerCompletedEventArgs e2 )
+                        {
+                            MainWindow mainWindow = new MainWindow();
+                            mainWindow.exporter = exporter;
+                            mainWindow.Show();
+                            this.Close();
+                        };
+
+                        exportWorker.RunWorkerAsync();
+                        lblMessage_SQL.Text = "Reading Group Types from MDF file, please wait.";
+                        btnSqlFileUpload.IsEnabled = false;
                     }
                     else
                     {

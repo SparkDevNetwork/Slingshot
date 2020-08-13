@@ -1,12 +1,9 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Security.Cryptography;
-using System.Text;
 using System.Linq;
-
-using Slingshot.Core;
-using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -31,7 +28,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 business.CreatedDateTime = row.Field<DateTime>( "CREATED_DATE" );
 
                 // Get communication values
-                var emailRow = communications.Select( "household_id = " + householdId + " AND communication_type = 'Email'" ).FirstOrDefault();
+                var emailRow = communications.Select( $"household_id = { householdId } AND communication_type = 'Email'" ).FirstOrDefault();
 
                 if ( emailRow != null )
                 {

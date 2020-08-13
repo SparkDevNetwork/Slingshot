@@ -166,7 +166,7 @@ namespace Slingshot.F1
             {
                 exportWorker.ReportProgress( 53, $"Exporting Groups..." );
 
-                exporter.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
+                exporter.ExportGroups( exportSettings.ExportGroupTypes );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {

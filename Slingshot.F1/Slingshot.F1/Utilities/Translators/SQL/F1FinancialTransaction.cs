@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Slingshot.Core.Model;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Slingshot.Core.Model;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -91,12 +91,13 @@ namespace Slingshot.F1.Utilities.Translators.SQL
             if ( string.IsNullOrWhiteSpace( row.Field<string>( "sub_fund_name" ) ) )
             {
                 //Use Hash to create Account ID
-                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) ) );
-
+                string valueToHash = row.Field<string>( "fund_name" );
+                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
             }
             else
             {
-                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" ) ) );
+                string valueToHash = row.Field<string>("fund_name") + row.Field<string>("sub_fund_name");
+                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
             }
 
             accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number

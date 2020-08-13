@@ -13,6 +13,26 @@ namespace Slingshot.F1.Utilities
     public partial class F1Mdb : F1Translator
     {
 
+        /*
+         * 8/12/20 - Shaun
+         * 
+         * The methods in this section load data from the Access (MDB) Database into .NET
+         * DataTables.  Most of that data is only used once, but some of it may be used
+         * repeatedly, across multiple methods.  We don't want to hold all of that data in
+         * memory if we don't need it, anymore, but we also don't want to have to fetch it
+         * from disk if we do need it again, later.
+         * 
+         * Tables are loaded by calling GetTableData() with the Access SQL query as the
+         * parameter.  The SQL queries are located in F1Mdb.SqlQueries.cs.  Tables which
+         * will be utilized multiple times, in different methods, should pass a second
+         * parameter value of "true" to keep those tables in memory for when they are
+         * needed again.
+         * 
+         * Please review GetTableData_CallOrder.txt before modifying or copying any methods
+         * which use the GetTableData() method.
+         * 
+         * */
+
         #region Try/Catch Delegate Wrapper
 
         /// <summary>
@@ -35,6 +55,13 @@ namespace Slingshot.F1.Utilities
         #endregion Try/Catch Delegate Wrapper
 
         #region Public Methods
+
+        /*
+         * 8/12/20 - Shaun
+         * 
+         * These publicly exposed methods are just wrappers for the "Internal" methods found below.
+         * 
+         * */
 
         /// <summary>
         /// Exports the individuals.
@@ -119,8 +146,6 @@ namespace Slingshot.F1.Utilities
 
         #region Internal Methods
 
-        // Please review GetTableData_CallOrder.txt before modifying or copying any methods which use the GetTableData() method.
-
         /// <summary>
         /// Internal method for ExportIndividuals().
         /// </summary>
@@ -157,14 +182,14 @@ namespace Slingshot.F1.Utilities
                     var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
 
                     //Split communications into basic elements to make subsequent queries faster.
-                    var dtCommunications_IndividualEmails =
-                        dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Email'" ).CopyToDataTable();
+                    var individualEmailRows = dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Email'" );
+                    var dtCommunications_IndividualEmails = individualEmailRows.CopyToDataTable_Safe( dtCommunications );
 
-                    var dtCommunications_InfellowshipLogins =
-                        dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Infellowship Login'" ).CopyToDataTable();
+                    var infellowshipLoginRows = dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Infellowship Login'" );
+                    var dtCommunications_InfellowshipLogins = infellowshipLoginRows.CopyToDataTable_Safe( dtCommunications );
 
-                    var dtCommunications_HouseholdEmails =
-                        dtCommunications.Select( "individual_id IS NULL AND household_id IS NOT NULL AND communication_type = 'Email'" ).CopyToDataTable();
+                    var householdEmails = dtCommunications.Select( "individual_id IS NULL AND household_id IS NOT NULL AND communication_type = 'Email'" );
+                    var dtCommunications_HouseholdEmails = householdEmails.CopyToDataTable_Safe( dtCommunications );
 
                     foreach ( DataRow row in dtPeople.Rows )
                     {
@@ -528,8 +553,8 @@ namespace Slingshot.F1.Utilities
         {
             using ( var dtAttendance = GetTableData( SqlQueries.ATTENDANCE ) )
             {
-                var dtAttendance_AssignedIds = dtAttendance.Select( "Attendance_ID IS NOT NULL" ).CopyToDataTable();
-                var dtAttendance_NullIds = dtAttendance.Select( "Attendance_ID IS NULL" ).CopyToDataTable();
+                var dtAttendance_AssignedIds = dtAttendance.Select( "Attendance_ID IS NOT NULL" ).CopyToDataTable_Safe( dtAttendance );
+                var dtAttendance_NullIds = dtAttendance.Select( "Attendance_ID IS NULL" ).CopyToDataTable_Safe( dtAttendance );
                 var uniqueAttendanceIds = new List<int>();
 
                 // Process rows with assigned Attendance_ID values, first, to ensure their AttendanceId is preserved.

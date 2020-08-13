@@ -250,7 +250,7 @@ namespace Slingshot.F1.Utilities
         }
 
         /// <summary>
-        /// Exports the person attributes.
+        /// Exports the business attributes.
         /// </summary>
         public void WriteBusinessAttributes()
         {
@@ -323,11 +323,6 @@ namespace Slingshot.F1.Utilities
                     Name = groupType.Name
                 } );
             }
-        }
-
-        public override List<FamilyMember> GetFamilyMembers()
-        {
-            return null;
         }
 
         /// <summary>

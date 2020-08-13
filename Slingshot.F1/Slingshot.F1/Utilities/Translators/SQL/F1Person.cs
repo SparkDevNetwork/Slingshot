@@ -1,12 +1,11 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
-
-using Slingshot.Core;
-using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -14,7 +13,9 @@ namespace Slingshot.F1.Utilities.Translators.SQL
     {
         public static Person Translate(
             DataRow row
-            , DataTable Communications
+            , DataTable dtCommunications_IndividualEmails
+            , DataTable dtCommunications_InfellowshipLogins
+            , DataTable dtCommunications_HouseholdEmails
             , Dictionary<int, HeadOfHousehold> headOfHouseHolds
             , DataTable dtRequirementValues
             , DataTable dtCommunicationValues )
@@ -189,14 +190,15 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                              person.MiddleName.IsNotNullOrWhitespace() || person.NickName.IsNotNullOrWhitespace() )
                         {
                             MD5 md5Hasher = MD5.Create();
-                            var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( person.FirstName + person.NickName + person.MiddleName + person.LastName ) );
+                            string valueToHash = person.FirstName + person.NickName + person.MiddleName + person.LastName;
+                            var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                             var familyId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                             if ( familyId > 0 )
                             {
                                 person.FamilyId = familyId;
                             }
                         }
-                        notes.Add( "F1 Visitor of the " + person.FamilyName + "(" + person.FamilyId + ")" );
+                        notes.Add( $"F1 Visitor of the { person.FamilyName } ({ person.FamilyId })" );
                         break;
                     default:
                         person.FamilyRole = FamilyRole.Child;
@@ -206,16 +208,17 @@ namespace Slingshot.F1.Utilities.Translators.SQL
 
                 // email
                 string email = null;
-                var emailrow = Communications.Select( "individual_id = " +  person.Id + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                // Communications table should be sorted by LastUpdateDate (in descending order) before this occurs.
+                var emailrow = dtCommunications_IndividualEmails.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 if ( emailrow == null )
                 {
-                    emailrow = Communications.Select( "individual_id = " + person.Id + " AND communication_type = 'Infellowship Login'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    emailrow = dtCommunications_InfellowshipLogins.Select( $"individual_id = { person.Id }" ).FirstOrDefault();
                 }
                 if ( emailrow == null && person.FamilyRole == FamilyRole.Adult )
                 {
-                    emailrow = Communications.Select( "individual_id is null and household_id = " + person.FamilyId + " AND communication_type = 'Email'", "LastUpdateDate DESC" ).FirstOrDefault();
+                    emailrow = dtCommunications_HouseholdEmails.Select( $"household_id = { person.FamilyId }" ).FirstOrDefault();
                 }
-                if( emailrow != null )
+                if ( emailrow != null )
                 {
                     email = emailrow.Field<string>( "communication_value" );
                 }
@@ -253,7 +256,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 }
 
                 // person requirements. 
-                var requirements = dtRequirementValues.Select( "individual_id = " + person.Id );
+                var requirements = dtRequirementValues.Select( $"individual_id = { person.Id }" );
                 foreach ( var requirement in requirements )
                 {
                     string requirementName = requirement.Field<string>( "requirement_name" );
@@ -273,8 +276,18 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                     }
 
 
-                    // Add the attribute value for date (if not empty) 
-                    DateTime? requirementDate = requirement.Field<DateTime?>( "requirement_date" );
+                    // Add the attribute value for date (if not empty)
+                    DateTime? requirementDate = null;
+                    string requirementDateValue = requirement.Field<string>( "requirement_date" );
+                    if ( !string.IsNullOrEmpty( requirementDateValue ) )
+                    {
+                        if ( DateTime.TryParse( requirementDateValue, out var outputDate ) )
+                        {
+                            requirementDate = outputDate;
+                        }
+                    }
+
+                    //DateTime? requirementDate = requirement.Field<DateTime?>( "requirement_date" );
                     var requirementDateKey = requirementName.RemoveSpaces().RemoveSpecialCharacters() + "Date";
 
                     if ( requirementDate.HasValue )
@@ -291,13 +304,24 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 // person fields
 
                 // occupation
-                string occupation = row.Field<string>( "Occupation" );
+                string occupation = row.Field<string>( "Occupation_Name" );
                 if ( occupation.IsNotNullOrWhitespace() )
                 {
                     person.Attributes.Add( new PersonAttributeValue
                     {
                         AttributeKey = "Position",
                         AttributeValue = occupation,
+                        PersonId = person.Id
+                    } );
+                }
+
+                string occupationDescription = row.Field<string>( "Occupation_Description" );
+                if ( occupation.IsNotNullOrWhitespace() )
+                {
+                    person.Attributes.Add( new PersonAttributeValue
+                    {
+                        AttributeKey = "Position_Description",
+                        AttributeValue = occupationDescription,
                         PersonId = person.Id
                     } );
                 }
@@ -327,7 +351,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 }
 
                 // denomination
-                string denomination = row.Field<string>( "FormerDenomination" );
+                string denomination = row.Field<string>( "FormerDenomination_Name" );
                 if ( denomination.IsNotNullOrWhitespace() )
                 {
                     person.Attributes.Add( new PersonAttributeValue
@@ -376,7 +400,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
 
 
                 // Communications That aren't phone or email
-                var communicationAttributeValues = dtCommunicationValues.Select( "individual_id = " + person.Id );
+                var communicationAttributeValues = dtCommunicationValues.Select( $"individual_id = { person.Id }" );
 
                 foreach ( var attributeValue in communicationAttributeValues )
                 {

@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Security.Cryptography;
-using System.Text;
-using System.Linq;
-
-using Slingshot.Core;
+﻿using Slingshot.Core;
 using Slingshot.Core.Model;
+using System.Data;
+using System.Linq;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
@@ -25,18 +20,24 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                 var houseHoldId = row.Field<int>( "household_id" );
                 var personId = row.Field<int?>( "individual_id" );
 
-                // Check if the address has a person tied to if. If not, set the head of household PersonId to the personId
+                // Check if the address has a person tied to it. If not, set the head of household PersonId to the personId
                 if ( !personId.HasValue )
                 {
-                    var person = dtPeople.Select( "household_id = " + houseHoldId ).FirstOrDefault();
+                    var person = dtPeople.Select( $"household_position = 'Head' AND household_id = { houseHoldId }" ).FirstOrDefault();
+                    if ( person == null )
+                    {
+                        // We didn't find a household 'Head', so look for anyone else who isn't a visitor.
+                        person = dtPeople.Select( $"household_position <> 'Visitor' AND household_id = { houseHoldId }" ).FirstOrDefault();
+                    }
+                    if ( person == null )
+                    {
+                        // We didn't find anyone who isn't a visitor, so it's okay to assign this address to the visitor.
+                        person = dtPeople.Select( $"household_id = { houseHoldId }" ).FirstOrDefault();
+                    }
                     if ( person != null )
                     {
                         personId = person.Field<int>( "individual_id" );
                     }
-                    
-                    /*
-                    .FirstOrDefault()
-                        .Field<int?>( "indiviual_id" ); */
                 }
 
                 if ( !personId.HasValue )

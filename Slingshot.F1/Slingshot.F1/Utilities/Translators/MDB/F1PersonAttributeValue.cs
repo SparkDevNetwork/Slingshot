@@ -25,7 +25,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 int attributeId = row.Field<int>( "Attribute_Id" );
                 string attributeName = row.Field<string>( "Attribute_Name" );
                 // Add the attribute value for start date (if not empty) 
-                var startDateAttributeKey = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
+                var startDateAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "StartDate";
                 DateTime? startDate = row.Field<DateTime?>( "Start_Date" );
 
                 if ( startDate.HasValue )
@@ -39,7 +39,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // Add the attribute value for end date (if not empty) 
-                var endDateAttributeKey = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
+                var endDateAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "EndDate";
                 DateTime? endDate = row.Field<DateTime?>( "End_Date" );
 
                 if ( endDate.HasValue )
@@ -53,7 +53,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 }
 
                 // Add the attribute value for comment (if not empty) 
-                var commentAttributeKey = attributeId.ToString() + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
+                var commentAttributeKey = attributeId + "_" + attributeName.RemoveSpaces().RemoveSpecialCharacters() + "Comment";
                 string comment = row.Field<string>( "comment" );
 
                 if ( comment.IsNotNullOrWhitespace() )

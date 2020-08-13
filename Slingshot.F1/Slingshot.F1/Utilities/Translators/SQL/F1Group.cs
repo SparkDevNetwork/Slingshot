@@ -1,34 +1,37 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using Slingshot.F1.Utilities.SQL.DTO;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-
-using Slingshot.Core;
-using Slingshot.Core.Model;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
     public static class F1Group
     {
-        public static Group Translate( DataRow row, DataTable members, DataTable staffing )
+        public static Group Translate( GroupDTO group, List<GroupMemberDTO> members, DataTable staffing )
         {
-            var group = new Group();
+            var slingshotGroup = new Group();
 
-            if ( row.Field<int?>( "Group_Id" ).HasValue )
+            if ( group.GroupId.HasValue )
             {
-                group.Id = row.Field<int?>( "Group_Id" ).Value;
+                slingshotGroup.Id = group.GroupId.Value;
             }
             else
             {
 
-                if ( !string.IsNullOrWhiteSpace( row.Field<string>( "Group_Name" ) ) && row.Field<int?>( "ParentGroupId" ).HasValue )
+                if ( !string.IsNullOrWhiteSpace( group.GroupName ) && group.ParentGroupId.HasValue )
                 {
                     MD5 md5Hasher = MD5.Create();
-                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "Group_Name" ) + row.Field<int?>( "ParentGroupId" ).Value ) );
+                    string valueToHash = $"{ group.GroupName }{ group.ParentGroupId.Value }";
+                    var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
                     var groupId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                     if ( groupId > 0 )
                     {
-                        group.Id = groupId;
+                        slingshotGroup.Id = groupId;
                     }
                 }
                 else
@@ -39,30 +42,30 @@ namespace Slingshot.F1.Utilities.Translators.SQL
 
             // Limit the group name to 50 since the schedules that will be created in Rock use the group's name as the schedule name and
             // that field is limited in the database to 50 characters
-            group.Name = row.Field<string>( "Group_Name" ).Left( 50 );
-            group.GroupTypeId = row.Field<int>( "Group_Type_ID" );
-            group.IsActive = row.Field<int>( "is_active" ) != 0;
-            if( row.Field<int?>( "is_public" ).HasValue )
+            slingshotGroup.Name = group.GroupName.Left( 50 );
+            slingshotGroup.GroupTypeId = group.GroupTypeId;
+            slingshotGroup.IsActive = group.IsActive;
+            if( group.IsPublic.HasValue )
             {
-                group.IsPublic = row.Field<int?>( "is_public" ).Value != 0;
+                slingshotGroup.IsPublic = group.IsPublic.Value;
             }
-            group.MeetingDay = row.Field<string>( "ScheduleDay" );
-            group.ParentGroupId = row.Field<int?>( "ParentGroupId" ) ?? 90000000 + group.GroupTypeId;
-            group.Description = row.Field<string>( "Description" );
+            slingshotGroup.MeetingDay = group.ScheduleDay;
+            slingshotGroup.ParentGroupId = group.ParentGroupId ?? 90000000 + slingshotGroup.GroupTypeId;
+            slingshotGroup.Description = group.Description;
 
-            if( !string.IsNullOrWhiteSpace( row.Field<string>( "StartHour" ) ) )
+            if( !string.IsNullOrWhiteSpace( group.StartHour ) )
             {
-                group.MeetingTime = row.Field<string>( "StartHour" ) + ":00";
+                slingshotGroup.MeetingTime = group.StartHour + ":00";
             }
 
             var importAddress = new GroupAddress();
-            importAddress.GroupId = group.Id;
-            importAddress.Street1 = row.Field<string>( "Address1" );
-            importAddress.Street2 = row.Field<string>( "Address2" );
-            importAddress.City = row.Field<string>( "City" );
-            importAddress.State = row.Field<string>( "StProvince" );
-            importAddress.PostalCode = row.Field<string>( "PostalCode" );
-            importAddress.Country = row.Field<string>( "country" );
+            importAddress.GroupId = slingshotGroup.Id;
+            importAddress.Street1 = group.Address1;
+            importAddress.Street2 = group.Address2;
+            importAddress.City = group.City;
+            importAddress.State = group.StateProvince;
+            importAddress.PostalCode = group.PostalCode;
+            importAddress.Country = group.Country;
             importAddress.AddressType = AddressType.Other;
 
 
@@ -71,34 +74,36 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                     importAddress.City.IsNotNullOrWhitespace() &&
                     importAddress.PostalCode.IsNotNullOrWhitespace() )
             {
-                group.Addresses.Add( importAddress );
+                slingshotGroup.Addresses.Add( importAddress );
 
             }
 
-            foreach( var member in members.Select( "Group_Id =" + group.Id ) )
+            var groupMembers = members.AsEnumerable().Where( m => m.GroupId == slingshotGroup.Id );
+
+            foreach( var member in groupMembers )
             {
                 var groupMember = new GroupMember();
-                groupMember.GroupId = group.Id;
-                groupMember.PersonId = member.Field<int>( "Individual_ID" );
-                groupMember.Role = member.Field<string>( "Group_Member_Type" );
+                groupMember.GroupId = slingshotGroup.Id;
+                groupMember.PersonId = member.IndividualId;
+                groupMember.Role = member.GroupMemberType;
 
-                group.GroupMembers.Add( groupMember );
+                slingshotGroup.GroupMembers.Add( groupMember );
             }
 
             if ( staffing != null )
             {
-                foreach ( var staff in staffing.Select( "Group_Id =" + group.Id ) )
+                foreach ( var staff in staffing.Select( $"RLC_ID = { slingshotGroup.Id } OR Activity_ID = { slingshotGroup.Id }" ) )
                 {
                     var groupMember = new GroupMember();
-                    groupMember.GroupId = group.Id;
+                    groupMember.GroupId = slingshotGroup.Id;
                     groupMember.PersonId = staff.Field<int>( "INDIVIDUAL_ID" );
                     groupMember.Role = "Staff";
 
-                    group.GroupMembers.Add( groupMember );
+                    slingshotGroup.GroupMembers.Add( groupMember );
                 }
             }
 
-            return group;
+            return slingshotGroup;
         }
     }
 }

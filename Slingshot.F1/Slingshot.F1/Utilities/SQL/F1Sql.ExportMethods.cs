@@ -1,12 +1,13 @@
 ﻿using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
+using Slingshot.F1.Utilities;
+using Slingshot.F1.Utilities.SQL.DTO;
 using Slingshot.F1.Utilities.Translators.SQL;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace Slingshot.F1.Utilities
 {
@@ -35,6 +36,13 @@ namespace Slingshot.F1.Utilities
         #endregion Try/Catch Delegate Wrapper
 
         #region Public Methods
+
+        /*
+         * 8/12/20 - Shaun
+         * 
+         * These publicly exposed methods are just wrappers for the "Internal" methods found below.
+         * 
+         * */
 
         /// <summary>
         /// Exports the individuals.
@@ -119,8 +127,6 @@ namespace Slingshot.F1.Utilities
 
         #region Internal Methods
 
-        // Please review GetTableData_CallOrder.txt before modifying or copying any methods which use the GetTableData() method.
-
         /// <summary>
         /// Internal method for ExportIndividuals().
         /// </summary>
@@ -132,102 +138,160 @@ namespace Slingshot.F1.Utilities
             WritePersonAttributes();
 
             // export people (and their addresses).
-            using ( var dtPeople = GetTableData( SqlQueries.PEOPLE, true ) )
-            {
+            var dtPeople = _db.Table( "Individual_Household" ).Data;
+            DataView dvCommunication = _db.Table( "Communication" ).Data.DefaultView;
+            dvCommunication.Sort = "LastUpdatedDate"; // Communications must be sorted by LastUpdatedDate to ensure we get the right values.
+            var dtCommunications = dvCommunication.ToTable();
 
-                // export people
-                using ( var dtHoh = GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) )
-                using ( var dtCommunications = GetTableData( SqlQueries.COMMUNICATIONS ) )
-                using ( var dtCommunicationValues = GetTableData( SqlQueries.COMMUNCATION_ATTRIBUTE_VALUES ) )
-                using ( var dtRequirementValues = GetTableData( SqlQueries.REQUIREMENTVALUES ) )
+            // export people
+
+            var dtOtherCommunications = dtCommunications
+                .Select( "Communication_Type NOT IN ('Mobile', 'Email') AND Communication_Type NOT LIKE '%Phone%' AND Individual_ID IS NOT NULL" );
+
+            var dtCommunicationAttributeValueFilter =
+                from a in dtOtherCommunications
+                group a by new
                 {
-                    // Make Requirement Names match case, as they may be in mixed cases in the F1 database.
-                    foreach ( DataRow row in dtRequirementValues.Rows )
-                    {
-                        string requirementName = row["requirement_name"].ToString();
-                        if ( _RequirementNames.ContainsKey( requirementName.ToLower() ) )
-                        {
-                            if ( _RequirementNames[requirementName.ToLower()] != requirementName )
-                            {
-                                row["requirement_name"] = _RequirementNames[requirementName.ToLower()];
-                            }
-                        }
-                    }
-
-                    var headOfHouseHolds = GetHeadOfHouseholdMap( dtHoh );
-                    foreach ( DataRow row in dtPeople.Rows )
-                    {
-                        var importPerson = F1Person.Translate( row, dtCommunications, headOfHouseHolds, dtRequirementValues, dtCommunicationValues );
-
-                        if ( importPerson != null )
-                        {
-                            ImportPackage.WriteToPackage( importPerson );
-                        }
-                    }
-
-                    // Cleanup - Remember not to Clear() any cached tables.
-                    dtCommunications.Clear();
-                    dtCommunicationValues.Clear();
-                    dtRequirementValues.Clear();
-                    GC.Collect();
+                    CommunicationType = a.Field<string>( "communication_type" ),
+                    IndividualId = a.Field<int>( "individual_id" )
                 }
+                into g
+                select ( from t2 in g select t2.Field<int>( "Communication_Id" ) ).Max();
 
-                // export people addresses
-                using ( var dtAddress = GetTableData( SqlQueries.ADDRESSES ) )
+            var dtCommunicationAttributeValues = ( from values in dtOtherCommunications
+                                                   join filter in dtCommunicationAttributeValueFilter
+                                                   on values.Field<int>( "Communication_Id" ) equals filter
+                                                   select values ).ToList().CopyToDataTable_Safe( dtCommunications );
+
+
+
+            var dtRawRequirementValues = _db.Table( "Requirement" ).Data.AsEnumerable();
+            var dtRequirementValueFilter =
+                from a in dtRawRequirementValues
+                group a by new
                 {
-                    foreach ( DataRow row in dtAddress.Rows )
+                    RequirementName = a.Field<string>( "requirement_name" ),
+                    IndividualId = a.Field<int>( "individual_id" )
+                }
+                into g
+                select ( from t2 in g select t2.Field<int>( "Individual_Requirement_ID" ) ).Max();
+                //new {
+                //    CommunicationId = ( from t2 in g
+                //                        select t2.Field<int>( "Communication_Id" ) ).Max()
+                //};
+
+            var dtRequirementValues = ( from values in dtRawRequirementValues
+                                        join filter in dtRequirementValueFilter
+                                        on values.Field<int>( "Individual_Requirement_ID" ) equals filter
+                                        select values ).ToList().CopyToDataTable_Safe( _db.Table( "Requirement" ).Data );
+
+            // Make Requirement Names match case, as they may be in mixed cases in the F1 database.
+            foreach ( DataRow row in dtRequirementValues.Rows )
+            {
+                string requirementName = row["requirement_name"].ToString();
+                if ( _RequirementNames.ContainsKey( requirementName ) )
+                {
+                    if ( _RequirementNames[requirementName] != requirementName )
                     {
-                        var importAddress = F1PersonAddress.Translate( row, dtPeople );
-
-                        if ( importAddress != null )
-                        {
-                            ImportPackage.WriteToPackage( importAddress );
-                        }
+                        row["requirement_name"] = _RequirementNames[requirementName];
                     }
-
-                    // Cleanup - Remember not to Clear() any cached tables.
-                    dtAddress.Clear();
-                    GC.Collect();
                 }
             }
 
-            // export Attribute Values
-            using ( var dtAttributeValues = GetTableData( SqlQueries.ATTRIBUTEVALUES ) )
-            {
-                foreach ( DataRow row in dtAttributeValues.Rows )
-                {
-                    var importAttributes = F1PersonAttributeValue.Translate( row );
+            var headOfHouseHolds = GetHeadOfHouseholdMap( dtPeople );
 
-                    if ( importAttributes != null )
+            //Split communications into basic elements to make subsequent queries faster.
+            var individualEmailRows = dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Email'" );
+            var dtCommunications_IndividualEmails = individualEmailRows.CopyToDataTable_Safe( dtCommunications );
+
+            var infellowshipLoginRows = dtCommunications.Select( "individual_id IS NOT NULL AND communication_type = 'Infellowship Login'" );
+            var dtCommunications_InfellowshipLogins = infellowshipLoginRows.CopyToDataTable_Safe( dtCommunications );
+
+            var householdEmails = dtCommunications.Select( "individual_id IS NULL AND household_id IS NOT NULL AND communication_type = 'Email'" );
+            var dtCommunications_HouseholdEmails = householdEmails.CopyToDataTable_Safe( dtCommunications );
+
+            foreach ( DataRow row in dtPeople.Rows )
+            {
+                var importPerson = F1Person.Translate( row, dtCommunications_IndividualEmails, dtCommunications_InfellowshipLogins, dtCommunications_HouseholdEmails, headOfHouseHolds, dtRequirementValues, dtCommunicationAttributeValues );
+
+                if ( importPerson != null )
+                {
+                    ImportPackage.WriteToPackage( importPerson );
+                }
+            }
+
+            // export people addresses
+            var dtAddress = _db.Table( "Household_Address" ).Data;
+            foreach ( DataRow row in dtAddress.Rows )
+            {
+                var importAddress = F1PersonAddress.Translate( row, dtPeople );
+
+                if ( importAddress != null )
+                {
+                    ImportPackage.WriteToPackage( importAddress );
+                }
+            }
+
+            // export people attributes
+            var individualAttributes =
+                from a in _db.Table("Attribute").Data.AsEnumerable()
+                group a by new
+                {
+                    IndividualId = a.Field<int>( "Individual_Id" ),
+                    AttributeId = a.Field<int>( "Attribute_Id" ),
+                    AttributeName = a.Field<string>( "Attribute_Name" )
+                }
+                into g
+                select new
+                {
+                    g.Key.IndividualId,
+                    g.Key.AttributeId,
+                    g.Key.AttributeName,
+                    IndividualAttributeId = ( from t2 in g
+                                              select t2.Field<int>( "Individual_attribute_Id" ) )
+                                              .Max()
+                };
+
+            var dtAttributeValues = ( from table1 in _db.Table( "Attribute" ).Data.AsEnumerable()
+                                      join table2 in individualAttributes
+                                      on table1.Field<int>( "Individual_attribute_Id" ) equals table2.IndividualAttributeId
+                                      select table1 ).ToList().CopyToDataTable_Safe( _db.Table( "Attribute" ).Data );
+
+            foreach ( DataRow row in dtAttributeValues.Rows )
+            {
+                var importAttributes = F1PersonAttributeValue.Translate( row );
+
+                if ( importAttributes != null )
+                {
+                    foreach ( PersonAttributeValue value in importAttributes )
                     {
-                        foreach ( PersonAttributeValue value in importAttributes )
-                        {
-                            ImportPackage.WriteToPackage( value );
-                        }
+                        ImportPackage.WriteToPackage( value );
                     }
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtAttributeValues.Clear();
-                GC.Collect();
             }
 
             // export Phone Numbers
-            using ( var dtPhoneNumbers = GetTableData( SqlQueries.PHONE_NUMBERS ) )
+            var phoneNumbers = dtCommunications.Select( "(individual_id IS NOT NULL OR household_id IS NOT NULL) AND (communication_type = 'Mobile' OR communication_type like '%Phone%')" );
+
+            foreach ( DataRow row in phoneNumbers )
             {
-                foreach ( DataRow row in dtPhoneNumbers.Rows )
+                //Household phone numbers may be assigned to multiple person records (i.e., "Head" and "Spouse").
+                var personIds = F1PersonPhone.GetPhonePersonIds( row, dtPeople );
+                foreach ( int personId in personIds )
                 {
-                    var importNumber = F1PersonPhone.Translate( row );
+                    var importNumber = F1PersonPhone.Translate( row, personId );
                     if ( importNumber != null )
                     {
                         ImportPackage.WriteToPackage( importNumber );
                     }
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtPhoneNumbers.Clear();
-                GC.Collect();
             }
+
+            // Cleanup.
+            phoneNumbers = null;
+            dtCommunications.Clear();
+            dtAttributeValues.Clear();
+            GC.Collect();
         }
 
         /// <summary>
@@ -237,51 +301,71 @@ namespace Slingshot.F1.Utilities
         {
             WriteBusinessAttributes();
 
-            using ( var dtCommunications = GetTableData( SqlQueries.COMPANY_COMMUNICATIONS ) )
-            using ( var dtCompanies = GetTableData( SqlQueries.COMPANY, true ) )
+            var dtCompany = _db.Table( "Company" ).Data;
+
+            if ( dtCompany.Rows.Count == 0 )
             {
-                foreach ( DataRow row in dtCompanies.Rows )
-                {
-                    var business = F1Business.Translate( row, dtCommunications );
-
-                    if ( business != null )
-                    {
-                        ImportPackage.WriteToPackage( business );
-                    }
-                }
-
-                // export Phone Numbers
-                foreach ( DataRow row in dtCommunications.Rows )
-                {
-                    var importNumber = F1BusinessPhone.Translate( row );
-
-                    if ( importNumber != null )
-                    {
-                        ImportPackage.WriteToPackage( importNumber );
-                    }
-                }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtCommunications.Clear();
-                GC.Collect();
+                // Nothing to export.
+                return;
             }
 
-            using ( var dtAddress = GetTableData( SqlQueries.COMPANY_ADDRESSES ) )
+            DataView dvCommunication = _db.Table( "Communication" ).Data.DefaultView;
+            dvCommunication.Sort = "LastUpdatedDate"; // Communications must be sorted by LastUpdatedDate to ensure we get the right values.
+
+            var companyCommunications = ( from table1 in dvCommunication.ToTable().AsEnumerable()
+                                          join table2 in dtCompany.AsEnumerable()
+                                          on ( int ) table1["household_id"] equals ( int ) table2["household_id"]
+                                          select table1 );
+
+            var dtCompanyCommunications = companyCommunications.CopyToDataTable_Safe( _db.Table( "Communication" ).Data );
+
+            foreach ( DataRow row in dtCompany.Rows )
             {
-                foreach ( DataRow row in dtAddress.Rows )
+                var business = F1Business.Translate( row, dtCompanyCommunications );
+
+                if ( business != null )
                 {
-                    var importAddress = F1BusinessAddress.Translate( row );
-
-                    if ( importAddress != null )
-                    {
-                        ImportPackage.WriteToPackage( importAddress );
-                    }
+                    ImportPackage.WriteToPackage( business );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtAddress.Clear();
-                GC.Collect();
             }
+
+            // export Phone Numbers
+            foreach ( DataRow row in dtCompanyCommunications.Rows )
+            {
+                var importNumber = F1BusinessPhone.Translate( row );
+
+                if ( importNumber != null )
+                {
+                    ImportPackage.WriteToPackage( importNumber );
+                }
+            }
+
+            // Cleanup.
+            dtCompanyCommunications.Clear();
+            GC.Collect();
+
+            var dtAddress = _db.Table( "Household_Address" ).Data;
+
+            var companyAddresses = ( from table1 in dtAddress.AsEnumerable()
+                                     join table2 in dtCompany.AsEnumerable()
+                                     on ( int ) table1["household_id"] equals ( int ) table2["household_id"]
+                                     select table1 );
+
+            var dtCompanyAddresses = companyAddresses.CopyToDataTable_Safe( dtAddress );
+
+            foreach ( DataRow row in dtCompanyAddresses.Rows )
+            {
+                var importAddress = F1BusinessAddress.Translate( row );
+
+                if ( importAddress != null )
+                {
+                    ImportPackage.WriteToPackage( importAddress );
+                }
+            }
+
+            // Cleanup.
+            dtCompanyAddresses.Clear();
+            GC.Collect();
         }
 
         /// <summary>
@@ -289,28 +373,26 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         private void ExportNotes_Internal()
         {
-            using ( var dtUsers = GetTableData( SqlQueries.USERS ) )
-            using ( var dtNotes = GetTableData( SqlQueries.NOTES ) )
-            using ( var dtHoh = GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) )
+            var dtUsers = _db.Table( "Users" ).Data;
+            var dtNotes = _db.Table( "Notes" ).Data;
+
+            var headOfHouseHoldMap = GetHeadOfHouseholdMap( _db.Table( "Company" ).Data );
+            var users = dtUsers.AsEnumerable().ToArray();
+
+            foreach ( DataRow row in dtNotes.Rows )
             {
-                var headOfHouseHoldMap = GetHeadOfHouseholdMap( dtHoh );
-                var users = dtUsers.AsEnumerable().ToArray();
+                var importNote = F1Note.Translate( row, headOfHouseHoldMap, users );
 
-                foreach ( DataRow row in dtNotes.Rows )
+                if ( importNote != null )
                 {
-                    var importNote = F1Note.Translate( row, headOfHouseHoldMap, users );
-
-                    if ( importNote != null )
-                    {
-                        ImportPackage.WriteToPackage( importNote );
-                    }
+                    ImportPackage.WriteToPackage( importNote );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtUsers.Clear();
-                dtNotes.Clear();
-                GC.Collect();
             }
+
+            // Cleanup
+            dtUsers.Clear();
+            dtNotes.Clear();
+            GC.Collect();
         }
 
         /// <summary>
@@ -318,22 +400,31 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         private void ExportFinancialAccounts_Internal()
         {
-            using ( var dtFunds = GetTableData( SqlQueries.FUNDS ) )
+            var dvFunds = new DataView( _db.Table( "Contribution" ).Data );
+
+            // Get primary funds.
+            var dtPrimaryFunds = dvFunds.ToTable( true, "fund_name");
+
+            // Get sub-funds.
+            dvFunds.RowFilter = "ISNULL(sub_fund_name, 'Null Column') <> 'Null Column'";
+            var dtFunds = dvFunds.ToTable( true, "fund_name", "sub_fund_name" );
+
+            // Merge primary and sub-funds.
+            dtFunds.Merge( dtPrimaryFunds );
+
+            foreach ( DataRow row in dtFunds.Rows )
             {
-                foreach ( DataRow row in dtFunds.Rows )
+                var importAccount = F1FinancialAccount.Translate( row );
+
+                if ( importAccount != null )
                 {
-                    var importAccount = F1FinancialAccount.Translate( row );
-
-                    if ( importAccount != null )
-                    {
-                        ImportPackage.WriteToPackage( importAccount );
-                    }
+                    ImportPackage.WriteToPackage( importAccount );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtFunds.Clear();
-                GC.Collect();
             }
+
+            // Cleanup.
+            dtFunds.Clear();
+            GC.Collect();
         }
 
         /// <summary>
@@ -341,25 +432,26 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         private void ExportFinancialPledges_Internal()
         {
-            using ( var dtPledges = GetTableData( SqlQueries.PLEDGES ) )
+            //ToDo:  Test this export method.
+            var dvPledges = new DataView( _db.Table( "Pledge" ).Data );
+            var dtPledges = dvPledges.ToTable( true, "individual_id", "household_id", "Pledge_id", "fund_name", "sub_fund_name", "pledge_frequency_name", "total_pledge", "start_date", "end_date" );
+            
+            //Get head of house holds because in F1 pledges can be tied to indiviuals or households
+            var headOfHouseHolds = GetHeadOfHouseholdMap( _db.Table( "Company" ).Data );
+
+            foreach ( DataRow row in dtPledges.Rows )
             {
-                //Get head of house holds because in F1 pledges can be tied to indiviuals or households
-                var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) );
+                var importPledge = F1FinancialPledge.Translate( row, headOfHouseHolds );
 
-                foreach ( DataRow row in dtPledges.Rows )
+                if ( importPledge != null )
                 {
-                    var importPledge = F1FinancialPledge.Translate( row, headOfHouseHolds );
-
-                    if ( importPledge != null )
-                    {
-                        ImportPackage.WriteToPackage( importPledge );
-                    }
+                    ImportPackage.WriteToPackage( importPledge );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtPledges.Clear();
-                GC.Collect();
             }
+
+            // Cleanup.
+            dtPledges.Clear();
+            GC.Collect();
         }
 
         /// <summary>
@@ -368,21 +460,41 @@ namespace Slingshot.F1.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         private void ExportFinancialBatches_Internal( DateTime modifiedSince )
         {
-            using ( var dtBatches = GetTableData( SqlQueries.BATCHES ) )
-            {
-                foreach ( DataRow row in dtBatches.Rows )
+            var batches = _db.Table( "Batch" ).Data.AsEnumerable()
+                .Select( b => new BatchDTO {
+                    BatchId = b.Field<int>( "BatchId" ),
+                    BatchName = b.Field<string>( "BatchName" ),
+                    BatchDate = b.Field<DateTime>( "BatchDate" ),
+                    BatchAmount = b.Field<decimal>( "BatchAmount" )
+                } ).ToList();
+
+            var batchesFromContribution = _db.Table( "Contribution" ).Data.AsEnumerable()
+                .Where( c => c.Field<int?>( "BatchId" ) == null )
+                .Select( c => new {
+                    BatchId = 90000000 + Int32.Parse( c.Field<DateTime>( "Received_Date" ).ToString( "yyyyMMdd" ) ),
+                    BatchName = "Batch: " + c.Field<DateTime>( "Received_Date" ).ToString( "MMM dd, yyyy" ),
+                    BatchDate = c.Field<DateTime>( "Received_Date" ),
+                    BatchAmount = c.Field<decimal>( "Amount" )
+                } )
+                .GroupBy( c => c.BatchId  )
+                .Select( x => new BatchDTO
                 {
-                    var importBatch = F1FinancialBatch.Translate( row );
+                    BatchId = x.First().BatchId,
+                    BatchName = x.First().BatchName,
+                    BatchDate = x.Min( z => z.BatchDate ),
+                    BatchAmount = x.Sum( z => z.BatchAmount )
+                } ).ToList();
 
-                    if ( importBatch != null )
-                    {
-                        ImportPackage.WriteToPackage( importBatch );
-                    }
+            batches = batches.Concat( batchesFromContribution ).ToList();
+
+            foreach ( var batch in batches )
+            {
+                var importBatch = F1FinancialBatch.Translate( batch );
+
+                if ( importBatch != null )
+                {
+                    ImportPackage.WriteToPackage( importBatch );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtBatches.Clear();
-                GC.Collect();
             }
         }
 
@@ -393,28 +505,20 @@ namespace Slingshot.F1.Utilities
         /// <param name="exportContribImages">Indicates whether images should be exported.  (WARNING:  Not implemented.)</param>
         private void ExportContributions_Internal( DateTime modifiedSince, bool exportContribImages )
         {
-            using ( var dtHoh = GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) )
-            using ( var dtPeople = GetTableData( SqlQueries.PEOPLE, true ) )
-            using ( var dtContributions = GetTableData( SqlQueries.CONTRIBUTIONS ) )
+            var dtContributions = _db.Table( "Contribution" ).Data;
+            var headOfHouseholdMap = GetHeadOfHouseholdMap( _db.Table( "Company" ).Data );
+
+            var dtCompany = _db.Table( "Company" ).Data;
+            var companyIds = new HashSet<int>( dtCompany.AsEnumerable().Select( s => s.Field<int>( "Household_ID" ) ) );
+
+            foreach ( DataRow row in dtContributions.Rows )
             {
-                var headOfHouseholdMap = GetHeadOfHouseholdMap( dtHoh );
+                var importTransaction = F1FinancialTransaction.Translate( row, headOfHouseholdMap, companyIds );
 
-                var dtCompanies = GetTableData( SqlQueries.COMPANY, true );
-                var companyIds = new HashSet<int>( dtCompanies.AsEnumerable().Select( s => s.Field<int>( "HOUSEHOLD_ID" ) ) );
-
-                foreach ( DataRow row in dtContributions.Rows )
+                if ( importTransaction != null )
                 {
-                    var importTransaction = F1FinancialTransaction.Translate( row, headOfHouseholdMap, companyIds );
-
-                    if ( importTransaction != null )
-                    {
-                        ImportPackage.WriteToPackage( importTransaction );
-                    }
+                    ImportPackage.WriteToPackage( importTransaction );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtContributions.Clear();
-                GC.Collect();
             }
         }
 
@@ -442,65 +546,223 @@ namespace Slingshot.F1.Utilities
             // Export F1 Activites
             if( selectedGroupTypes.Contains( 99999904 ) )
             {
-                using ( var dtActivityMembers = GetTableData( SqlQueries.ACTIVITY_MEMBERS ) )
+                var dvActivityAssignment = new DataView( _db.Table( "ActivityAssignment" ).Data );
+
+                dvActivityAssignment.RowFilter = "ISNULL(RLC_ID, 0) <> 0";
+                var dtRlcGroupMembers = dvActivityAssignment.ToTable( true, "Individual_ID", "RLC_ID", "BreakoutGroupName" );
+
+                dvActivityAssignment.RowFilter = "ISNULL(BreakoutGroupName,'Null Column') <> 'Null Column'";
+                var dtBreakoutGroupMembers = dvActivityAssignment.ToTable( true, "Individual_ID", "BreakoutGroupName", "RLC_ID", "Activity_ID" );
+
+                MD5 md5Hasher = MD5.Create();
+                var rlcAssignments = dtRlcGroupMembers.AsEnumerable().Select( r => new GroupMemberDTO
                 {
-                    // Add Group Ids for Break Out Groups
-                    foreach ( var member in dtActivityMembers.Select( "Group_Id is null" ) )
-                    {
-                        MD5 md5Hasher = MD5.Create();
-                        var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( member.Field<string>( "BreakoutGroup" ) + member.Field<string>( "ParentGroupId" ) ) );
-                        var groupId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
-                        if ( groupId > 0 )
-                        {
-                            member.SetField<int>( "Group_Id", groupId );
-                        }
-                    }
+                    IndividualId = r.Field<int>( "Individual_ID" ),
+                    GroupId = r.Field<int>( "RLC_ID" ),
+                    BreakoutGroupName = r.Field<string>( "BreakoutGroupName" ),
+                    GroupMemberType = "Member"
+                } );
 
-                    using ( var dtStaffing = GetTableData( SqlQueries.STAFFING ) )
-                    using ( var dtActivites = GetTableData( SqlQueries.ACTIVITIES ) )
-                    {
-                   
-                        foreach ( DataRow row in dtActivites.Rows )
-                        {
-                            var importGroup = F1Group.Translate( row, dtActivityMembers, dtStaffing );
-
-                            if ( importGroup != null )
-                            {
-                                ImportPackage.WriteToPackage( importGroup );
-                            }
-                        }
-
-                        // Cleanup - Remember not to Clear() any cached tables.
-                        dtStaffing.Clear();
-                        dtActivites.Clear();
-                    }
-
-                    // Cleanup - Remember not to Clear() any cached tables.
-                    dtActivityMembers.Clear();
-                    GC.Collect();
-                }
-            }
-
-            using ( var dtGroups = GetTableData( SqlQueries.GROUPS ) )
-            using ( var dtGroupMembers = GetTableData( SqlQueries.GROUP_MEMBERS ) )
-            {
-                var group_Type_Ids = string.Join( ",", selectedGroupTypes.Select( n => n.ToString() ).ToArray() );
-
-                foreach ( DataRow row in dtGroups.Select( "Group_Type_Id in(" + group_Type_Ids + ")" ) )
+                var breakoutGroupAssignments = dtBreakoutGroupMembers.AsEnumerable().Select( r => new GroupMemberDTO
                 {
-                    var importGroup = F1Group.Translate( row, dtGroupMembers, null );
+                    IndividualId = r.Field<int>( "Individual_ID" ),
+                    BreakoutGroupName = r.Field<string>( "BreakoutGroupName" ),
+                    ParentGroupId = r.Field<int?>( "RLC_ID" ) ?? r.Field<int?>( "Activity_ID" ),
+                    GroupMemberType = "Member",
+                    GroupIdHasher = md5Hasher // Add Group Ids for Break Out Groups
+                } );
+
+                var activityMembers = rlcAssignments.Concat( breakoutGroupAssignments ).ToList();
+
+                var dvActivityMinistry = new DataView( _db.Table( "ActivityMinistry" ).Data );
+                var dtMinistries = dvActivityMinistry.ToTable( true, "Ministry_Name", "Ministry_ID", "Ministry_Active" );
+                var ministryGroups = dtMinistries.AsEnumerable().Select( r => new GroupDTO
+                {
+                    GroupName = r.Field<string>( "Ministry_Name" ),
+                    GroupId = r.Field<int>( "Ministry_ID" ),
+                    GroupTypeId = 99999904,
+                    Description = null,
+                    IsActive = !( r.Field<bool?>( "Ministry_Active" ) == false ),
+                    StartDate = null,
+                    IsPublic = false,
+                    LocationName = string.Empty,
+                    ScheduleDay = string.Empty,
+                    StartHour = null,
+                    Address1 = string.Empty,
+                    Address2 = string.Empty,
+                    City = string.Empty,
+                    StateProvince = string.Empty,
+                    PostalCode = null,
+                    Country = string.Empty,
+                    ParentGroupId = 0
+                } );
+
+                var dtMinistryActivities = dvActivityMinistry.ToTable( true, "Activity_Name", "Activity_ID", "Activity_Active", "Ministry_ID" );
+                var ministryActivityGroups = dtMinistryActivities.AsEnumerable().Select( r => new GroupDTO
+                {
+                    GroupName = r.Field<string>( "Activity_Name" ),
+                    GroupId = r.Field<int>( "Activity_ID" ),
+                    GroupTypeId = 99999904,
+                    Description = null,
+                    IsActive = !( r.Field<bool?>( "Activity_Active" ) == false ),
+                    StartDate = null,
+                    IsPublic = false,
+                    LocationName = string.Empty,
+                    ScheduleDay = string.Empty,
+                    StartHour = null,
+                    Address1 = string.Empty,
+                    Address2 = string.Empty,
+                    City = string.Empty,
+                    StateProvince = string.Empty,
+                    PostalCode = null,
+                    Country = string.Empty,
+                    ParentGroupId = r.Field<int?>( "Ministry_ID" )
+                } );
+
+                var dvActivityGroup = new DataView( _db.Table( "Activity_Group" ).Data );
+                var dtActivities = dvActivityGroup.ToTable( true, "Activity_Group_Name", "Activity_Group_ID", "Activity_ID" );
+                var activityGroups = dtActivities.AsEnumerable().Select( r => new GroupDTO
+                {
+                    GroupName = r.Field<string>( "Activity_Group_Name" ),
+                    GroupId = r.Field<int>( "Activity_Group_ID" ),
+                    GroupTypeId = 99999904,
+                    Description = null,
+                    IsActive = true,
+                    StartDate = null,
+                    IsPublic = false,
+                    LocationName = string.Empty,
+                    ScheduleDay = string.Empty,
+                    StartHour = null,
+                    Address1 = string.Empty,
+                    Address2 = string.Empty,
+                    City = string.Empty,
+                    StateProvince = string.Empty,
+                    PostalCode = null,
+                    Country = string.Empty,
+                    ParentGroupId = r.Field<int?>( "Activity_ID" )
+                } );
+
+                var dvRLC = new DataView( _db.Table( "RLC" ).Data );
+                var dtRLC = dvRLC.ToTable( true, "RLC_Name", "RLC_ID", "Is_Active", "Room_Name", "Activity_Group_ID", "Activity_ID" );
+                var rlcGroups = dtRLC.AsEnumerable().Select( r => new GroupDTO
+                {
+                    GroupName = r.Field<string>( "RLC_Name" ),
+                    GroupId = r.Field<int>( "RLC_ID" ),
+                    GroupTypeId = 99999904,
+                    Description = null,
+                    IsActive = r.Field<bool>( "Is_Active" ),
+                    StartDate = null,
+                    IsPublic = false,
+                    LocationName = r.Field<string>( "Room_Name" ),
+                    ScheduleDay = string.Empty,
+                    StartHour = null,
+                    Address1 = string.Empty,
+                    Address2 = string.Empty,
+                    City = string.Empty,
+                    StateProvince = string.Empty,
+                    PostalCode = null,
+                    Country = string.Empty,
+                    ParentGroupId = r.Field<int?>( "Activity_Group_ID" ) ?? r.Field<int?>( "Activity_ID" )
+                } );
+
+                dvActivityAssignment.RowFilter = "ISNULL(BreakoutGroupName,'Null Column') <> 'Null Column'"; // This is already set, but it's good to have it here as a reminder.
+                var dtActivityAssignmentGruops = dvActivityAssignment.ToTable( true, "BreakoutGroupName", "RLC_ID", "Activity_ID" );
+                var activityAssignmentGroups = dtActivityAssignmentGruops.AsEnumerable().Select( r => new GroupDTO
+                {
+                    GroupName = r.Field<string>( "BreakoutGroupName" ),
+                    GroupId = null,
+                    GroupTypeId = 99999904,
+                    Description = null,
+                    IsActive = true,
+                    StartDate = null,
+                    IsPublic = false,
+                    LocationName = string.Empty,
+                    ScheduleDay = string.Empty,
+                    StartHour = null,
+                    Address1 = string.Empty,
+                    Address2 = string.Empty,
+                    City = string.Empty,
+                    StateProvince = string.Empty,
+                    PostalCode = null,
+                    Country = string.Empty,
+                    ParentGroupId = r.Field<int?>( "RLC_ID" ) ?? r.Field<int?>( "Activity_ID" )
+                } );
+
+                var activities =
+                    ministryGroups
+                    .Concat( ministryActivityGroups )
+                    .Concat( activityGroups )
+                    .Concat( rlcGroups )
+                    .Concat( activityAssignmentGroups )
+                    .ToList();
+
+                var dtStaffing = _db.Table( "Staffing_Assignment" ).Data;
+                foreach ( var row in activities )
+                {
+                    var importGroup = F1Group.Translate( row, activityMembers, dtStaffing );
 
                     if ( importGroup != null )
                     {
                         ImportPackage.WriteToPackage( importGroup );
                     }
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtGroups.Clear();
-                dtGroupMembers.Clear();
+                // Cleanup.
                 GC.Collect();
             }
+
+            // Export F1 Groups
+            var groupMembersQry = _db.Table( "Groups").Data.AsEnumerable()
+                .Select( r => new GroupMemberDTO
+                {
+                    IndividualId = r.Field<int>( "Individual_ID" ),
+                    GroupId = r.Field<int?>( "Group_Id" ),
+                    GroupMemberType = r.Field<string>("Group_Member_Type")
+                } );
+
+            var groupMembers = groupMembersQry.Distinct().ToList();
+
+            var dvGroups = new DataView( _db.Table( "Groups").Data );
+            var dtGroupsDistinct = dvGroups.ToTable( true, "Group_Id", "Group_Type_Id", "Group_Name" );
+            var dtGroupsDescription = _db.Table( "GroupsDescription" ).Data;
+
+            var groups = ( from table1 in dtGroupsDistinct.AsEnumerable()
+                           join table2 in dtGroupsDescription.AsEnumerable()
+                           on ( int ) table1["Group_ID"] equals ( int ) table2["Group_ID"]
+                           into groupsWithDescriptions
+                           from output in groupsWithDescriptions.DefaultIfEmpty()
+                           where selectedGroupTypes.Contains( ( int ) table1["Group_Type_Id"] )
+                           select new GroupDTO
+                           {
+                               GroupName = table1.Field<string>( "Group_Name" ),
+                               GroupId = table1.Field<int>( "Group_Id" ),
+                               GroupTypeId = table1.Field<int>( "Group_Type_Id" ),
+                               IsActive = !( output?.Field<bool?>( "is_open" ) == false ),
+                               StartDate = output?.Field<DateTime>( "start_date" ),
+                               IsPublic = output?.Field<bool?>( "is_open" ),
+                               LocationName = output?.Field<string>( "Location_Name" ),
+                               ScheduleDay = output?.Field<string>( "ScheduleDay" ),
+                               StartHour = output?.Field<string>( "StartHour" ),
+                               Address1 = output?.Field<string>( "Address1" ),
+                               Address2 = output?.Field<string>( "Address2" ),
+                               City = output?.Field<string>( "City" ),
+                               StateProvince = output?.Field<string>( "StProvince" ),
+                               PostalCode = output?.Field<string>( "PostalCode" ),
+                               Country = output?.Field<string>( "Country" ),
+                               ParentGroupId = null
+                           } ).ToList();
+
+            foreach ( var group in groups )
+            {
+                var importGroup = F1Group.Translate( group, groupMembers, null );
+
+                if ( importGroup != null )
+                {
+                    ImportPackage.WriteToPackage( importGroup );
+                }
+            }
+
+            // Cleanup.
+            GC.Collect();
         }
 
         /// <summary>
@@ -509,22 +771,64 @@ namespace Slingshot.F1.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         private void ExportAttendance_Internal( DateTime modifiedSince )
         {
-            using ( var dtAttendance = GetTableData( SqlQueries.ATTENDANCE ) )
+            var uniqueAttendanceIds = new List<int>();
+
+            var dtAttendance = _db.Table( "Attendance" ).Data
+                .Select( "Start_Date_Time IS NOT NULL" )
+                .Distinct( DataRowComparer.Default );
+
+            var dtGroupAttendance = _db.Table( "GroupsAttendance" ).Data
+                //ToDo:  This should be uncommented when F1 updates the data set.
+                //.Select( "IsPresent <> 0" )
+                .Select()
+                .Distinct( DataRowComparer.Default );
+
+            var individualAttendanceData = dtAttendance.Select( r => new AttendanceDTO {
+                IndividualId = r.Field<int>( "Individual_ID" ),
+                //ToDo:  This should be uncommented when F1 updates the data set.
+                //AttendanceId = r.Field<int?>( "Attendance_ID" ),
+                GroupId = r.Field<int?>( "RLC_ID" ),
+                StartDateTime = r.Field<DateTime>( "Start_Date_Time" ),
+                EndDateTime = null,
+                CheckedInAs = r.Field<string>( "CheckedInAs" ),
+                JobTitle = r.Field<string>( "Job_Title" ),
+            } );
+
+            var groupAttendanceData = dtGroupAttendance.Select( r => new AttendanceDTO {
+                IndividualId = r.Field<int>( "Individual_ID" ),
+                AttendanceId = null,
+                GroupId = r.Field<int?>( "GroupID" ),
+                StartDateTime = r.Field<DateTime>( "AttendanceDate" ),
+                EndDateTime = r.Field<DateTime?>( "EndDateTime" ),
+                CheckedInAs = r.Field<string>( "CheckedInAs" ),
+                JobTitle = r.Field<string>( "Job_Title" ),
+            } );
+
+            var attendanceData_AssignedIds = individualAttendanceData.Where( a => a.AttendanceId != null ).ToList();
+            var attendanceData_NullIds = individualAttendanceData.Where( a => a.AttendanceId == null ).Concat( groupAttendanceData ).ToList();
+
+            // Process rows with assigned Attendance_ID values, first, to ensure their AttendanceId is preserved.
+            foreach ( var attendance in attendanceData_AssignedIds )
             {
-                foreach ( DataRow row in dtAttendance.Rows )
+                var importAttendance = F1Attendance.Translate( attendance, uniqueAttendanceIds );
+                if ( importAttendance != null )
                 {
-                    var importAttendance = F1Attendance.Translate( row );
-
-                    if ( importAttendance != null )
-                    {
-                        ImportPackage.WriteToPackage( importAttendance );
-                    }
+                    ImportPackage.WriteToPackage( importAttendance );
                 }
-
-                // Cleanup - Remember not to Clear() any cached tables.
-                dtAttendance.Clear();
-                GC.Collect();
             }
+
+            // Process remaining rows without assigned Attendance_ID values.  These records will have AttendanceId
+            // values generated by an MD5 hash of the Individual_ID, GroupId, and StartDateTime.  Collisions for
+            // that hash are relatively common and in cases where that occurs, a random value will be used, instead.
+            foreach ( var attendance in attendanceData_NullIds )
+            {
+                var importAttendance = F1Attendance.Translate( attendance, uniqueAttendanceIds );
+                if ( importAttendance != null )
+                {
+                    ImportPackage.WriteToPackage( importAttendance );
+                }
+            }
+
         }
 
         #endregion Internal Methods

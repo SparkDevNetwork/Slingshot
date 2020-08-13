@@ -48,7 +48,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             {
                 //Hash collision, use a random number.
                 var random = new Random();
-                attendance.AttendanceId = GetNewRandomAttendanceId(uniqueAttendanceIds, random);
+                attendance.AttendanceId = GetNewRandomAttendanceId( uniqueAttendanceIds, random );
             }
 
             uniqueAttendanceIds.Add( attendance.AttendanceId );

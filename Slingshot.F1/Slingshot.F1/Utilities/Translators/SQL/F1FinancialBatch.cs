@@ -1,29 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Security.Cryptography;
-using System.Text;
-using System.Linq;
-
-using Slingshot.Core;
-using Slingshot.Core.Model;
+﻿using Slingshot.Core.Model;
+using Slingshot.F1.Utilities.SQL.DTO;
 
 namespace Slingshot.F1.Utilities.Translators.SQL
 {
     public static class F1FinancialBatch
     {
-        public static FinancialBatch Translate( DataRow row )
+        public static FinancialBatch Translate( BatchDTO batch )
         {
-            var batch = new FinancialBatch();
+            var slingshotBatch = new FinancialBatch();
 
-            batch.Id = row.Field<int>( "BatchID" );
-            batch.StartDate = row.Field<DateTime?>( "BatchDate" );
-            batch.Name = row.Field<string>( "BatchName" );
+            slingshotBatch.Id = batch.BatchId;
+            slingshotBatch.StartDate = batch.BatchDate;
+            slingshotBatch.Name = batch.BatchName;
 
-            //There's no status in the MDB, so just marked all imported batches as closed
-            batch.Status = BatchStatus.Closed;
+            //There's no status in the MDF, so just marked all imported batches as closed
+            slingshotBatch.Status = BatchStatus.Closed;
 
-            return batch;
+            return slingshotBatch;
         }
     }
 }
