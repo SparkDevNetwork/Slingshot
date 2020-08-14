@@ -118,9 +118,9 @@ namespace Slingshot.F1.Utilities.SQL.DTO
     }
 
     /// <summary>
-    /// The Attendance DTO.
+    /// The Attendance DTO.  Implements IEquatable for <see cref="Enumerable.Distinct{TSource}(IEnumerable{TSource})"/>.
     /// </summary>
-    public class AttendanceDTO
+    public class AttendanceDTO : IEquatable<AttendanceDTO>
     {
         /// <summary>
         /// The Individual Id.
@@ -185,6 +185,68 @@ namespace Slingshot.F1.Utilities.SQL.DTO
                 return "";
             }
         }
+
+        #region IEquatable Implementation
+
+        /// <summary>
+        /// Tests equality.
+        /// </summary>
+        /// <param name="other">The other <see cref="AttendanceDTO"/>.</param>
+        /// <returns></returns>
+        public bool Equals( AttendanceDTO other )
+        {
+            //Check whether the compared object is null.
+            if ( Object.ReferenceEquals( other, null ) )
+			{
+                return false;
+			}
+
+            //Check whether the compared object references the same data.
+            if ( Object.ReferenceEquals( this, other ) )
+            {
+                return true;
+        }
+
+            //Check whether the objects' properties are equal.
+            return
+				IndividualId.Equals( other.IndividualId ) &&
+                AttendanceId.Equals( other.AttendanceId ) && 
+				GroupId.Equals( other.GroupId ) &&
+                StartDateTime.Equals( other.StartDateTime ) &&
+                EndDateTime.Equals( other.EndDateTime ) &&
+                Note.Equals( other.Note );
+        }
+
+        /// <summary>
+        /// Generates the hash code (which is used by LINQ to test uniqueness of the object).
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            //Get hash code for the IndividualId field.
+            int hashIndividualId = IndividualId.GetHashCode();
+
+            //Get hash code for the AttendanceId field.
+            int hashAttendanceId = AttendanceId == null ? 0 : AttendanceId.GetHashCode();
+
+            //Get hash code for the GroupId field if it is not null.
+            int hashGroupId = GroupId == null ? 0 : GroupId.GetHashCode();
+
+            //Get hash code for the StartDateTime field.
+            int hashStartDateTime = StartDateTime.GetHashCode();
+
+            //Get hash code for the StartDateTime field.
+            int hashEndDateTime = EndDateTime == null ? 0 : EndDateTime.GetHashCode();
+
+            //Get hash code for the Note field.
+            int hashNote = Note.GetHashCode();
+
+            //Calculate the hash code for the object.
+            return hashIndividualId ^ hashAttendanceId ^ hashGroupId ^ hashStartDateTime ^ hashEndDateTime & hashNote;
+        }
+
+        #endregion IEquatable Implementation
+
     }
     
     /// <summary>

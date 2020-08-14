@@ -771,43 +771,51 @@ namespace Slingshot.F1.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         private void ExportAttendance_Internal( DateTime modifiedSince )
         {
+            var dtAttendance = _db.Table( "Attendance" ).Data;
+
+            var attendanceData_AssignedIds = dtAttendance.AsEnumerable()
+                    .Where( r => r.Field<DateTime?>( "Start_Date_Time" ) != null )
+                    .Where( r => r.Field<int?>( "Individual_Instance_ID" ) != null )
+                    .Select( r => new AttendanceDTO {
+                        IndividualId = r.Field<int>( "Individual_ID" ),
+                        AttendanceId = r.Field<int>( "Individual_Instance_ID" ),
+                        GroupId = r.Field<int?>( "RLC_ID" ),
+                        StartDateTime = r.Field<DateTime>( "Start_Date_Time" ),
+                        EndDateTime = r.Field<DateTime?>( "Check_Out_Time" ),
+                        CheckedInAs = r.Field<string>( "CheckedInAs" ),
+                        JobTitle = r.Field<string>( "Job_Title" )
+                    } ).Distinct().ToList();
+
+            var attendanceData_NullIds = dtAttendance.AsEnumerable()
+                    .Where( r => r.Field<DateTime?>( "Start_Date_Time" ) != null )
+                    .Where( r => r.Field<int?>( "Individual_Instance_ID" ) == null )
+                    .Select( r => new AttendanceDTO {
+                        IndividualId = r.Field<int>( "Individual_ID" ),
+                        AttendanceId = null,
+                        GroupId = r.Field<int?>( "RLC_ID" ),
+                        StartDateTime = r.Field<DateTime>( "Start_Date_Time" ),
+                        EndDateTime = r.Field<DateTime?>( "Check_Out_Time" ),
+                        CheckedInAs = r.Field<string>( "CheckedInAs" ),
+                        JobTitle = r.Field<string>( "Job_Title" )
+                    } ).Distinct().ToList();
+
+            var groupAttendanceData = _db.Table( "GroupsAttendance" ).Data.AsEnumerable()
+                //.Where( r => r.Field<bool>( "IsPresent" ) != false ) //ToDo:  This should be uncommented when F1 updates the data set.
+                .Select( r => new AttendanceDTO {
+                    IndividualId = r.Field<int>( "Individual_ID" ),
+                    AttendanceId = null,
+                    GroupId = r.Field<int?>( "GroupID" ),
+                    StartDateTime = r.Field<DateTime>( "AttendanceDate" ),
+                    EndDateTime = r.Field<DateTime?>( "EndDateTime" ),
+                    CheckedInAs = r.Field<string>( "CheckedInAs" ),
+                    JobTitle = r.Field<string>( "Job_Title" ),
+                } ).Distinct().ToList();
+
+            attendanceData_NullIds = attendanceData_NullIds.Concat( groupAttendanceData ).ToList();
+
             var uniqueAttendanceIds = new List<int>();
 
-            var dtAttendance = _db.Table( "Attendance" ).Data
-                .Select( "Start_Date_Time IS NOT NULL" )
-                .Distinct( DataRowComparer.Default );
-
-            var dtGroupAttendance = _db.Table( "GroupsAttendance" ).Data
-                //ToDo:  This should be uncommented when F1 updates the data set.
-                //.Select( "IsPresent <> 0" )
-                .Select()
-                .Distinct( DataRowComparer.Default );
-
-            var individualAttendanceData = dtAttendance.Select( r => new AttendanceDTO {
-                IndividualId = r.Field<int>( "Individual_ID" ),
-                //ToDo:  This should be uncommented when F1 updates the data set.
-                //AttendanceId = r.Field<int?>( "Attendance_ID" ),
-                GroupId = r.Field<int?>( "RLC_ID" ),
-                StartDateTime = r.Field<DateTime>( "Start_Date_Time" ),
-                EndDateTime = null,
-                CheckedInAs = r.Field<string>( "CheckedInAs" ),
-                JobTitle = r.Field<string>( "Job_Title" ),
-            } );
-
-            var groupAttendanceData = dtGroupAttendance.Select( r => new AttendanceDTO {
-                IndividualId = r.Field<int>( "Individual_ID" ),
-                AttendanceId = null,
-                GroupId = r.Field<int?>( "GroupID" ),
-                StartDateTime = r.Field<DateTime>( "AttendanceDate" ),
-                EndDateTime = r.Field<DateTime?>( "EndDateTime" ),
-                CheckedInAs = r.Field<string>( "CheckedInAs" ),
-                JobTitle = r.Field<string>( "Job_Title" ),
-            } );
-
-            var attendanceData_AssignedIds = individualAttendanceData.Where( a => a.AttendanceId != null ).ToList();
-            var attendanceData_NullIds = individualAttendanceData.Where( a => a.AttendanceId == null ).Concat( groupAttendanceData ).ToList();
-
-            // Process rows with assigned Attendance_ID values, first, to ensure their AttendanceId is preserved.
+            // Process rows with assigned Individual_Instance_ID values, first, to ensure their AttendanceId is preserved.
             foreach ( var attendance in attendanceData_AssignedIds )
             {
                 var importAttendance = F1Attendance.Translate( attendance, uniqueAttendanceIds );
@@ -817,7 +825,7 @@ namespace Slingshot.F1.Utilities
                 }
             }
 
-            // Process remaining rows without assigned Attendance_ID values.  These records will have AttendanceId
+            // Process remaining rows without assigned Individual_Instance_ID values.  These records will have AttendanceId
             // values generated by an MD5 hash of the Individual_ID, GroupId, and StartDateTime.  Collisions for
             // that hash are relatively common and in cases where that occurs, a random value will be used, instead.
             foreach ( var attendance in attendanceData_NullIds )
