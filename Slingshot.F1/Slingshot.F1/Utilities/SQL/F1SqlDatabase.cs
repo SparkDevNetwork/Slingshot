@@ -142,26 +142,6 @@ namespace Slingshot.F1.Utilities.SQL
                 // Unload the MDF file.
                 db.Dispose();
             }
-
-            //var cols = db.Dmvs.Columns
-            //    .Where( c => tables.Select( t => t.ObjectID ).ToList().Contains( c.ObjectID ) ).ToList();
-            //var dataTypes = cols.Select( c => c.SystemTypeID );
-
-
-            //var types = db.Dmvs.Types
-            //    .Where( t => dataTypes.Contains( t.SystemTypeID ) )
-            //    .ToList();
-
-            //string delTypes = string.Empty;
-            //foreach (var t in types)
-            //{
-            //    var cols2 = db.Dmvs.Columns.Where( c => c.SystemTypeID == t.SystemTypeID );
-            //    var colNames = cols2.Select( c => c.Name ).ToList();
-            //    int colCount = cols2.Count();
-            //    delTypes += t.Name + " = " + colCount.ToString() + Environment.NewLine;
-            //}
-            //var typeNames = types.Select( t => t.Name ).ToList();
-
         }
 
         #endregion Constructor
@@ -551,15 +531,6 @@ namespace Slingshot.F1.Utilities.SQL
         /// </summary>
         public static readonly Dictionary<string, List<string>> Columns = new Dictionary<string, List<string>>( StringComparer.OrdinalIgnoreCase )
         {
-            // Account table columns.
-            { "Account", new List<string> {
-                "Individual_ID",
-                "Household_ID",
-                "Account_Type_Name",
-                "Account",
-                "Routing_Number"
-            } },
-
             // Activity_Group table columns.
             { "Activity_Group", new List<string> {
                 "Activity_ID",
@@ -568,14 +539,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "Activity_Group_Name",
                 "Activity_Super_Group",
                 "CheckinBalanceType" } },
-
-            // Activity_Schedule table columns.
-            { "Activity_Schedule", new List<string> {
-                "Activity_Time_Name",
-                "Activity_Start_Time",
-                "Activity_End_Time",
-                "Activity_ID",
-                "Activity_Schedule_ID" } },
 
             // ActivityAssignment table columns.
             { "ActivityAssignment", new List<string> {
@@ -639,16 +602,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "Individual_attribute_ID",
                 "Created_Date" } },
 
-            // Authorizations table columns.
-            { "Authorizations", new List<string> {
-                "AuthorizationID",
-                "HouseholdID",
-                "ChurchID",
-                "PersonName",
-                "AuthorizationDate",
-                "CreatedDate",
-                "LastUpdatedDate" } },
-
             // Batch table columns.
             { "Batch", new List<string> {
                 "BatchID",
@@ -700,36 +653,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "Activity_ID",
                 "Activity_Instance_ID",
                 "ActivityService" } },
-
-            // GiftednessProgram table columns.
-            { "GiftednessProgram", new List<string> {
-                "GiftProgramID",
-                "GiftCategoryID",
-                "GiftAttributeID",
-                "ProgramName",
-                "ShortProgramName",
-                "CategoryName",
-                "AttributeName",
-                "CategorySort",
-                "AttributeSort",
-                "ProgramActive",
-                "CategoryActive",
-                "AttributeActive",
-                "CategoryPercentage",
-                "TotalJobAttributes",
-                "MinJobAttributes",
-                "JobAttributeWeight",
-                "TotalIndividualAttributes",
-                "MinIndividualAttributes",
-                "IndividualAttributeWeight" } },
-
-            // GroupManager table columns.
-            { "GroupManager", new List<string> {
-                "GroupTypeID",
-                "GroupID",
-                "IndividualID",
-                "CreatedDate",
-                "AdminTypeName" } },
 
             // Groups table columns.
             { "Groups", new List<string> {
@@ -792,19 +715,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "Country",
                 "HasChildcare" } },
 
-            // Headcount table columns.
-            { "Headcount", new List<string> {
-                "Headcount_ID",
-                "Activity_ID",
-                "RLC_ID",
-                "RLC_name",
-                "Start_Date_Time",
-                "Attendance",
-                "Meeting_note",
-                "Activity_schedule_ID",
-                "Activity_schedule_name",
-                "Activity_Instance_ID" } },
-
             // Household_Address table columns.
             { "Household_Address", new List<string> {
                 "Individual_ID",
@@ -853,62 +763,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "WeblinkLogin",
                 "UnsubscribeAllChurchEmail" } },
 
-            // IndividualContactNotes table columns.
-            { "IndividualContactNotes", new List<string> {
-                "IndividualContactID",
-                "ContactInstItemID",
-                "IndividualID",
-                "IndividualContactDatetime",
-                "UserID",
-                "IndividualContactNote",
-                "ConfidentialNote",
-                "ContactMethodName" } },
-
-            // IndividualGiftedness table columns.
-            { "IndividualGiftedness", new List<string> {
-                "Individual_ID",
-                "ConductedByIndividualID",
-                "AssessmentDate",
-                "GiftProgramID",
-                "GiftCategoryID",
-                "GiftAttributeID",
-                "Rank" } },
-
-            // Job table columns.
-            { "Job", new List<string> {
-                "Job_ID",
-                "Ministry_ID",
-                "Activity_ID",
-                "Job_Title",
-                "Job_Description",
-                "DYD_Enabled",
-                "Position_Contact",
-                "Gender",
-                "Marital_Status",
-                "Reports_To_Individual",
-                "Ministry_Purpose",
-                "Requirements",
-                "Training_Requirements",
-                "Time_Commitment_Required",
-                "Christian_Maturity_Required",
-                "Comments",
-                "Minimum_Age",
-                "Created_Date",
-                "Last_Updated_Date",
-                "Contact_Individual_ID",
-                "Reports_To_Individual_ID",
-                "Maximum_Age",
-                "Is_Active" } },
-
-            // JobInformation table columns.
-            { "JobInformation", new List<string> {
-                "JobID",
-                "CreatedDate",
-                "LastUpdatedDate",
-                "JobInformationName",
-                "Sort",
-                "JobInformationText" } },
-
             // Notes table columns.
             { "Notes", new List<string> {
                 "Note_ID",
@@ -940,23 +794,6 @@ namespace Slingshot.F1.Utilities.SQL
                 "Start_Date",
                 "End_Date",
                 "Pledge_drive_goal" } },
-
-            // RelationshipManager table columns.
-            { "RelationshipManager", new List<string> {
-                "IND_Relationship_Member_ID",
-                "Ind_Relationship_ID",
-                "Individual_ID",
-                "Relationship_Role_Name",
-                "Is_Primary",
-                "CreatedDate" } },
-
-            // RelationshipNotes table columns.
-            { "RelationshipNotes", new List<string> {
-                "IND_Relationship_Member_ID",
-                "start_date",
-                "EndDate",
-                "Ind_Relationship_Note_ID",
-                "Note_text" } },
 
             // Requirement table columns.
             { "Requirement", new List<string> {
