@@ -25,6 +25,8 @@ namespace Slingshot.F1
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
+        private bool _errorHasOccurred = false;
+
         public List<GroupType> ExportGroupTypes { get; set; }
         public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
 
@@ -50,16 +52,30 @@ namespace Slingshot.F1
 
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
-            txtExportMessage.Text = e.UserState.ToString();
+            string userState = e.UserState.ToString();
+            txtExportMessage.Text = userState;
             pbProgress.Value = e.ProgressPercentage;
+
+            if ( _errorHasOccurred )
+            {
+                if ( userState.IsNotNullOrWhitespace() )
+                {
+                    txtMessages.Text += userState + Environment.NewLine;
+                }
+                txtMessages.Visibility = Visibility.Visible;
+                txtError.Visibility = Visibility.Visible;
+            }
         }
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
-            var tsTicks = DateTime.Now.Ticks - _workStarted.Ticks;
-            var ts = new TimeSpan( tsTicks );
-            txtExportMessage.Text = string.Format( "Export Completed in {0}", ts.ToString( "g" ) );
-            pbProgress.Value = 100;
+            if ( !_errorHasOccurred )
+            {
+                var tsTicks = DateTime.Now.Ticks - _workStarted.Ticks;
+                var ts = new TimeSpan( tsTicks );
+                txtExportMessage.Text = string.Format( "Export Completed in {0}", ts.ToString( "g" ) );
+                pbProgress.Value = 100;
+            }
         }
 
         private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
@@ -81,13 +97,14 @@ namespace Slingshot.F1
             }
 
             // export individuals
-            if ( exportSettings.ExportIndividuals )
+            if ( !_errorHasOccurred && exportSettings.ExportIndividuals )
             {
                 exportWorker.ReportProgress( 1, "Exporting Individuals..." );
                 exporter.ExportIndividuals( exportSettings.ModifiedSince );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     this.Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 2, $"Error exporting individuals: {F1Api.ErrorMessage}" );
@@ -96,13 +113,14 @@ namespace Slingshot.F1
             }
 
             // export companies
-            if ( exportSettings.ExportCompanies )
+            if ( !_errorHasOccurred && exportSettings.ExportCompanies )
             {
                 exportWorker.ReportProgress( 1, "Exporting Companies..." );
                 exporter.ExportCompanies();
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 2, $"Error exporting companies: {F1Api.ErrorMessage}" );
@@ -111,13 +129,14 @@ namespace Slingshot.F1
             }
 
             // export notes
-            if ( exportSettings.ExportNotes )
+            if ( !_errorHasOccurred && exportSettings.ExportNotes )
             {
                 exportWorker.ReportProgress( 1, "Exporting Notes..." );
                 exporter.ExportNotes();
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 2, $"Error exporting notes: {F1Api.ErrorMessage}" );
@@ -126,13 +145,14 @@ namespace Slingshot.F1
             }
 
             // export contributions
-            if ( exportSettings.ExportContributions )
+            if ( !_errorHasOccurred && exportSettings.ExportContributions )
             {
                 exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
 
                 exporter.ExportFinancialAccounts();
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {F1Api.ErrorMessage}" );
                 }
 
@@ -141,6 +161,7 @@ namespace Slingshot.F1
                 exporter.ExportFinancialPledges();
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 33, $"Error exporting financial pledges: {F1Api.ErrorMessage}" );
                 }
 
@@ -149,6 +170,7 @@ namespace Slingshot.F1
                 exporter.ExportFinancialBatches( exportSettings.ModifiedSince );
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 35, $"Error exporting financial batches: {F1Api.ErrorMessage}" );
                 }
 
@@ -157,12 +179,13 @@ namespace Slingshot.F1
                 exporter.ExportContributions( exportSettings.ModifiedSince, exportSettings.ExportContributionImages );
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 37, $"Error exporting financial contributions: {F1Api.ErrorMessage}" );
                 }
             }
 
             // export group types
-            if ( exportSettings.ExportGroupTypes.Count > 0 )
+            if ( !_errorHasOccurred && exportSettings.ExportGroupTypes.Count > 0 )
             {
                 exportWorker.ReportProgress( 53, $"Exporting Groups..." );
 
@@ -170,18 +193,20 @@ namespace Slingshot.F1
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {F1Api.ErrorMessage}" );
                 }
             }
 
             // export attendance
-            if ( exportSettings.ExportAttendance )
+            if ( !_errorHasOccurred && exportSettings.ExportAttendance )
             {
                 exportWorker.ReportProgress( 61, "Exporting Attendance..." );
                 exporter.ExportAttendance( exportSettings.ModifiedSince );
 
                 if ( F1Api.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     this.Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 68, $"Error exporting attendance: {F1Api.ErrorMessage}" );
@@ -223,7 +248,6 @@ namespace Slingshot.F1
 
             foreach ( var groupType in ExportGroupTypes )
             {
-                //cblGroupTypes.Items.Add( groupType );
                 GroupTypesCheckboxItems.Add( new CheckListItem { Id = groupType.Id, Text = groupType.Name, Checked = true } );
             }
 
@@ -239,6 +263,13 @@ namespace Slingshot.F1
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            // clear result from previous export
+            txtExportMessage.Text = string.Empty;
+            txtMessages.Text = string.Empty;
+            txtMessages.Visibility = Visibility.Collapsed;
+            txtError.Visibility = Visibility.Collapsed;
+            _errorHasOccurred = false;
+
             // launch our background export
             var exportSettings = new ExportSettings
             {
@@ -248,8 +279,7 @@ namespace Slingshot.F1
                 ExportNotes = cbNotes.IsChecked.Value,
                 ExportCompanies = cbBusinesses.IsChecked.Value,
                 ExportContributionImages = cbExportContribImages.IsChecked.Value,
-                ExportAttendance = cbAttendance.IsChecked.Value, 
-                ExportBusinesses = cbBusinesses.IsChecked.Value
+                ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
@@ -323,8 +353,6 @@ namespace Slingshot.F1
         public bool ExportContributionImages { get; set; } = true;
 
         public bool ExportAttendance { get; set; } = true;
-
-        public bool ExportBusinesses { get; set; } = true;
     }
 
     public class CheckListItem
