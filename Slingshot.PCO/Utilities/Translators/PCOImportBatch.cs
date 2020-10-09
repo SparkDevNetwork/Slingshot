@@ -1,11 +1,11 @@
 ﻿using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportBatch
     {
-        public static FinancialBatch Translate( PCOBatch inputBatch )
+        public static FinancialBatch Translate( BatchDTO inputBatch )
         {
             var financialBatch = new FinancialBatch
             {

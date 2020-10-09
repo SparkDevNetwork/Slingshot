@@ -1,11 +1,11 @@
 ﻿using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportPersonNote
     {
-        public static PersonNote Translate( PCONote inputNote )
+        public static PersonNote Translate( NoteDTO inputNote )
         {
             var note = new PersonNote
             {

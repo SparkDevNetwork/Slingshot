@@ -84,7 +84,13 @@
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\PCOClasses.cs" />
+    <Compile Include="Models\ApiModels\DataItem.cs" />
+    <Compile Include="Models\ApiModels\Links.cs" />
+    <Compile Include="Models\ApiModels\Meta.cs" />
+    <Compile Include="Models\ApiModels\QueryItems.cs" />
+    <Compile Include="Models\ApiModels\Json\SingleOrArrayConverter.cs" />
+    <Compile Include="Models\DTO\PCOClasses.cs" />
+    <Compile Include="Models\ApiModels\Relationships.cs" />
     <Compile Include="Utilities\PCOApi.cs" />
     <Compile Include="Utilities\Translators\PCOImportPersonNotes.cs" />
     <Compile Include="Utilities\Translators\PCOImportBatch.cs" />

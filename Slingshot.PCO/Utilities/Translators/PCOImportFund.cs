@@ -1,11 +1,11 @@
 ﻿using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportFund
     {
-        public static FinancialAccount Translate( PCOFund inputAccount )
+        public static FinancialAccount Translate( FundDTO inputAccount )
         {
             var financialAccount = new FinancialAccount
             {

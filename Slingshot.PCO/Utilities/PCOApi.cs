@@ -4,7 +4,8 @@ using RestSharp.Authenticators;
 using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.ApiModels;
+using Slingshot.PCO.Models.DTO;
 using Slingshot.PCO.Utilities.Translators;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,11 @@ namespace Slingshot.PCO.Utilities
         private static RestRequest _request;
 
         #region Properties
+
+        /// <summary>
+        /// Gets or sets the number of seconds the api was throttled by rate limiting.
+        /// </summary>
+        public static int ApiThrottleSeconds { get; private set; } = 0;
 
         /// <summary>
         /// Gets or sets the api counter.
@@ -101,6 +107,8 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         public static void InitializeExport()
         {
+            PCOApi.ErrorMessage = string.Empty;
+            PCOApi.ApiThrottleSeconds = 0;
             ImportPackage.InitalizePackageFolder();
         }
 
@@ -147,6 +155,10 @@ namespace Slingshot.PCO.Utilities
                 {
                     return response.Content;
                 }
+                else if ( response.StatusCode == HttpStatusCode.Forbidden )
+                {
+                    throw new Exception( $"Forbidden request: {apiEndPoint}" );
+                }
                 else if ( ( int ) response.StatusCode == 429 )
                 {
                     // If we've got a 'too many requests' error, delay for a number of seconds specified by 'Retry-After
@@ -162,7 +174,7 @@ namespace Slingshot.PCO.Utilities
                     }
 
                     int waitTime = ( retryAfter.Value * 1000 ) + 50; // Add 50ms to avoid clock synchronization issues.
-                    PCOApi.ErrorMessage = $"Throttling API requests for {retryAfter} seconds";
+                    PCOApi.ApiThrottleSeconds += retryAfter.Value;
                     Thread.Sleep( waitTime );
 
                     return ApiGet( apiEndPoint, apiRequestOptions );
@@ -216,7 +228,7 @@ namespace Slingshot.PCO.Utilities
         /// <param name="apiRequestOptions">An optional collection of request options.</param>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        private static PCOQueryResult GetAPIQuery( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null, DateTime? modifiedSince = null )
+        private static QueryResult GetAPIQuery( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null, DateTime? modifiedSince = null, QueryResult existingResults = null )
         {
             if ( modifiedSince.HasValue && apiRequestOptions != null )
             {
@@ -230,19 +242,23 @@ namespace Slingshot.PCO.Utilities
                 return null;
             }
 
-            var itemsResult = JsonConvert.DeserializeObject<PCOItemsResult>( result );
+            var itemsResult = JsonConvert.DeserializeObject<QueryItems>( result );
             if ( itemsResult == null )
             {
                 PCOApi.ErrorMessage = $"Error:  Unable to deserialize result retrieved from { apiEndPoint }.";
                 throw new Exception( PCOApi.ErrorMessage );
             }
 
-            var queryResult = new PCOQueryResult();
-            queryResult.Items = new List<PCOData>();
-            queryResult.IncludedItems = new List<PCOData>();
 
-            // Add the included items collection.
-            queryResult.IncludedItems.AddRange( itemsResult.IncludedItems );
+            QueryResult queryResult;
+            if ( existingResults != null )
+            {
+                queryResult = new QueryResult( existingResults, itemsResult.IncludedItems );
+            }
+            else
+            {
+                queryResult = new QueryResult( itemsResult.IncludedItems );
+            }
 
             // Loop through each item in the results
             var continuePaging = true;
@@ -266,9 +282,7 @@ namespace Slingshot.PCO.Utilities
                 nextEndPoint = nextEndPoint.Substring( ApiBaseUrl.Length );
                 // Get the next page of results by doing a recursive call to this same method.
                 // Note that nextEndPoint is supplied without the options dictionary, as those should already be specified in the result from PCO.
-                var nextItems = GetAPIQuery( nextEndPoint, null, modifiedSince );
-                queryResult.Items.AddRange( nextItems.Items );
-                queryResult.IncludedItems.AddRange( nextItems.IncludedItems );
+                return GetAPIQuery( nextEndPoint, null, modifiedSince, queryResult );
             }
 
             return queryResult;
@@ -299,14 +313,14 @@ namespace Slingshot.PCO.Utilities
 
             foreach ( var person in PCOPeople )
             {
-                PCOPerson headOfHouse = person; // Default headOfHouse to person, in case they are not assigned to a household in PCO.
+                PersonDTO headOfHouse = person; // Default headOfHouse to person, in case they are not assigned to a household in PCO.
                 if( person.Household != null && headOfHouseholdMap.ContainsKey( person.Household.Id ) )
                 {
                     headOfHouse = headOfHouseholdMap[person.Household.Id];
                 }
 
                 // The backgroundCheckPerson is pulled from a different API endpoint.
-                PCOPerson backgroundCheckPerson = null;
+                PersonDTO backgroundCheckPerson = null;
                 if ( PCOServicePeople != null )
                 {
                     backgroundCheckPerson = PCOServicePeople.Where( x => x.Id == person.Id ).FirstOrDefault();
@@ -338,7 +352,7 @@ namespace Slingshot.PCO.Utilities
             // save notes.
             if ( PCONotes != null )
             {
-                foreach ( PCONote note in PCONotes )
+                foreach ( NoteDTO note in PCONotes )
                 {
                     PersonNote importNote = PCOImportPersonNote.Translate( note );
                     if ( importNote != null )
@@ -355,7 +369,7 @@ namespace Slingshot.PCO.Utilities
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="peoplePerPage">The people per page.</param>
         /// <returns></returns>
-        private static List<PCOPerson> GetServicePeople( DateTime modifiedSince, int peoplePerPage = 100 )
+        private static List<PersonDTO> GetServicePeople( DateTime modifiedSince, int peoplePerPage = 100 )
         {
             var apiOptions = new Dictionary<string, string>
             {
@@ -372,14 +386,20 @@ namespace Slingshot.PCO.Utilities
         /// <param name="apiRequestOptions">A collection of request options.</param>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        public static List<PCOPerson> GetPeople( string apiEndPoint, Dictionary<string, string> apiRequestOptions, DateTime? modifiedSince )
+        public static List<PersonDTO> GetPeople( string apiEndPoint, Dictionary<string, string> apiRequestOptions, DateTime? modifiedSince )
         {
+            var people = new List<PersonDTO>();
+
             var personQuery = GetAPIQuery( apiEndPoint, apiRequestOptions, modifiedSince );
 
-            var people = new List<PCOPerson>();
+            if ( personQuery == null )
+            {
+                return people;
+            }
+
             foreach ( var item in personQuery.Items )
             {
-                var person = new PCOPerson( item, personQuery.IncludedItems );
+                var person = new PersonDTO( item, personQuery.IncludedItems );
                 people.Add( person );
             }
 
@@ -389,20 +409,22 @@ namespace Slingshot.PCO.Utilities
         /// <summary>
         /// Maps household Ids to the PCOPerson object designated as the primary contact for that household.  This map method is used to avoid repetitive searches for the head of household for each household member.
         /// </summary>
-        /// <param name="people">The list of <see cref="PCOPerson"/> records.</param>
+        /// <param name="people">The list of <see cref="PersonDTO"/> records.</param>
         /// <returns></returns>
-        private static Dictionary<int, PCOPerson> GetHeadOfHouseholdMap( List<PCOPerson> people )
+        private static Dictionary<int, PersonDTO> GetHeadOfHouseholdMap( List<PersonDTO> people )
         {
-            var map = new Dictionary<int, PCOPerson>();
+            var map = new Dictionary<int, PersonDTO>();
 
             foreach ( var person in people )
             {
-                if ( person.Household != null  && !map.ContainsKey( person.Household.Id ) )
+                if ( person.Household == null || map.ContainsKey( person.Household.Id ) )
                 {
-                    if ( person.Household.PrimaryContactId == person.Id )
-                    {
-                        map.Add( person.Household.Id, person );
-                    }
+                    continue;
+                }
+
+                if ( person.Household.PrimaryContactId == person.Id )
+                {
+                    map.Add( person.Household.Id, person );
                 }
             }
 
@@ -414,8 +436,10 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        public static List<PCONote> GetNotes( DateTime? modifiedSince )
+        public static List<NoteDTO> GetNotes( DateTime? modifiedSince )
         {
+            var notes = new List<NoteDTO>();
+
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "category" }
@@ -423,11 +447,15 @@ namespace Slingshot.PCO.Utilities
 
             var notesQuery = GetAPIQuery( ApiEndpoint.API_NOTES, apiOptions, modifiedSince );
 
-            var notes = new List<PCONote>();
+            if ( notesQuery == null )
+            {
+                return notes;
+            }
+
 
             foreach ( var item in notesQuery.Items )
             {
-                var note = new PCONote( item, notesQuery.IncludedItems );
+                var note = new NoteDTO( item, notesQuery.IncludedItems );
                 notes.Add( note );
             }
 
@@ -437,7 +465,7 @@ namespace Slingshot.PCO.Utilities
         /// <summary>
         /// Exports the person attributes.
         /// </summary>
-        private static List<PCOFieldDefinition> WritePersonAttributes()
+        private static List<FieldDefinitionDTO> WritePersonAttributes()
         {
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
@@ -481,13 +509,21 @@ namespace Slingshot.PCO.Utilities
 
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
+                Name = "PCO Remote Id",
+                Key = "RemoteId",
+                Category = "Education",
+                FieldType = "Rock.Field.Types.TextFieldType"
+            } );
+
+            ImportPackage.WriteToPackage( new PersonAttribute()
+            {
                 Name = "Background Check Result",
                 Key = "BackgroundCheckResult",
                 Category = "Safety & Security",
                 FieldType = "Rock.Field.Types.TextFieldType"
             } );
 
-            var attributes = new List<PCOFieldDefinition>();
+            var attributes = new List<FieldDefinitionDTO>();
 
             // export person attributes
             try
@@ -545,8 +581,10 @@ namespace Slingshot.PCO.Utilities
         /// Get the field definitions from PCO.
         /// </summary>
         /// <returns></returns>
-        private static List<PCOFieldDefinition> GetFieldDefinitions()
+        private static List<FieldDefinitionDTO> GetFieldDefinitions()
         {
+            var fields = new List<FieldDefinitionDTO>();
+
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "field_options,tab" }
@@ -554,10 +592,14 @@ namespace Slingshot.PCO.Utilities
 
             var fieldQuery = GetAPIQuery( ApiEndpoint.API_FIELD_DEFINITIONS, apiOptions );
 
-            var fields = new List<PCOFieldDefinition>();
+            if ( fieldQuery == null )
+            {
+                return fields;
+            }
+
             foreach ( var item in fieldQuery.Items )
             {
-                var field = new PCOFieldDefinition( item, fieldQuery.IncludedItems );
+                var field = new FieldDefinitionDTO( item, fieldQuery.IncludedItems );
                 if ( field != null && field.DataType != "header" )
                 {
                     fields.Add( field );
@@ -582,7 +624,7 @@ namespace Slingshot.PCO.Utilities
                 foreach ( var fund in funds )
                 {
                     var importFund = PCOImportFund.Translate( fund );
-                    if( importFund != null )
+                    if ( importFund != null )
                     {
                         ImportPackage.WriteToPackage( importFund );
                     }
@@ -598,14 +640,20 @@ namespace Slingshot.PCO.Utilities
         /// Get the Funds from PCO.
         /// </summary>
         /// <returns></returns>
-        private static List<PCOFund> GetFunds()
+        private static List<FundDTO> GetFunds()
         {
+            var funds = new List<FundDTO>();
+
             var fundQuery = GetAPIQuery( ApiEndpoint.API_FUNDS );
 
-            var funds = new List<PCOFund>();
+            if ( fundQuery == null )
+            {
+                return funds;
+            }
+
             foreach ( var item in fundQuery.Items )
             {
-                var fund = new PCOFund( item );
+                var fund = new FundDTO( item );
                 if ( fund != null )
                 {
                     funds.Add( fund );
@@ -627,7 +675,6 @@ namespace Slingshot.PCO.Utilities
         {
             try
             {
-
                 var batches = GetBatches( modifiedSince );
 
                 foreach ( var batch in batches )
@@ -652,8 +699,10 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        public static List<PCOBatch> GetBatches( DateTime? modifiedSince )
+        public static List<BatchDTO> GetBatches( DateTime? modifiedSince )
         {
+            var batches = new List<BatchDTO>();
+
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "owner" },
@@ -662,10 +711,14 @@ namespace Slingshot.PCO.Utilities
 
             var batchesQuery = GetAPIQuery( ApiEndpoint.API_BATCHES, apiOptions, modifiedSince );
 
-            var batches = new List<PCOBatch>();
+            if ( batchesQuery == null )
+            {
+                return batches;
+            }
+
             foreach ( var item in batchesQuery.Items )
             {
-                var batch = new PCOBatch( item );
+                var batch = new BatchDTO( item );
                 if ( batch != null )
                 {
                     batches.Add( batch );
@@ -721,8 +774,10 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        private static List<PCODonation> GetDonations( DateTime? modifiedSince )
+        private static List<DonationDTO> GetDonations( DateTime? modifiedSince )
         {
+            var donations = new List<DonationDTO>();
+
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "designations" },
@@ -731,10 +786,14 @@ namespace Slingshot.PCO.Utilities
 
             var donationsQuery = GetAPIQuery( ApiEndpoint.API_DONATIONS, apiOptions, modifiedSince );
 
-            var donations = new List<PCODonation>();
+            if ( donationsQuery == null )
+            {
+                return donations;
+            }
+
             foreach ( var item in donationsQuery.Items )
             {
-                var donation = new PCODonation( item, donationsQuery.IncludedItems );
+                var donation = new DonationDTO( item, donationsQuery.IncludedItems );
                 if ( donation != null )
                 {
                     donations.Add( donation );

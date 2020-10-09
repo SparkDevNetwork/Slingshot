@@ -1,6 +1,6 @@
 ﻿using Slingshot.Core;
 using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.DTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +9,14 @@ namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportPerson
     {
-        public static Person Translate( PCOPerson inputPerson, List<PCOFieldDefinition> personAttributes, PCOPerson headOfHouse, PCOPerson backgroundCheckPerson )
+        public static Person Translate(Models.DTO.PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, Models.DTO.PersonDTO headOfHouse, Models.DTO.PersonDTO backgroundCheckPerson )
         {
             if ( inputPerson.Id <= 0 )
             {
                 return null;
             }
 
-            var person = new Person
+            var person = new Core.Model.Person
             {
                 Id = inputPerson.Id,
                 Salutation = inputPerson.GetSalutation(),
@@ -50,7 +50,7 @@ namespace Slingshot.PCO.Utilities.Translators
 
         #region Translation Logic
 
-        private static Gender GetGender( this PCOPerson inputPerson )
+        private static Gender GetGender( this Models.DTO.PersonDTO inputPerson )
         {
             if ( inputPerson.Gender == "M" || inputPerson.Gender == "Male" )
             {
@@ -64,7 +64,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return Gender.Unknown;
         }
 
-        private static string GetSalutation( this PCOPerson inputPerson )
+        private static string GetSalutation( this Models.DTO.PersonDTO inputPerson )
         {
             if ( !string.IsNullOrWhiteSpace( inputPerson.NamePrefix ) )
             {
@@ -74,7 +74,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return string.Empty;
         }
 
-        private static string GetSuffix( this PCOPerson inputPerson )
+        private static string GetSuffix( this Models.DTO.PersonDTO inputPerson )
         {
             if ( !string.IsNullOrWhiteSpace( inputPerson.NameSuffix ) )
             {
@@ -99,7 +99,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return string.Empty;
         }
 
-        private static List<PersonPhone> GetPhoneNumbers( this PCOPerson inputPerson )
+        private static List<PersonPhone> GetPhoneNumbers( this Models.DTO.PersonDTO inputPerson )
         {
             var phones = new List<PersonPhone>();
             foreach ( var number in inputPerson.ContactData.PhoneNumbers )
@@ -115,7 +115,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return phones;
         }
 
-        private static string GetEmail( this PCOPerson inputPerson )
+        private static string GetEmail( this Models.DTO.PersonDTO inputPerson )
         {
             string emailAddress = string.Empty;
             foreach ( var email in inputPerson.ContactData.EmailAddresses )
@@ -129,9 +129,10 @@ namespace Slingshot.PCO.Utilities.Translators
             return emailAddress;
         }
 
-        private static List<PersonAddress> GetAddresses( this PCOPerson inputPerson )
+        private static List<PersonAddress> GetAddresses( this Models.DTO.PersonDTO inputPerson )
         {
             var addresses = new List<PersonAddress>();
+
 
             foreach ( var address in inputPerson.ContactData.Addresses )
             {
@@ -162,13 +163,36 @@ namespace Slingshot.PCO.Utilities.Translators
                     AddressType = addressType
                 };
 
-                addresses.Add( importAddress );
+                /*
+                 * Shaun Cummings - 10/09/20
+                 * 
+                 * Addresses cannot be added to this collection unless they have a value in Street1 and PostalCode or else they will
+                 * create a NullReference exception in Slingshot.Core\Utilities\ImportPackage.cs at line 367 (this is due to using the
+                 * .Equals() method directly on the property, which assumes the property is not null).
+                 * 
+                 * This should probably be fixed in Slingshot.Core, but that will require including the update in Rock.  The AddIfValid()
+                 * extension method is a workaround for this and should be removed if the problem is resolved in Slingshot.Core.
+                 * 
+                 * */
+                ////addresses.Add( importAddress );
+
+                addresses.AddIfValid( importAddress );
             }
 
             return addresses;
         }
 
-        private static MaritalStatus GetMaritalStatus( this PCOPerson inputPerson )
+        private static void AddIfValid( this List<PersonAddress> addresses, PersonAddress importAddress )
+        {
+            bool isValid = importAddress.Street1.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace();
+            if ( isValid )
+            {
+                addresses.Add( importAddress );
+            }
+
+       }
+
+        private static MaritalStatus GetMaritalStatus( this Models.DTO.PersonDTO inputPerson )
         {
             switch ( inputPerson.MaritalStatus )
             {
@@ -185,7 +209,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return MaritalStatus.Unknown;
         }
 
-        private static List<string> GetNotes( this PCOPerson inputPerson )
+        private static List<string> GetNotes( this Models.DTO.PersonDTO inputPerson )
         {
             var notes = new List<string>();
 
@@ -197,7 +221,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return notes;
         }
 
-        private static List<PersonAttributeValue> GetAttributes( this PCOPerson inputPerson, List<PCOFieldDefinition> personAttributes, PCOPerson servicePerson )
+        private static List<PersonAttributeValue> GetAttributes( this Models.DTO.PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, Models.DTO.PersonDTO servicePerson )
         {
             var attributeList = new List<PersonAttributeValue>();
             
@@ -244,12 +268,22 @@ namespace Slingshot.PCO.Utilities.Translators
             }
 
             // Add School Attribute
-            if( !string.IsNullOrWhiteSpace( inputPerson.School ) )
+            if ( !string.IsNullOrWhiteSpace( inputPerson.School ) )
             {
                 attributeList.Add( new PersonAttributeValue
                 {
                     AttributeKey = "School",
                     AttributeValue = inputPerson.School,
+                    PersonId = inputPerson.Id
+                } );
+            }
+
+            if ( inputPerson.RemoteId.HasValue )
+            {
+                attributeList.Add( new PersonAttributeValue
+                {
+                    AttributeKey = "RemoteId",
+                    AttributeValue = inputPerson.RemoteId.Value.ToString(),
                     PersonId = inputPerson.Id
                 } );
             }
@@ -264,7 +298,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return attributeList;
         }
 
-        private static Campus GetCampus( this PCOPerson HeadOfHouse )
+        private static Campus GetCampus( this Models.DTO.PersonDTO HeadOfHouse )
         {
             if ( HeadOfHouse.Campus != null )
             {
@@ -278,7 +312,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return null;
         }
 
-        private static PersonAttributeValue GetBackgroundCheckResult( this PCOPerson inputPerson, PCOPerson backgroundCheckPerson )
+        private static PersonAttributeValue GetBackgroundCheckResult( this Models.DTO.PersonDTO inputPerson, Models.DTO.PersonDTO backgroundCheckPerson )
         {
             if ( backgroundCheckPerson == null || !backgroundCheckPerson.PassedBackgroundCheck.HasValue )
             {

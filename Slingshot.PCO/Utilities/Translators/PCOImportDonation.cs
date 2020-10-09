@@ -1,11 +1,11 @@
 ﻿using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportDonation
     {
-        public static FinancialTransaction Translate( PCODonation inputTransaction )
+        public static FinancialTransaction Translate( DonationDTO inputTransaction )
         {
             var currencyType = CurrencyType.Unknown;
             switch ( inputTransaction.PaymentMethod )

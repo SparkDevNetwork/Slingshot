@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace Slingshot.PCO
 {
@@ -15,7 +17,8 @@ namespace Slingshot.PCO
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Windows.Threading.DispatcherTimer _apiUpdateTimer = new System.Windows.Threading.DispatcherTimer();
+        private DispatcherTimer _apiUpdateTimer = new DispatcherTimer();
+        private Stopwatch _stopwatch = new Stopwatch();
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
@@ -58,10 +61,16 @@ namespace Slingshot.PCO
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
             btnDownloadPackage.IsEnabled = true;
-            txtExportMessage.Text = "Export Complete";
             if ( !_errorHasOccurred )
             {
-                txtExportMessage.Text = "Export Complete";
+                var elapsedTime = String.Format(
+                    "{0:00}:{1:00}:{2:00}.{3:00}",
+                    _stopwatch.Elapsed.Hours,
+                    _stopwatch.Elapsed.Minutes,
+                    _stopwatch.Elapsed.Seconds,
+                    _stopwatch.Elapsed.Milliseconds / 10 );
+
+                txtExportMessage.Text = $"Export Completed in {elapsedTime}.";
                 pbProgress.Value = 100;
             }
         }
@@ -70,6 +79,7 @@ namespace Slingshot.PCO
         {
             exportWorker.ReportProgress( 0, "" );
             _apiUpdateTimer.Start();
+            _stopwatch.Start();
 
             var exportSettings = ( ExportSettings ) e.Argument;
 
@@ -84,6 +94,7 @@ namespace Slingshot.PCO
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     this.Dispatcher.Invoke( () =>
                     {
                         exportWorker.ReportProgress( 2, $"Error exporting individuals: {PCOApi.ErrorMessage}" );
@@ -99,6 +110,7 @@ namespace Slingshot.PCO
                 PCOApi.ExportFinancialAccounts();
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {PCOApi.ErrorMessage}" );
                 }
 
@@ -107,6 +119,7 @@ namespace Slingshot.PCO
                 PCOApi.ExportFinancialBatches( exportSettings.ModifiedSince );
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 35, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
                 }
 
@@ -115,6 +128,7 @@ namespace Slingshot.PCO
                 PCOApi.ExportContributions( exportSettings.ModifiedSince );
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 37, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
                 }
             }
@@ -129,6 +143,7 @@ namespace Slingshot.PCO
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
+                    _errorHasOccurred = true;
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {PCOApi.ErrorMessage}" );
                 }
             }
@@ -137,6 +152,7 @@ namespace Slingshot.PCO
             ImportPackage.FinalizePackage( "pco-export.slingshot" );
 
             _apiUpdateTimer.Stop();
+            _stopwatch.Stop();
         }
 
         #endregion
@@ -150,6 +166,10 @@ namespace Slingshot.PCO
         {
             // update the api stats
 			lblApiUsage.Text = $"API Usage: {PCOApi.ApiCounter}";
+            if ( PCOApi.ApiThrottleSeconds > 0 )
+            {
+                lblApiUsage.Text += $" (Throttled for {PCOApi.ApiThrottleSeconds} seconds.)";
+            }
         }
 
         /// <summary>
@@ -223,18 +243,6 @@ namespace Slingshot.PCO
             else
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 0 );
-            }
-        }
-
-        private void cbContributions_Checked( object sender, RoutedEventArgs e )
-        {
-            if ( cbContributions.IsChecked.Value )
-            {
-                gridMain.RowDefinitions[6].Height = new GridLength( 1, GridUnitType.Auto );
-            }
-            else
-            {
-                gridMain.RowDefinitions[6].Height = new GridLength( 0 );
             }
         }
 
