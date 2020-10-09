@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Slingshot.Core;
-using Slingshot.Core.Model;
+﻿using Slingshot.Core.Model;
 using Slingshot.PCO.Models;
+using System;
+using System.Collections.Generic;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
@@ -16,20 +11,17 @@ namespace Slingshot.PCO.Utilities.Translators
         {
             var transactionDetails = new List<FinancialTransactionDetail>();
 
-            foreach( var inputTransactionDetail in inputDonation.designations )
+            foreach ( var inputTransactionDetail in inputDonation.Designations )
             {
-                var transactionDetail = new FinancialTransactionDetail();
-
-                transactionDetail.Id = inputTransactionDetail.id;
-                
-                transactionDetail.AccountId = inputTransactionDetail.fundId;
-
-                transactionDetail.Amount = Convert.ToDecimal( inputTransactionDetail.amount_cents.Value / 100.00 );
-                transactionDetail.TransactionId = inputDonation.id;
-
-                transactionDetail.CreatedDateTime = inputDonation.created_at;
-
-                transactionDetail.ModifiedDateTime = inputDonation.updated_at;
+                var transactionDetail = new FinancialTransactionDetail
+                {
+                    Id = inputTransactionDetail.Id,
+                    AccountId = inputTransactionDetail.FundId,
+                    Amount = Convert.ToDecimal( inputTransactionDetail.AmountCents.Value / 100.00 ),
+                    TransactionId = inputDonation.Id,
+                    CreatedDateTime = inputDonation.CreatedAt,
+                    ModifiedDateTime = inputDonation.UpdatedAt
+                };
 
                 transactionDetails.Add( transactionDetail );
             }

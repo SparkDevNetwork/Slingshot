@@ -89,10 +89,8 @@
     <Compile Include="Utilities\Translators\PCOImportPersonNotes.cs" />
     <Compile Include="Utilities\Translators\PCOImportBatch.cs" />
     <Compile Include="Utilities\Translators\PCOImportFund.cs" />
-    <Compile Include="Utilities\Translators\PCOFinancialPledge.cs" />
     <Compile Include="Utilities\Translators\PCOImportDonation.cs" />
     <Compile Include="Utilities\Translators\PCOImportDesignation.cs" />
-    <Compile Include="Utilities\Translators\PCOGroup.cs" />
     <Compile Include="Utilities\Translators\PCOImportPerson.cs" />
     <Page Include="Login.xaml">
       <SubType>Designer</SubType>

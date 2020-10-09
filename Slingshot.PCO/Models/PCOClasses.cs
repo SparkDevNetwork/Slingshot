@@ -1,88 +1,169 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using System.Dynamic;
-using Newtonsoft.Json.Linq;
 
 namespace Slingshot.PCO.Models
 {
-    public class PCOItemResult
+    public class SingleOrArrayConverter<T> : JsonConverter
     {
-        public PCOData data { get; set; }
-        public List<PCOData> included { get; set; }
-        public PCOMeta meta { get; set; }
+        public override bool CanConvert( Type objecType )
+        {
+            return ( objecType == typeof( List<T> ) );
+        }
+
+        public override object ReadJson( JsonReader reader, Type objecType, object existingValue,
+            JsonSerializer serializer )
+        {
+            JToken token = JToken.Load( reader );
+            if ( token.Type == JTokenType.Array )
+            {
+                return token.ToObject<List<T>>();
+            }
+            return new List<T> { token.ToObject<T>() };
+        }
+
+        public override bool CanWrite
+        {
+            get { return false; }
+        }
+
+        public override void WriteJson( JsonWriter writer, object value, JsonSerializer serializer )
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class PCOItemsResult
     {
-        public PCOLinks links { get; set; }
+        [JsonProperty( "links" )]
+        public PCOLinks Links { get; set; }
 
+        [JsonProperty( "data" )]
         [JsonConverter( typeof( SingleOrArrayConverter<PCOData> ) )]
-        public List<PCOData> data { get; set; }
-        public List<PCOData> included { get; set; }
-        public PCOMeta meta { get; set; }
-    }
+        public List<PCOData> Data { get; set; }
 
-    public class PCOFileResult
-    {
-        public List<PCOFile> data { get; set; }
+        [JsonProperty( "included" )]
+        public List<PCOData> IncludedItems { get; set; }
+
+        [JsonProperty( "meta" )]
+        public PCOMeta Meta { get; set; }
     }
 
     public class PCOLinks
     {
-        public string self { get; set; }
-        public string prev { get; set; }
-        public string next { get; set; }
+        [JsonProperty( "self" )]
+        public string Self { get; set; }
+
+        [JsonProperty( "prev" )]
+        public string Previous { get; set; }
+
+        [JsonProperty( "next" )]
+        public string Next { get; set; }
     }
 
     public class PCORelationships
     {
-        public PCOItemsResult tags { get; set; }
-        public PCOItemsResult emails { get; set; }
-        public PCOItemsResult addresses { get; set; }
-        public PCOItemsResult phone_numbers { get; set; }
-        public PCOItemsResult field_options { get; set; }
-        public PCOItemsResult primary_campus { get; set; }
-        public PCOItemsResult name_prefix { get; set; }
-        public PCOItemsResult name_suffix { get; set; }
-        public PCOItemsResult school { get; set; }
-        public PCOItemsResult social_profiles { get; set; }
-        public PCOItemsResult field_data { get; set; }
-        public PCOItemsResult households { get; set; }
-        public PCOItemsResult inactive_reason { get; set; }
-        public PCOItemsResult marital_status { get; set; }
-        public PCOItemsResult field_definition { get; set; }
-        public PCOItemsResult batch { get; set; }
-        public PCOItemsResult person { get; set; }
-        public PCOItemsResult designations { get; set; }
-        public PCOItemsResult fund { get; set; }
-        public PCOItemsResult owner { get; set; }
-        public PCOItemsResult note_category { get; set; }
-    }
+        [JsonProperty( "tags" )]
+        public PCOItemsResult Tags { get; set; }
 
-    public class PCOFile
-    {
-        public string id { get; set; }
+        [JsonProperty( "emails" )]
+        public PCOItemsResult Emails { get; set; }
+
+        [JsonProperty( "addresses" )]
+        public PCOItemsResult Addresses { get; set; }
+
+        [JsonProperty( "phone_numbers" )]
+        public PCOItemsResult PhoneNumbers { get; set; }
+
+        [JsonProperty( "field_options" )]
+        public PCOItemsResult FieldOptions { get; set; }
+
+        [JsonProperty( "primary_campus" )]
+        public PCOItemsResult PrimaryCampus { get; set; }
+
+        [JsonProperty( "name_prefix" )]
+        public PCOItemsResult NamePrefix { get; set; }
+
+        [JsonProperty( "name_suffix" )]
+        public PCOItemsResult NameSuffix { get; set; }
+
+        [JsonProperty( "school" )]
+        public PCOItemsResult School { get; set; }
+
+        [JsonProperty( "social_profiles" )]
+        public PCOItemsResult SocialProfiles { get; set; }
+
+        [JsonProperty( "field_data" )]
+        public PCOItemsResult FieldData { get; set; }
+
+        [JsonProperty( "households" )]
+        public PCOItemsResult Households { get; set; }
+
+        [JsonProperty( "inactive_reason" )]
+        public PCOItemsResult InactiveReason { get; set; }
+
+        [JsonProperty( "marital_status" )]
+        public PCOItemsResult MaritalStatus { get; set; }
+
+        [JsonProperty( "field_definition" )]
+        public PCOItemsResult FieldDefinition { get; set; }
+
+        [JsonProperty( "batch" )]
+        public PCOItemsResult Batch { get; set; }
+
+        [JsonProperty( "person" )]
+        public PCOItemsResult Person { get; set; }
+
+        [JsonProperty( "designations" )]
+        public PCOItemsResult Designations { get; set; }
+
+        [JsonProperty( "fund" )]
+        public PCOItemsResult Fund { get; set; }
+
+        [JsonProperty( "owner" )]
+        public PCOItemsResult Owner { get; set; }
+
+        [JsonProperty( "note_category" )]
+        public PCOItemsResult NoteCategory { get; set; }
     }
 
     public class PCOData
     {
-        public string type { get; set; }
-        public int id { get; set; }
+        [JsonProperty( "type" )]
+        public string Type { get; set; }
+
+        [JsonProperty( "id" )]
+        public int Id { get; set; }
 
         [JsonProperty( "attributes" )]
         public dynamic Item { get; set; }
 
-        public PCORelationships relationships { get; set; }
+        [JsonProperty( "relationships" )]
+        public PCORelationships Relationships { get; set; }
+    }
+
+    public class PCOQueryResult
+    {
+        /// <summary>
+        /// The Items included in this query.
+        /// </summary>
+        public List<PCOData> Items { get; set; }
+
+        /// <summary>
+        /// Related items specified in the "include" option of the query.
+        /// </summary>
+        public List<PCOData> IncludedItems { get; set; }
     }
 
     public class PCOMeta
     {
-        public int total_count { get; set; }
-        public int count { get; set; }
+        [JsonProperty( "total_count" )]
+        public int TotalCount { get; set; }
+
+        [JsonProperty( "count" )]
+        public int Count { get; set; }
     }
 
     public class PCOTagGroup

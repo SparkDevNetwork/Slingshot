@@ -1,286 +1,299 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
-using System.Xml.Linq;
-using Slingshot.Core;
+﻿using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.PCO.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportPerson
     {
-        public static Person Translate( PCOPerson inputPerson, List<PCOFieldDefinition> personAttributes, PCOPerson HeadOfHouse )
+        public static Person Translate( PCOPerson inputPerson, List<PCOFieldDefinition> personAttributes, PCOPerson headOfHouse, PCOPerson backgroundCheckPerson )
         {
-            var person = new Core.Model.Person();
-            var notes = new List<string>();
-
-            if ( inputPerson.id > 0 )
+            if ( inputPerson.Id <= 0 )
             {
-                person.Id = inputPerson.id;
+                return null;
+            }
 
-                // names
-                person.FirstName = inputPerson.first_name;
-                person.NickName = inputPerson.nickname;
-                person.MiddleName = inputPerson.middle_name;
-                person.LastName = inputPerson.last_name;
-
-                
-                if ( !string.IsNullOrWhiteSpace( inputPerson.name_prefix ) )
-                {
-                    person.Salutation = System
-                                        .Threading
-                                        .Thread
-                                        .CurrentThread
-                                        .CurrentCulture
-                                        .TextInfo
-                                        .ToTitleCase( inputPerson.name_prefix.ToLower() );
-                }
-
-                if( !string.IsNullOrWhiteSpace( inputPerson.name_suffix ) )
-                {
-                    if ( inputPerson.name_suffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )
-                    {
-                        person.Suffix = "Sr.";
-                    }
-                    else if ( inputPerson.name_suffix.Equals( "Jr.", StringComparison.OrdinalIgnoreCase ) )
-                    {
-                        person.Suffix = "Jr.";
-                    }
-                    else if ( inputPerson.name_suffix.Equals( "Ph.D.", StringComparison.OrdinalIgnoreCase ) )
-                    {
-                        person.Suffix = "Ph.D.";
-                    }
-                    else
-                    {
-                        person.Suffix = inputPerson.name_suffix;
-                    }
-                }
-                
-                // communcations (phone & email)
-                foreach ( var number in inputPerson.contact_data.phone_numbers )
-                {
-                    person.PhoneNumbers.Add( new PersonPhone
-                    {
-                        PersonId = person.Id,
-                        PhoneType = number.location,
-                        PhoneNumber = number.number
-                    } );
-                }
-
-                foreach ( var email in inputPerson.contact_data.email_addresses )
-                {
-                    person.Email = email.address;
-                }
-
-                
-                // addresses
-                foreach ( var address in inputPerson.contact_data.addresses )
-                {
-                        var importAddress = new PersonAddress();
-                        importAddress.PersonId = person.Id;
-                        importAddress.Street1 = address.street;
-                        importAddress.City = address.city;
-                        importAddress.State = address.state;
-                        importAddress.PostalCode = address.zip;
-
-                        var addressType = address.location;
-
-                        switch ( addressType )
-                        {
-                            case "Home":
-                                importAddress.AddressType = AddressType.Home;
-                                break;
-                            case "Previous":
-                                importAddress.AddressType = AddressType.Previous;
-                                break;
-                            case "Work":
-                                importAddress.AddressType = AddressType.Work;
-                                break;
-                            case "Other":
-                                importAddress.AddressType = AddressType.Other;
-                                break;
-
-                        }
-
-                        person.Addresses.Add( importAddress );
-
-                }
-
-                // gender
-                var gender = inputPerson.gender;
-
-                if ( gender == "M" || gender == "Male" )
-                {
-                    person.Gender = Gender.Male;
-                }
-                else if ( gender == "F" || gender == "Female" )
-                {
-                    person.Gender = Gender.Female;
-                }
-                else
-                {
-                    person.Gender = Gender.Unknown;
-                }
-
-            // marital status
-            switch ( inputPerson.marital_status )
+            var person = new Person
             {
-                case "Married":
-                    person.MaritalStatus = MaritalStatus.Married;
-                    break;
-                case "Single":
-                    person.MaritalStatus = MaritalStatus.Single;
-                    break;
-                case "Divorced":
-                    person.MaritalStatus = MaritalStatus.Divorced;
-                    break;
-                default:
-                    person.MaritalStatus = MaritalStatus.Unknown;
-                    if ( inputPerson.marital_status.IsNotNullOrWhitespace() )
-                    {
-                        notes.Add( "maritalStatus: " + inputPerson.marital_status );
-                    }
-                    break;
-            }
-            
-
-            // connection status
-                person.ConnectionStatus = inputPerson.member;
-
-                // record status
-                if ( inputPerson.status == "active" )
-                {
-                    person.RecordStatus = RecordStatus.Active;
-                }
-                else
-                {
-                    person.RecordStatus = RecordStatus.Inactive;
-                }
-
-                // dates
-                person.Birthdate = inputPerson.birthdate;
-                person.AnniversaryDate = inputPerson.anniversary;
-                person.CreatedDateTime = inputPerson.created_at;
-                person.ModifiedDateTime = inputPerson.updated_at;
-
-                // family
-              
-                if( inputPerson.household != null )
-                {
-                    person.FamilyId = inputPerson.household.Id;
-                }
-                
-
-                if ( inputPerson.child.HasValue && inputPerson.child.Value )
-                {
-                    person.FamilyRole = FamilyRole.Child;
-                }
-                else
-                {
-                    person.FamilyRole = FamilyRole.Adult;
-                }
-
-                if( HeadOfHouse.campus != null)
-                {
-                    person.Campus = new Campus
-                    {
-                        CampusId = HeadOfHouse.campus.id,
-                        CampusName = HeadOfHouse.campus.name
-                    };
-                }
-
-                // person attributes
-                // Make sure there are no duplicate entries for a given field
-                var attributes = inputPerson.field_data
-                                    .GroupBy( a => a.field_definition_id )
-                                    .Select( g => g.First() )
-                                    .ToList();
-                var usedAttributeKeys = new List<string>();
-
-                foreach ( var attribute in attributes )
-                {
-                    var field_definition = personAttributes.Where( f => f.id == attribute.field_definition_id ).FirstOrDefault();
-                    if ( field_definition != null )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = field_definition.id + "_" + field_definition.slug,
-                            AttributeValue = attribute.value,
-                            PersonId = person.Id
-                        } );
-                    }
-                }
-                
-                // Make sure there are no duplicate entries
-                var profiles = inputPerson.socialProfiles
-                                    .GroupBy( a => a.site )
-                                    .Select( g => g.First() )
-                                    .ToList();
-                // add social profiles to attributes
-                foreach ( var profile in profiles )
-                {
-                    if( profile.url.IsNotNullOrWhitespace() )
-                    {
-                        person.Attributes.Add( new PersonAttributeValue
-                        {
-                            AttributeKey = profile.site,
-                            AttributeValue = profile.url,
-                            PersonId = person.Id
-                        } );
-                    }
-                }
-
-                // Add School Attribute
-                if( !string.IsNullOrWhiteSpace( inputPerson.school ) )
-                {
-                    person.Attributes.Add( new PersonAttributeValue
-                    {
-                        AttributeKey = "School",
-                        AttributeValue = inputPerson.school,
-                        PersonId = person.Id
-                    } );
-                }
-
-                // write out person notes
-                if ( notes.Count() > 0 )
-                {
-                    person.Note = string.Join( ",", notes );
-                }
-
-
-
-            }
+                Id = inputPerson.Id,
+                Salutation = inputPerson.GetSalutation(),
+                FirstName = inputPerson.FirstName,
+                NickName = inputPerson.Nickname,
+                MiddleName = inputPerson.MiddleName,
+                LastName = inputPerson.LastName,
+                Suffix = inputPerson.GetSuffix(),
+                Gender = GetGender( inputPerson ),
+                ConnectionStatus = inputPerson.Member,
+                RecordStatus = ( inputPerson.Status == "active" ) ? RecordStatus.Active : RecordStatus.Inactive,
+                PhoneNumbers = inputPerson.GetPhoneNumbers(),
+                Email = inputPerson.GetEmail(),
+                Addresses = inputPerson.GetAddresses(),
+                MaritalStatus = inputPerson.GetMaritalStatus(),
+                Birthdate = inputPerson.Birthdate,
+                AnniversaryDate = inputPerson.Anniversary,
+                CreatedDateTime = inputPerson.CreatedAt,
+                ModifiedDateTime = inputPerson.UpdatedAt,
+                FamilyId = inputPerson.Household?.Id,
+                FamilyName = inputPerson.Household?.Name,
+                FamilyRole = ( inputPerson.Child == true ) ? FamilyRole.Child : FamilyRole.Adult,
+                InactiveReason = inputPerson.InactiveReason,
+                Campus = headOfHouse.GetCampus(),
+                Attributes = inputPerson.GetAttributes( personAttributes, backgroundCheckPerson ),
+                Note = string.Join( ",", inputPerson.GetNotes() )
+            };
 
             return person;
         }
 
-        public static Person AddBackgroundCheckResult( Person person, PCOPerson pcoPerson )
-        {
-            if ( pcoPerson.passed_background_check.HasValue )
-            {
+        #region Translation Logic
 
-                string value;
-                if( pcoPerson.passed_background_check.Value )
+        private static Gender GetGender( this PCOPerson inputPerson )
+        {
+            if ( inputPerson.Gender == "M" || inputPerson.Gender == "Male" )
+            {
+                return Gender.Male;
+            }
+            else if ( inputPerson.Gender == "F" || inputPerson.Gender == "Female" )
+            {
+                return Gender.Female;
+            }
+
+            return Gender.Unknown;
+        }
+
+        private static string GetSalutation( this PCOPerson inputPerson )
+        {
+            if ( !string.IsNullOrWhiteSpace( inputPerson.NamePrefix ) )
+            {
+                return System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase( inputPerson.NamePrefix.ToLower() );
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetSuffix( this PCOPerson inputPerson )
+        {
+            if ( !string.IsNullOrWhiteSpace( inputPerson.NameSuffix ) )
+            {
+                if ( inputPerson.NameSuffix.Equals( "Sr.", StringComparison.OrdinalIgnoreCase ) )
                 {
-                    value = "Pass";
+                    return "Sr.";
+                }
+                else if ( inputPerson.NameSuffix.Equals( "Jr.", StringComparison.OrdinalIgnoreCase ) )
+                {
+                    return "Jr.";
+                }
+                else if ( inputPerson.NameSuffix.Equals( "Ph.D.", StringComparison.OrdinalIgnoreCase ) )
+                {
+                    return "Ph.D.";
                 }
                 else
                 {
-                    value = "Fail";
+                    return inputPerson.NameSuffix;
                 }
-                person.Attributes.Add( new PersonAttributeValue
+            }
+
+            return string.Empty;
+        }
+
+        private static List<PersonPhone> GetPhoneNumbers( this PCOPerson inputPerson )
+        {
+            var phones = new List<PersonPhone>();
+            foreach ( var number in inputPerson.ContactData.PhoneNumbers )
+            {
+                phones.Add( new PersonPhone
                 {
-                    AttributeKey = "BackgroundCheckResult",
-                    AttributeValue = value,
-                    PersonId = person.Id
+                    PersonId = inputPerson.Id,
+                    PhoneType = number.Location,
+                    PhoneNumber = number.Number
                 } );
             }
-            return person;
+
+            return phones;
         }
+
+        private static string GetEmail( this PCOPerson inputPerson )
+        {
+            string emailAddress = string.Empty;
+            foreach ( var email in inputPerson.ContactData.EmailAddresses )
+            {
+                if ( email.Primary || emailAddress.IsNullOrWhiteSpace() )
+                {
+                    emailAddress = email.Address;
+                }
+            }
+
+            return emailAddress;
+        }
+
+        private static List<PersonAddress> GetAddresses( this PCOPerson inputPerson )
+        {
+            var addresses = new List<PersonAddress>();
+
+            foreach ( var address in inputPerson.ContactData.Addresses )
+            {
+                var addressType = AddressType.Other;
+                switch ( address.Location )
+                {
+                    case "Home":
+                        addressType = AddressType.Home;
+                        break;
+                    case "Previous":
+                        addressType = AddressType.Previous;
+                        break;
+                    case "Work":
+                        addressType = AddressType.Work;
+                        break;
+                    case "Other":
+                        addressType = AddressType.Other;
+                        break;
+                }
+
+                var importAddress = new PersonAddress
+                {
+                    PersonId = inputPerson.Id,
+                    Street1 = address.Street,
+                    City = address.City,
+                    State = address.State,
+                    PostalCode = address.Zip,
+                    AddressType = addressType
+                };
+
+                addresses.Add( importAddress );
+            }
+
+            return addresses;
+        }
+
+        private static MaritalStatus GetMaritalStatus( this PCOPerson inputPerson )
+        {
+            switch ( inputPerson.MaritalStatus )
+            {
+                case "Married":
+                    return MaritalStatus.Married;
+                case "Single":
+                    return MaritalStatus.Single;
+                case "Divorced":
+                    return MaritalStatus.Divorced;
+                default:
+                    break;
+            }
+
+            return MaritalStatus.Unknown;
+        }
+
+        private static List<string> GetNotes( this PCOPerson inputPerson )
+        {
+            var notes = new List<string>();
+
+            if ( inputPerson.GetMaritalStatus() == MaritalStatus.Unknown && inputPerson.MaritalStatus.IsNotNullOrWhitespace() )
+            {
+                notes.Add( "PCO Marital Status: " + inputPerson.MaritalStatus );
+            }
+
+            return notes;
+        }
+
+        private static List<PersonAttributeValue> GetAttributes( this PCOPerson inputPerson, List<PCOFieldDefinition> personAttributes, PCOPerson servicePerson )
+        {
+            var attributeList = new List<PersonAttributeValue>();
+            
+            // Make sure there are no duplicate entries for a given field
+            var attributes = inputPerson.FieldData
+                                .GroupBy( a => a.FieldDefinitionId )
+                                .Select( g => g.First() )
+                                .ToList();
+
+            var usedAttributeKeys = new List<string>();
+
+            foreach ( var attribute in attributes )
+            {
+                var field_definition = personAttributes.Where( f => f.Id == attribute.FieldDefinitionId ).FirstOrDefault();
+                if ( field_definition != null )
+                {
+                    attributeList.Add( new PersonAttributeValue
+                    {
+                        AttributeKey = field_definition.Id + "_" + field_definition.Slug,
+                        AttributeValue = attribute.Value,
+                        PersonId = inputPerson.Id
+                    } );
+                }
+            }
+                
+            // Make sure there are no duplicate entries
+            var profiles = inputPerson.SocialProfiles
+                .GroupBy( a => a.Site )
+                .Select( g => g.First() )
+                .ToList();
+
+            // add social profiles to attributes
+            foreach ( var profile in profiles )
+            {
+                if( profile.Url.IsNotNullOrWhitespace() )
+                {
+                    attributeList.Add( new PersonAttributeValue
+                    {
+                        AttributeKey = profile.Site,
+                        AttributeValue = profile.Url,
+                        PersonId = inputPerson.Id
+                    } );
+                }
+            }
+
+            // Add School Attribute
+            if( !string.IsNullOrWhiteSpace( inputPerson.School ) )
+            {
+                attributeList.Add( new PersonAttributeValue
+                {
+                    AttributeKey = "School",
+                    AttributeValue = inputPerson.School,
+                    PersonId = inputPerson.Id
+                } );
+            }
+
+            // Add background check attribute, if appropriate.
+            var backgroundCheckAttribute = inputPerson.GetBackgroundCheckResult( servicePerson );
+            if ( backgroundCheckAttribute != null )
+            {
+                attributeList.Add( backgroundCheckAttribute );
+            }
+
+            return attributeList;
+        }
+
+        private static Campus GetCampus( this PCOPerson HeadOfHouse )
+        {
+            if ( HeadOfHouse.Campus != null )
+            {
+                return new Campus
+                {
+                    CampusId = HeadOfHouse.Campus.Id,
+                    CampusName = HeadOfHouse.Campus.Name
+                };
+            }
+
+            return null;
+        }
+
+        private static PersonAttributeValue GetBackgroundCheckResult( this PCOPerson inputPerson, PCOPerson backgroundCheckPerson )
+        {
+            if ( backgroundCheckPerson == null || !backgroundCheckPerson.PassedBackgroundCheck.HasValue )
+            {
+                return null;
+            }
+
+            var result = ( backgroundCheckPerson.PassedBackgroundCheck.Value ) ? "Pass" : "Fail";
+            return new PersonAttributeValue
+            {
+                AttributeKey = "BackgroundCheckResult",
+                AttributeValue = result,
+                PersonId = inputPerson.Id
+            };
+        }
+
+        #endregion Translation Logic
     }
 }

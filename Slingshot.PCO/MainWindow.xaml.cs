@@ -1,22 +1,12 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using Slingshot.Core.Utilities;
+using Slingshot.PCO.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
-using Slingshot.PCO.Utilities;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.Core.Utilities;
 
 namespace Slingshot.PCO
 {
@@ -29,6 +19,8 @@ namespace Slingshot.PCO
 
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
 
+        private bool _errorHasOccurred = false;
+
         public List<GroupType> ExportGroupTypes { get; set; }
         public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
 
@@ -39,9 +31,6 @@ namespace Slingshot.PCO
             _apiUpdateTimer.Tick += _apiUpdateTimer_Tick;          
             _apiUpdateTimer.Interval = new TimeSpan( 0, 0, 1 );
            
-            // Set F1Api.DumpResponseToXmlFile to true to save all API Responses to XML files and include them in the slingshot package
-            PCOApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
-
             exportWorker.DoWork += ExportWorker_DoWork;
             exportWorker.RunWorkerCompleted += ExportWorker_RunWorkerCompleted;
             exportWorker.ProgressChanged += ExportWorker_ProgressChanged;
@@ -51,14 +40,30 @@ namespace Slingshot.PCO
         #region Background Worker Events
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
-            txtExportMessage.Text = e.UserState.ToString();
+            string userState = e.UserState.ToString();
+            txtExportMessage.Text = userState;
             pbProgress.Value = e.ProgressPercentage;
+
+            if ( _errorHasOccurred )
+            {
+                if ( userState.IsNotNullOrWhitespace() )
+                {
+                    txtMessages.Text += userState + Environment.NewLine;
+                }
+                txtMessages.Visibility = Visibility.Visible;
+                txtError.Visibility = Visibility.Visible;
+            }
         }
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = true;
             txtExportMessage.Text = "Export Complete";
-            pbProgress.Value = 100;
+            if ( !_errorHasOccurred )
+            {
+                txtExportMessage.Text = "Export Complete";
+                pbProgress.Value = 100;
+            }
         }
 
         private void ExportWorker_DoWork( object sender, DoWorkEventArgs e )
@@ -72,7 +77,7 @@ namespace Slingshot.PCO
             PCOApi.InitializeExport();
 
             // export individuals
-            if ( exportSettings.ExportIndividuals )
+            if ( !_errorHasOccurred && exportSettings.ExportIndividuals )
             {
                 exportWorker.ReportProgress( 1, "Exporting Individuals..." );
                 PCOApi.ExportIndividuals( exportSettings.ModifiedSince );
@@ -87,7 +92,7 @@ namespace Slingshot.PCO
             }
 
             // export contributions
-            if ( exportSettings.ExportContributions )
+            if ( !_errorHasOccurred && exportSettings.ExportContributions )
             {
                 exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
 
@@ -96,17 +101,6 @@ namespace Slingshot.PCO
                 {
                     exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {PCOApi.ErrorMessage}" );
                 }
-
-                /*  PCO Doesn't have pledges
-
-                exportWorker.ReportProgress( 32, "Exporting Financial Pledges..." );
-
-                PCOApi.ExportFinancialPledges();
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    exportWorker.ReportProgress( 33, $"Error exporting financial pledges: {PCOApi.ErrorMessage}" );
-                }
-                */
 
                 exportWorker.ReportProgress( 34, "Exporting Financial Batches..." );
 
@@ -118,7 +112,7 @@ namespace Slingshot.PCO
 
                 exportWorker.ReportProgress( 36, "Exporting Contribution Information..." );
 
-                PCOApi.ExportContributions( exportSettings.ModifiedSince, exportSettings.ExportContributionImages );
+                PCOApi.ExportContributions( exportSettings.ModifiedSince );
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     exportWorker.ReportProgress( 37, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
@@ -126,7 +120,7 @@ namespace Slingshot.PCO
             }
 
             // export group types
-            if ( exportSettings.ExportGroupTypes.Count > 0 )
+            if ( !_errorHasOccurred && exportSettings.ExportGroupTypes.Count > 0 )
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
@@ -187,13 +181,21 @@ namespace Slingshot.PCO
         /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
         private void btnDownloadPackage_Click( object sender, RoutedEventArgs e )
         {
+            btnDownloadPackage.IsEnabled = false;
+
+            // clear result from previous export
+            txtExportMessage.Text = string.Empty;
+            txtMessages.Text = string.Empty;
+            txtMessages.Visibility = Visibility.Collapsed;
+            txtError.Visibility = Visibility.Collapsed;
+            _errorHasOccurred = false;
+
             // launch our background export
             var exportSettings = new ExportSettings
             {
                 ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
-                ExportIndividuals = cbIndividuals.IsChecked.Value,
-                ExportContributionImages = cbExportContribImages.IsChecked.Value
+                ExportIndividuals = cbIndividuals.IsChecked.Value
             };
 
             // configure group types to export
@@ -205,7 +207,6 @@ namespace Slingshot.PCO
                 }
             }
 
-            PCOApi.DumpResponseToXmlFile = cbDumpResponseToXmlFile.IsChecked ?? false;
             exportWorker.RunWorkerAsync( exportSettings );
         }
 
@@ -249,8 +250,6 @@ namespace Slingshot.PCO
         public bool ExportContributions { get; set; } = true;
 
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
-
-        public bool ExportContributionImages { get; set; } = true;
     }
 
     public class CheckListItem

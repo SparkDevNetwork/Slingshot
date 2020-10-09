@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Slingshot.Core;
-using Slingshot.Core.Model;
+﻿using Slingshot.Core.Model;
 using Slingshot.PCO.Models;
 
 namespace Slingshot.PCO.Utilities.Translators
@@ -14,23 +7,16 @@ namespace Slingshot.PCO.Utilities.Translators
     {
         public static FinancialBatch Translate( PCOBatch inputBatch )
         {
-            var financialBatch = new Core.Model.FinancialBatch();
-            financialBatch.Id = inputBatch.id;
-            financialBatch.StartDate = inputBatch.created_at;
-            financialBatch.Name = inputBatch.description;
-
-            if( inputBatch.committed_at.HasValue )
+            var financialBatch = new FinancialBatch
             {
-                financialBatch.Status = BatchStatus.Closed;
-            }
-            else
-            {
-                financialBatch.Status = BatchStatus.Open;
-            }
-
-            financialBatch.CreatedDateTime = inputBatch.created_at;
-            financialBatch.ModifiedDateTime = inputBatch.updated_at;
-            financialBatch.CreatedByPersonId = inputBatch.ownerId;
+                Id = inputBatch.Id,
+                StartDate = inputBatch.CreatedAt,
+                Name = inputBatch.Description,
+                CreatedDateTime = inputBatch.CreatedAt,
+                ModifiedDateTime = inputBatch.UpdatedAt,
+                CreatedByPersonId = inputBatch.OwnerId,
+                Status = ( inputBatch.CommittedAt.HasValue ) ? BatchStatus.Closed : BatchStatus.Open
+            };
 
             return financialBatch;
         }

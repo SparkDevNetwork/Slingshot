@@ -1,52 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Xml.Linq;
-using System.Net;
-
+﻿using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Authenticators;
-using RestSharp.Authenticators.OAuth;
-using RestSharp.Extensions.MonoHttp;
-
-using Newtonsoft.Json;
-
 using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
-using Slingshot.PCO.Utilities.Translators;
 using Slingshot.PCO.Models;
+using Slingshot.PCO.Utilities.Translators;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
 
 namespace Slingshot.PCO.Utilities
 {
     /// <summary>
-    /// API F1 Status
+    /// PCO API Class.
     /// </summary>
     public static class PCOApi
     {
         private static RestClient _client;
         private static RestRequest _request;
 
-        /// <summary>
-        ///  Set F1Api.DumpResponseToXmlFile to true to save all API Responses 
-        ///   to XML files and include them in the slingshot package
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if the response should get dumped to XML; otherwise, <c>false</c>.
-        /// </value>
-        public static bool DumpResponseToXmlFile { get; set; }
-
-        /// <summary>
-        /// Gets or sets the last run date.
-        /// </summary>
-        /// <value>
-        /// The last run date.
-        /// </value>
-        public static DateTime LastRunDate { get; set; } = DateTime.MinValue;
+        #region Properties
 
         /// <summary>
         /// Gets or sets the api counter.
@@ -55,14 +32,6 @@ namespace Slingshot.PCO.Utilities
         /// The api counter.
         /// </value>
         public static int ApiCounter { get; set; } = 0;
-
-        /// <summary>
-        /// Gets or sets the domain.
-        /// </summary>
-        /// <value>
-        /// The domain.
-        /// </value>
-        public static string Hostname { get; set; }
 
         /// <summary>
         /// Gets or sets the error message.
@@ -78,11 +47,11 @@ namespace Slingshot.PCO.Utilities
         /// <value>
         /// The API URL.
         /// </value>
-        public static string ApiUrl
+        public static string ApiBaseUrl
         {
             get
             {
-                return $"https://api.planningcenteronline.com/";
+                return $"https://api.planningcenteronline.com";
             }
         }
 
@@ -103,30 +72,29 @@ namespace Slingshot.PCO.Utilities
         public static string ApiConsumerSecret { get; set; }
 
         /// <summary>
-        /// Gets or sets the oauth token.
+        /// Is Connected.
         /// </summary>
         /// <value>
-        /// The oauth token.
+        /// <c>true</c> if the connected; otherwise, <c>false</c>.
         /// </value>
-
         public static bool IsConnected { get; private set; } = false;
 
-        #region API Call Paths 
+        #endregion Properties
 
-        private const string API_ACCESS_TOKEN = "/v1/PortalUser/AccessToken";
-        private const string API_PEOPLE = "https://api.planningcenteronline.com/people/v2/people";
-        private const string API_INDIVIDUALS_REQUIREMENTS = "/v1/Requirements";
-        private const string API_ATTRIBUTE_GROUPS = "/v1/people/attributegroups";
-        private const string API_ACCOUNTS = "/giving/v1/funds";
-        private const string API_BATCH_TYPES = "/giving/v1/batches/batchtypes";
-        private const string API_BATCHES = "/giving/v1/batches/search";
-        private const string API_CONTRIBUTION_RECEIPTS = "/giving/v1/contributionreceipts/search";
-        private const string API_CONTRIBUTION_RECEIPT_IMAGE = "/giving/v1/referenceimages/";
-        private const string API_GROUP_TYPES = "/groups/v1/grouptypes";
-        private const string API_GROUPS = "/groups/v1/grouptypes/";
-        private const string API_GROUP_MEMBERS = "/groups/v1/groups/";
-
-        #endregion
+        /// <summary>
+        /// Api Endpoint Declarations.
+        /// </summary>
+        internal static class ApiEndpoint
+        {
+            internal const string API_MYSELF = "/people/v2/me";
+            internal const string API_PEOPLE = "/people/v2/people";
+            internal const string API_SERVICE_PEOPLE = "/services/v2/people";
+            internal const string API_NOTES = "/people/v2/notes";
+            internal const string API_FIELD_DEFINITIONS = "/people/v2/field_definitions";
+            internal const string API_FUNDS = "/giving/v2/funds";
+            internal const string API_BATCHES = "/giving/v2/batches";
+            internal const string API_DONATIONS = "/giving/v2/donations";
+        }
 
         /// <summary>
         /// Initializes the export.
@@ -137,37 +105,38 @@ namespace Slingshot.PCO.Utilities
         }
 
         /// <summary>
-        /// Connects the specified host name.
+        /// Connects to the PCO API.
         /// </summary>
-        /// <param name="hostName">Name of the host.</param>
         /// <param name="apiUsername">The API username.</param>
         /// <param name="apiPassword">The API password.</param>
         public static void Connect( string apiConsumerKey, string apiConsumerSecret )
         {
             ApiConsumerKey = apiConsumerKey;
             ApiConsumerSecret = apiConsumerSecret;
-
             ApiCounter = 0;
 
-            var me = ApiGet( "https://api.planningcenteronline.com/people/v2/me" );
-
-            if ( me != string.Empty )
-            {
-                IsConnected = true;
-            }
-            else
-            {
-                IsConnected = false;
-            }
+            var response = ApiGet( ApiEndpoint.API_MYSELF );
+            IsConnected = ( response != string.Empty );
         }
 
-        private static string ApiGet( string apiEndPoint )
+        #region Private Data Access Methods
+
+        /// <summary>
+        /// Issues a GET request to the PCO API for the specified end point and returns the response.
+        /// </summary>
+        /// <param name="apiEndPoint">The API end point.</param>
+        /// <param name="apiRequestOptions">An optional collection of request options.</param>
+        /// <returns></returns>
+        private static string ApiGet( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null )
         {
             try
             {
-                _client = new RestClient( apiEndPoint );
-                _request = new RestRequest( Method.GET );
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                var fullApiUrl = ApiBaseUrl + apiEndPoint + GetRequestQueryString( apiRequestOptions );
+                _client = new RestClient( fullApiUrl );
                 _client.Authenticator = new HttpBasicAuthenticator( ApiConsumerKey, ApiConsumerSecret );
+
+                _request = new RestRequest( Method.GET );
                 _request.AddHeader( "accept", "application/json" );
 
                 var response = _client.Execute( _request );
@@ -181,31 +150,26 @@ namespace Slingshot.PCO.Utilities
                 else if ( ( int ) response.StatusCode == 429 )
                 {
                     // If we've got a 'too many requests' error, delay for a number of seconds specified by 'Retry-After
-                    System.Threading.Thread.Sleep( 60000 ); //Wait 1 minute
 
-                    _client = new RestClient( apiEndPoint );
-                    _request = new RestRequest( Method.GET );
-                    _client.Authenticator = OAuth1Authenticator.ForRequestToken( ApiConsumerKey, ApiConsumerSecret );
-                    _request.AddHeader( "accept", "application/json" );
+                    var retryAfter = response.Headers
+                        .Where( h => h.Name.Equals( "Retry-After", StringComparison.InvariantCultureIgnoreCase ) )
+                        .Select( x => ( ( string ) x.Value ).AsIntegerOrNull() )
+                        .FirstOrDefault();
 
-                    response = _client.Execute( _request );
-
-                    ApiCounter++;
-
-                    if ( response.StatusCode == HttpStatusCode.OK )
+                    if ( !retryAfter.HasValue )
                     {
-                        return response.Content;
+                        throw new Exception( "Received HTTP 429 response without 'Retry-After' header." );
                     }
-                    else
-                    {
-                        PCOApi.ErrorMessage = response.StatusCode + ": " + response.Content;
-                    }
-                }
-                else
-                {
-                    PCOApi.ErrorMessage = response.StatusCode + ": " + response.Content;
+
+                    int waitTime = ( retryAfter.Value * 1000 ) + 50; // Add 50ms to avoid clock synchronization issues.
+                    PCOApi.ErrorMessage = $"Throttling API requests for {retryAfter} seconds";
+                    Thread.Sleep( waitTime );
+
+                    return ApiGet( apiEndPoint, apiRequestOptions );
                 }
 
+                // If we made it here, the response can be assumed to be an error.
+                PCOApi.ErrorMessage = response.StatusCode + ": " + response.Content;
             }
             catch ( Exception ex )
             {
@@ -216,76 +180,156 @@ namespace Slingshot.PCO.Utilities
         }
 
         /// <summary>
+        /// Converts a dictionary into a formatted query string.
+        /// </summary>
+        /// <param name="apiRequestOptions"></param>
+        /// <returns></returns>
+        private static string GetRequestQueryString( Dictionary<string, string> apiRequestOptions )
+        {
+            var requestQueryString = new System.Text.StringBuilder();
+            apiRequestOptions = apiRequestOptions ?? new Dictionary<string, string>();
+
+            foreach( string key in apiRequestOptions.Keys )
+            {
+                if ( requestQueryString.Length > 0 )
+                {
+                    requestQueryString.Append( "&" );
+                }
+                else
+                {
+                    requestQueryString.Append( "?" );
+                }
+
+                var name = WebUtility.UrlEncode( key );
+                var value = WebUtility.UrlEncode( apiRequestOptions[key] );
+
+                requestQueryString.Append( $"{ name }={ value }" );
+            }
+
+            return requestQueryString.ToString();
+        }
+
+        /// <summary>
+        /// Gets the results of an API query for the specified API end point.
+        /// </summary>
+        /// <param name="apiEndPoint">The API end point.</param>
+        /// <param name="apiRequestOptions">An optional collection of request options.</param>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <returns></returns>
+        private static PCOQueryResult GetAPIQuery( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null, DateTime? modifiedSince = null )
+        {
+            if ( modifiedSince.HasValue && apiRequestOptions != null )
+            {
+                // Add a parameter to sort records by last update, descending.
+                apiRequestOptions.Add( "order", "-updated_at" );
+            }
+
+            string result = ApiGet( apiEndPoint, apiRequestOptions );
+            if ( result.IsNullOrWhiteSpace() )
+            {
+                return null;
+            }
+
+            var itemsResult = JsonConvert.DeserializeObject<PCOItemsResult>( result );
+            if ( itemsResult == null )
+            {
+                PCOApi.ErrorMessage = $"Error:  Unable to deserialize result retrieved from { apiEndPoint }.";
+                throw new Exception( PCOApi.ErrorMessage );
+            }
+
+            var queryResult = new PCOQueryResult();
+            queryResult.Items = new List<PCOData>();
+            queryResult.IncludedItems = new List<PCOData>();
+
+            // Add the included items collection.
+            queryResult.IncludedItems.AddRange( itemsResult.IncludedItems );
+
+            // Loop through each item in the results
+            var continuePaging = true;
+            foreach ( var itemResult in itemsResult.Data )
+            {
+                // If we're only looking for records updated after last update, and this record is older, stop processing                    
+                DateTime? recordUpdatedAt = ( itemResult.Item.updated_at ?? itemResult.Item.created_at );
+                if ( modifiedSince.HasValue && recordUpdatedAt.HasValue && recordUpdatedAt.Value <= modifiedSince.Value )
+                {
+                    continuePaging = false;
+                    break;
+                }
+
+                queryResult.Items.Add( itemResult );
+            }
+
+            // If there are more page, and we should be paging
+            string nextEndPoint = itemsResult.Links != null && itemsResult.Links.Next != null ? itemsResult.Links.Next : string.Empty;
+            if ( nextEndPoint.IsNotNullOrWhitespace() && continuePaging )
+            {
+                nextEndPoint = nextEndPoint.Substring( ApiBaseUrl.Length );
+                // Get the next page of results by doing a recursive call to this same method.
+                // Note that nextEndPoint is supplied without the options dictionary, as those should already be specified in the result from PCO.
+                var nextItems = GetAPIQuery( nextEndPoint, null, modifiedSince );
+                queryResult.Items.AddRange( nextItems.Items );
+                queryResult.IncludedItems.AddRange( nextItems.IncludedItems );
+            }
+
+            return queryResult;
+        }
+
+        #endregion Private Data Access Methods
+
+        #region ExportIndividuals() and Related Methods
+
+        /// <summary>
         /// Exports the individuals.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
         /// <param name="peoplePerPage">The people per page.</param>
         public static void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 100 )
         {
+            var apiOptions = new Dictionary<string, string>
+            {
+                { "include", "emails,addresses,phone_numbers,field_data,households,inactive_reason,martial_status,name_prefix,name_suffix,primary_campus,school,social_profiles" },
+                { "per_page", peoplePerPage.ToString() }
+            };
 
+            var PCOPeople = GetPeople( ApiEndpoint.API_PEOPLE, apiOptions, modifiedSince );
+            var PCOServicePeople = GetServicePeople( modifiedSince );
+            var PCONotes = GetNotes( modifiedSince );
+            var headOfHouseholdMap = GetHeadOfHouseholdMap( PCOPeople );
             var personAttributes = WritePersonAttributes();
 
-            var PCOPeople = GetPeople( false, modifiedSince, API_PEOPLE + "?include=emails,addresses,phone_numbers,field_data,households,inactive_reason,martial_status,name_prefix,name_suffix,primary_campus,school,social_profiles&per_page=" + peoplePerPage );
-            var PCOServicePeople = GetPeople( false, modifiedSince, "https://api.planningcenteronline.com/services/v2/people?per_page=" + peoplePerPage );
-            var PCONotes = GetNotes( false, modifiedSince, null );
-
-            foreach ( PCOPerson p in PCOPeople )
+            foreach ( var person in PCOPeople )
             {
+                PCOPerson headOfHouse = person; // Default headOfHouse to person, in case they are not assigned to a household in PCO.
+                if( person.Household != null && headOfHouseholdMap.ContainsKey( person.Household.Id ) )
+                {
+                    headOfHouse = headOfHouseholdMap[person.Household.Id];
+                }
 
-                /*  For debugging issues with a given person
-                if ( p.id == 29004938 )
+                // The backgroundCheckPerson is pulled from a different API endpoint.
+                PCOPerson backgroundCheckPerson = null;
+                if ( PCOServicePeople != null )
                 {
-                    //Debug this profile
-                    Console.WriteLine();
+                    backgroundCheckPerson = PCOServicePeople.Where( x => x.Id == person.Id ).FirstOrDefault();
                 }
-                */
 
-                PCOPerson headOfHouse;
-                if( p.household is null )
-                {
-                    headOfHouse = p;
-                }
-                else
-                {
-                    headOfHouse = PCOPeople.Where( x => x.id == p.household.primary_contact_id ).FirstOrDefault();
-                }
-                
-                if ( headOfHouse == null )
-                {
-                    headOfHouse = p;
-                }
-                var importPerson = PCOImportPerson.Translate( p, personAttributes, headOfHouse );
-
+                var importPerson = PCOImportPerson.Translate( person, personAttributes, headOfHouse, backgroundCheckPerson );
                 if ( importPerson != null )
                 {
-                    if ( PCOServicePeople != null )
-                    {
-                        PCOPerson backgroundCheckPerson = PCOServicePeople.Where( x => x.id == p.id ).FirstOrDefault();
-                        if ( backgroundCheckPerson != null 
-                                && backgroundCheckPerson.passed_background_check.HasValue 
-                                && backgroundCheckPerson.passed_background_check.Value 
-                           )
-                        {
-                            importPerson = PCOImportPerson.AddBackgroundCheckResult( importPerson, backgroundCheckPerson );
-                        }
-                    }
-                   
                     ImportPackage.WriteToPackage( importPerson );
                 }
 
                 // save person image
-                if ( p.avatar.IsNotNullOrWhitespace() )
+                if ( person.Avatar.IsNotNullOrWhitespace() )
                 {
                     WebClient client = new WebClient();
 
-                    var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + p.id + ".png" );
-
+                    var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".png" );
                     try
                     {
-                        client.DownloadFile( new Uri( p.avatar ), path );
+                        client.DownloadFile( new Uri( person.Avatar ), path );
                         ApiCounter++;
                     }
-                    catch (Exception ex)
+                    catch ( Exception ex )
                     {
                         Console.WriteLine( ex.Message );
                     }
@@ -306,252 +350,95 @@ namespace Slingshot.PCO.Utilities
         }
 
         /// <summary>
-        /// Exports the accounts.
-        /// </summary>
-        public static void ExportFinancialAccounts()
-        {
-            try
-            {
-                var funds = GetFunds( false, null, null );
-
-                /*
-                XDocument xdoc = XDocument.Parse( response.Content );
-
-                if ( PCOApi.DumpResponseToXmlFile )
-                {
-                    xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_ACCOUNTS_ResponseLog.xml" ) );
-                }
-                */
-
-                // process accounts
-                foreach ( var fund in funds )
-                {
-                    var importFund = PCOImportFund.Translate( fund );
-
-                    if( importFund != null )
-                    {
-                        ImportPackage.WriteToPackage( importFund );
-                    }
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Exports the pledges.
-        /// </summary>
-        /// 
-
-        /*  PCO Doesn't Have Pledges
-        public static void ExportFinancialPledges()
-        {
-            int loopCounter = 0;
-            try
-            {
-                foreach ( var accountId in AccountIds )
-                {
-                    //_client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
-                    _request = new RestRequest( API_ACCOUNTS + "/" + accountId.ToString() + "/pledgedrives", Method.GET );
-                    _request.AddHeader( "content-type", "application/xml" );
-                    var response = _client.Execute( _request );
-                    ApiCounter++;
-
-                    var xdoc = XDocument.Parse( response.Content );
-
-                    if ( PCOApi.DumpResponseToXmlFile )
-                    {
-                        xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_FINANCIAL_PLEDGES_ResponseLog_{loopCounter}.xml" ) );
-                    }
-
-                    var pledges = xdoc.Element( "pledgeDrives" );
-
-                    foreach ( var pledgeNode in pledges.Elements() )
-                    {
-                        
-                        var importPledge = F1FinancialPledge.Translate( pledgeNode );
-
-                        if ( importPledge != null )
-                        {
-                            ImportPackage.WriteToPackage( importPledge );
-                        }
-                        
-                    }
-
-                    loopCounter++;
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
-
-        }
-
-        */
-
-        /// <summary>
-        /// Exports the batches.
+        /// Gets people from the services endpoint.
         /// </summary>
         /// <param name="modifiedSince">The modified since.</param>
-        public static void ExportFinancialBatches( DateTime modifiedSince )
+        /// <param name="peoplePerPage">The people per page.</param>
+        /// <returns></returns>
+        private static List<PCOPerson> GetServicePeople( DateTime modifiedSince, int peoplePerPage = 100 )
         {
-            try
+            var apiOptions = new Dictionary<string, string>
             {
+                { "per_page", peoplePerPage.ToString() }
+            };
 
-                var batches = GetBatches( false, modifiedSince, null );
-
-                foreach ( var batch in batches )
-                {
-                    var importBatch = PCOImportBatch.Translate( batch );
-
-                    if ( importBatch != null )
-                    {
-                        ImportPackage.WriteToPackage( importBatch );
-                    }
-                }
-
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
+            return GetPeople( ApiEndpoint.API_SERVICE_PEOPLE, apiOptions, modifiedSince );
         }
 
         /// <summary>
-        /// Exports the contributions.
+        /// Gets people from the specified endpoint.
         /// </summary>
+        /// <param name="apiEndPoint">The API end point.</param>
+        /// <param name="apiRequestOptions">A collection of request options.</param>
         /// <param name="modifiedSince">The modified since.</param>
-        public static void ExportContributions( DateTime modifiedSince, bool exportContribImages )
+        /// <returns></returns>
+        public static List<PCOPerson> GetPeople( string apiEndPoint, Dictionary<string, string> apiRequestOptions, DateTime? modifiedSince )
         {
-            try
+            var personQuery = GetAPIQuery( apiEndPoint, apiRequestOptions, modifiedSince );
+
+            var people = new List<PCOPerson>();
+            foreach ( var item in personQuery.Items )
             {
-                var donations = GetDonations( false, modifiedSince, null )
-                                    .Where(d => d.refunded == false && d.payment_status == "succeeded")
-                                    .ToList();
-
-                foreach ( var donation in donations )
-                {
-                    var importTransaction = PCOImportDonation.Translate( donation );
-                    var importTransactionDetails = PCOImportDesignation.Translate( donation );
-
-                    if ( importTransaction != null )
-                    {
-                        ImportPackage.WriteToPackage( importTransaction );
-
-                        foreach( var detail in importTransactionDetails )
-                        {
-                            if ( detail != null )
-                            {
-                                ImportPackage.WriteToPackage( detail );
-                            }
-                        }
-                    }                                
-                }            
+                var person = new PCOPerson( item, personQuery.IncludedItems );
+                people.Add( person );
             }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
+
+            return people;
         }
 
         /// <summary>
-        /// Exports the groups.
+        /// Maps household Ids to the PCOPerson object designated as the primary contact for that household.  This map method is used to avoid repetitive searches for the head of household for each household member.
         /// </summary>
-        /// <param name="selectedGroupTypes">The selected group types.</param>
-        /// <param name="modifiedSince">The modified since.</param>
-        /// <param name="perPage">The people per page.</param>
-
-        /* NOT Implemented Yet
-        public static void ExportGroups( List<int> selectedGroupTypes )
+        /// <param name="people">The list of <see cref="PCOPerson"/> records.</param>
+        /// <returns></returns>
+        private static Dictionary<int, PCOPerson> GetHeadOfHouseholdMap( List<PCOPerson> people )
         {
-            // write out the group types 
-            WriteGroupTypes( selectedGroupTypes );
+            var map = new Dictionary<int, PCOPerson>();
 
-            // get groups
-            try
+            foreach ( var person in people )
             {
-                int loopCounter = 0;
-
-                foreach ( var selectedGroupType in selectedGroupTypes )
+                if ( person.Household != null  && !map.ContainsKey( person.Household.Id ) )
                 {
-                    //_client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
-                    _request = new RestRequest( API_GROUPS + selectedGroupType.ToString() + "/groups", Method.GET );
-                    _request.AddHeader( "content-type", "application/xml" );
-
-                    var response = _client.Execute( _request );
-                    ApiCounter++;
-
-                    XDocument xdoc = XDocument.Parse( response.Content );
-
-                    var groups = xdoc.Elements( "groups" );
-
-                    if ( groups.Elements().Any() )
+                    if ( person.Household.PrimaryContactId == person.Id )
                     {
-                        // since we don't have a group heirarchy to work with, add a parent
-                        //  group for each group type for organizational purposes
-                        int parentGroupId = 99 + groups.Elements().FirstOrDefault().Element( "groupType" ).Attribute( "id" ).Value.AsInteger();
-
-                        ImportPackage.WriteToPackage( new Group()
-                        {
-                            Id = parentGroupId,
-                            Name = groups.Elements().FirstOrDefault().Element( "groupType" ).Element( "name" ).Value,
-                            GroupTypeId = groups.Elements().FirstOrDefault().Element( "groupType" ).Attribute( "id" ).Value.AsInteger()
-                        } );
-
-                        foreach ( var groupNode in groups.Elements() )
-                        {
-                            string groupId = groupNode.Attribute( "id" ).Value;
-
-                            //_client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
-                            _request = new RestRequest( API_GROUP_MEMBERS + groupId + "/members", Method.GET );
-                            _request.AddHeader( "content-type", "application/xml" );
-
-                            response = _client.Execute( _request );
-                            ApiCounter++;
-
-                            xdoc = XDocument.Parse( response.Content );
-
-                            if ( PCOApi.DumpResponseToXmlFile )
-                            {
-                                xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUPS_ResponseLog_{loopCounter}.xml" ) );
-                            }
-
-                            var membersNode = xdoc.Elements( "members" );
-                            /*
-                            var importGroup = F1Group.Translate( groupNode, parentGroupId, membersNode );
-
-                            if ( importGroup != null )
-                            {
-                                ImportPackage.WriteToPackage( importGroup );
-                            }
-
-                            // developer safety blanket (prevents eating all the api calls for the day) 
-                            if ( loopCounter > loopThreshold )
-                            {
-                                break;
-                            }
-                            loopCounter++;
-                           
-                        }
+                        map.Add( person.Household.Id, person );
                     }
                 }
             }
-            catch ( Exception ex )
+
+            return map;
+        }
+
+        /// <summary>
+        /// Gets notes from PCO.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <returns></returns>
+        public static List<PCONote> GetNotes( DateTime? modifiedSince )
+        {
+            var apiOptions = new Dictionary<string, string>
             {
-                ErrorMessage = ex.Message;
+                { "include", "category" }
+            };
+
+            var notesQuery = GetAPIQuery( ApiEndpoint.API_NOTES, apiOptions, modifiedSince );
+
+            var notes = new List<PCONote>();
+
+            foreach ( var item in notesQuery.Items )
+            {
+                var note = new PCONote( item, notesQuery.IncludedItems );
+                notes.Add( note );
             }
 
+            return notes;
         }
-        */
+
         /// <summary>
         /// Exports the person attributes.
         /// </summary>
-        public static List<PCOFieldDefinition> WritePersonAttributes()
+        private static List<PCOFieldDefinition> WritePersonAttributes()
         {
-            // export person fields as attributes
             ImportPackage.WriteToPackage( new PersonAttribute()
             {
                 Name = "Facebook",
@@ -605,48 +492,45 @@ namespace Slingshot.PCO.Utilities
             // export person attributes
             try
             {
+                var fieldDefinitions = GetFieldDefinitions();
 
-                var Fields = GetFields( false, null, null );
-
-                foreach ( var field in Fields )
+                foreach ( var fieldDefinition in fieldDefinitions )
                 {
                     // get field type
                     var fieldtype = "Rock.Field.Types.TextFieldType";
-                    if ( field.data_type == "text" )
+                    if ( fieldDefinition.DataType == "text" )
                     {
                         fieldtype = "Rock.Field.Types.MemoFieldType";
                     }
-                    else if ( field.data_type == "date" )
+                    else if ( fieldDefinition.DataType == "date" )
                     {
                         fieldtype = "Rock.Field.Types.DateFieldType";
                     }
-                    else if ( field.data_type == "boolean" )
+                    else if ( fieldDefinition.DataType == "boolean" )
                     {
                         fieldtype = "Rock.Field.Types.BooleanFieldType";
                     }
-                    else if ( field.data_type == "file" )
+                    else if ( fieldDefinition.DataType == "file" )
                     {
                         continue;
                         //fieldtype = "Rock.Field.Types.FileFieldType";
                     }
-                    else if ( field.data_type == "number" )
+                    else if ( fieldDefinition.DataType == "number" )
                     {
                         fieldtype = "Rock.Field.Types.IntegerFieldType";
                     }
 
                     var newAttribute = new PersonAttribute()
                     {
-                        Name = field.name,
-                        Key = field.id + "_" + field.slug,
-                        Category = "PCO Attributes",
+                        Name = fieldDefinition.Name,
+                        Key = fieldDefinition.Id + "_" + fieldDefinition.Slug,
+                        Category = ( fieldDefinition.Tab == null ) ? "PCO Attributes" : fieldDefinition.Tab.Name,
                         FieldType = fieldtype,
                     };
 
                     ImportPackage.WriteToPackage( newAttribute );
 
-                    // Add the attributes to the list
-                    attributes.Add( field );
-
+                    attributes.Add( fieldDefinition );
                 }
             }
             catch ( Exception ex )
@@ -658,6 +542,211 @@ namespace Slingshot.PCO.Utilities
         }
 
         /// <summary>
+        /// Get the field definitions from PCO.
+        /// </summary>
+        /// <returns></returns>
+        private static List<PCOFieldDefinition> GetFieldDefinitions()
+        {
+            var apiOptions = new Dictionary<string, string>
+            {
+                { "include", "field_options,tab" }
+            };
+
+            var fieldQuery = GetAPIQuery( ApiEndpoint.API_FIELD_DEFINITIONS, apiOptions );
+
+            var fields = new List<PCOFieldDefinition>();
+            foreach ( var item in fieldQuery.Items )
+            {
+                var field = new PCOFieldDefinition( item, fieldQuery.IncludedItems );
+                if ( field != null && field.DataType != "header" )
+                {
+                    fields.Add( field );
+                }
+            }
+            return fields;
+        }
+
+        #endregion ExportIndividuals() and Related Methods
+
+        #region ExportFinancialAccounts() and Related Methods
+
+        /// <summary>
+        /// Exports the accounts.
+        /// </summary>
+        public static void ExportFinancialAccounts()
+        {
+            try
+            {
+                var funds = GetFunds();
+
+                foreach ( var fund in funds )
+                {
+                    var importFund = PCOImportFund.Translate( fund );
+                    if( importFund != null )
+                    {
+                        ImportPackage.WriteToPackage( importFund );
+                    }
+                }
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Get the Funds from PCO.
+        /// </summary>
+        /// <returns></returns>
+        private static List<PCOFund> GetFunds()
+        {
+            var fundQuery = GetAPIQuery( ApiEndpoint.API_FUNDS );
+
+            var funds = new List<PCOFund>();
+            foreach ( var item in fundQuery.Items )
+            {
+                var fund = new PCOFund( item );
+                if ( fund != null )
+                {
+                    funds.Add( fund );
+                }
+            }
+
+            return funds;
+        }
+
+        #endregion ExportFinancialAccounts() and Related Methods
+
+        #region ExportFinancialBatches() and Related Methods
+
+        /// <summary>
+        /// Exports the batches.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        public static void ExportFinancialBatches( DateTime modifiedSince )
+        {
+            try
+            {
+
+                var batches = GetBatches( modifiedSince );
+
+                foreach ( var batch in batches )
+                {
+                    var importBatch = PCOImportBatch.Translate( batch );
+
+                    if ( importBatch != null )
+                    {
+                        ImportPackage.WriteToPackage( importBatch );
+                    }
+                }
+
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Get the Batches from PCO.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <returns></returns>
+        public static List<PCOBatch> GetBatches( DateTime? modifiedSince )
+        {
+            var apiOptions = new Dictionary<string, string>
+            {
+                { "include", "owner" },
+                { "per_page", "100" }
+            };
+
+            var batchesQuery = GetAPIQuery( ApiEndpoint.API_BATCHES, apiOptions, modifiedSince );
+
+            var batches = new List<PCOBatch>();
+            foreach ( var item in batchesQuery.Items )
+            {
+                var batch = new PCOBatch( item );
+                if ( batch != null )
+                {
+                    batches.Add( batch );
+                }
+            }
+
+            return batches;
+        }
+
+        #endregion ExportFinancialBatches() and Related Methods
+
+        #region ExportContributions() and Related Methods
+
+        /// <summary>
+        /// Exports the contributions.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        public static void ExportContributions( DateTime modifiedSince )
+        {
+            try
+            {
+                var donations = GetDonations( modifiedSince )
+                    .Where( d => d.Refunded == false && d.PaymentStatus == "succeeded" )
+                    .ToList();
+
+                foreach ( var donation in donations )
+                {
+                    var importTransaction = PCOImportDonation.Translate( donation );
+                    var importTransactionDetails = PCOImportDesignation.Translate( donation );
+
+                    if ( importTransaction != null )
+                    {
+                        ImportPackage.WriteToPackage( importTransaction );
+
+                        foreach( var detail in importTransactionDetails )
+                        {
+                            if ( detail != null )
+                            {
+                                ImportPackage.WriteToPackage( detail );
+                            }
+                        }
+                    }                                
+                }            
+            }
+            catch ( Exception ex )
+            {
+                ErrorMessage = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Gets Donations from PCO.
+        /// </summary>
+        /// <param name="modifiedSince">The modified since.</param>
+        /// <returns></returns>
+        private static List<PCODonation> GetDonations( DateTime? modifiedSince )
+        {
+            var apiOptions = new Dictionary<string, string>
+            {
+                { "include", "designations" },
+                { "per_page", "100" }
+            };
+
+            var donationsQuery = GetAPIQuery( ApiEndpoint.API_DONATIONS, apiOptions, modifiedSince );
+
+            var donations = new List<PCODonation>();
+            foreach ( var item in donationsQuery.Items )
+            {
+                var donation = new PCODonation( item, donationsQuery.IncludedItems );
+                if ( donation != null )
+                {
+                    donations.Add( donation );
+                }
+            }
+
+            return donations;
+        }
+
+        #endregion ExportContributions() and Related Methods
+
+        /// <summary>
         /// Gets the group types.
         /// </summary>
         /// <returns></returns>
@@ -665,391 +754,13 @@ namespace Slingshot.PCO.Utilities
         {
             List<GroupType> groupTypes = new List<GroupType>();
 
-            try
-            {
-                //_client.Authenticator = OAuth1Authenticator.ForProtectedResource( ApiConsumerKey, ApiConsumerSecret, OAuthToken, OAuthSecret );
-                _request = new RestRequest( API_GROUP_TYPES, Method.GET );
-                _request.AddHeader( "content-type", "application/xml" );
-
-                var response = _client.Execute( _request );
-                ApiCounter++;
-
-                XDocument xdoc = XDocument.Parse( response.Content );
-
-                if ( PCOApi.DumpResponseToXmlFile )
-                {
-                    xdoc.Save( Path.Combine( ImportPackage.PackageDirectory, $"API_GROUP_TYPES_ResponseLog.xml" ) );
-                }
-
-                var sourceGroupTypes = xdoc.Element( "groupTypes" );
-
-                foreach ( var sourceGroupType in sourceGroupTypes.Elements() )
-                {
-                    var groupType = new GroupType();
-
-                    groupType.Id = sourceGroupType.Attribute( "id" ).Value.AsInteger();
-                    groupType.Name = sourceGroupType.Element( "name" )?.Value;
-
-                    groupTypes.Add( groupType );
-
-                }
-            }
-            catch ( Exception ex )
-            {
-                ErrorMessage = ex.Message;
-            }
+            // ToDo:  Implement this.
 
             return groupTypes;
         }
 
-        /// <summary>
-        /// Writes the group types.
-        /// </summary>
-        /// <param name="selectedGroupTypes">The selected group types.</param>
-        public static void WriteGroupTypes( List<int> selectedGroupTypes )
-        {
-            // add custom defined group types 
-            var groupTypes = GetGroupTypes();
-            foreach ( var groupType in groupTypes.Where( t => selectedGroupTypes.Contains( t.Id ) ) )
-            {
-                ImportPackage.WriteToPackage( new GroupType()
-                {
-                    Id = groupType.Id,
-                    Name = groupType.Name
-                } );
-            }
-        }
 
-        private static bool PCOGetItems( string apiEndPoint, List<PCOData> dataItems, List<PCOData> includedItems, DateTime? updatedAfter, bool continuePaging, string saveEndPointAs, string saveNextEndPointAs )
-        {
-            // Save the current endpoing
-            if ( saveEndPointAs.IsNotNullOrWhitespace() )
-            {
-                saveEndPointAs = apiEndPoint;
-            }
 
-            // Verify that the result dictionaries are not null
-            dataItems = dataItems ?? new List<PCOData>();
-            includedItems = includedItems ?? new List<PCOData>();
-
-            // Query Planning Center
-            string result = ApiGet( apiEndPoint );
-
-            // If we got results
-            if ( !string.IsNullOrWhiteSpace( result ) )
-            {
-                // Check to see if we can deserialize the data
-                var searchResult = JsonConvert.DeserializeObject<PCOItemsResult>( result );
-                if ( searchResult != null )
-                {
-                    // Save the next endpoint
-                    string nextEndPoint = searchResult.links != null && searchResult.links.next != null ? searchResult.links.next : string.Empty;
-                    if ( nextEndPoint.IsNotNullOrWhitespace() && saveNextEndPointAs.IsNotNullOrWhitespace() )
-                    {
-                        saveNextEndPointAs = nextEndPoint;
-                    }
-
-                    includedItems.AddRange( searchResult.included );
-
-                    // Loop through each item in the results
-                    foreach ( var dataItem in searchResult.data )
-                    {
-                        // Get the last updated or created date
-                        DateTime? recordUpdatedAt = ( dataItem.Item.updated_at ?? dataItem.Item.created_at );
-
-                        // If we're only looking for records updated after last update, and this record is older, stop processing                    
-                        if ( updatedAfter.HasValue && recordUpdatedAt.HasValue && recordUpdatedAt.Value <= updatedAfter.Value )
-                        {
-                            continuePaging = false;
-                            break;
-                        }
-
-                        // Append the results to the dictionaries
-                        dataItems.Add( dataItem );
-                    }
-
-                    // If there are more page, and we should be paging
-                    if ( nextEndPoint.IsNotNullOrWhitespace() && continuePaging )
-                    {
-                        // Get the next page of results by doing a recursive call to this same method.
-                        return PCOGetItems( nextEndPoint, dataItems, includedItems, updatedAfter, true, saveEndPointAs, saveNextEndPointAs );
-                    }
-
-                    // We're good
-                    return true;
-                }
-            }
-
-            // We didn't get what we expected so return false
-            return false;
-        }
-
-        public static List<PCOFund> GetFunds( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/giving/v2/funds";
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var funds = new List<PCOFund>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    // Create the person record
-                    var fund = new PCOFund( item );
-                    if ( fund != null )
-                    {
-                        // Add to list of results
-                        funds.Add( fund );
-
-                    }
-                }
-
-                // return the list of people
-                return funds;
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
-
-        public static List<PCOBatch> GetBatches( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/giving/v2/batches?include=owner&per_page=100";
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var batches = new List<PCOBatch>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    // Create the person record
-                    var batch = new PCOBatch( item );
-                    if ( batch != null )
-                    {
-                        // Add to list of results
-                        batches.Add( batch );
-
-                    }
-                }
-
-                // return the list of people
-                return batches;
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
-
-        public static List<PCODonation> GetDonations( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/giving/v2/donations?include=designations&per_page=100";
-
-            // If not importing and querying only changes, add a parameter to specify that the results should be sored in descending order of last update
-            if ( !importing && updatedAfter.HasValue )
-            {
-                apiEndPoint = apiEndPoint + "&order=-updated_at";
-            }
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var donations = new List<PCODonation>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    // Create the person record
-                    var donation = new PCODonation( item );
-                    if ( donation != null )
-                    {
-                        // Update Designations
-                        donation.UpdateDesignation( item, includedItems );
-                        
-                        // Add to list of results
-                        donations.Add( donation );
-
-                    }
-                }
-
-                // return the list of people
-                return donations;
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
-
-        public static List<PCOPerson> GetPeople( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/people/v2/people?include=addresses,emails,field_data,households,inactive_reason,marital_status,name_prefix,name_suffix,phone_numbers,social_profiles,school,primary_campus&per_page=100";
-
-            // If not importing and querying only changes, add a parameter to specify that the results should be sored in descending order of last update
-            if ( !importing && updatedAfter.HasValue )
-            {
-                apiEndPoint = apiEndPoint + "&order=-updated_at";
-            }
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var people = new List<PCOPerson>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    PCOPerson person;
-                    if (apiEndPoint.Contains("giving"))
-                    {
-                        person = new PCOPerson( item, true );
-                    }
-                    else
-                    {
-                        person = new PCOPerson( item );
-                        if (person != null )
-                        {
-                            // Update the contact information
-                            person.UpdateContactInfo( item, includedItems );
-                            person.UpdateHouseHold( item, includedItems );
-                            person.UpdateFieldData( item, includedItems );
-                            person.UpdateCampus( item, includedItems );
-                            person.UpdateProperties( item, includedItems );
-                            person.UpdateSocialProfiles( item, includedItems );
-                        }
-                    }
-                    // Create the person record
-                    
-                    if ( person != null )
-                    {
-
-                        // Add to list of results
-                        people.Add( person );
-
-                    }
-                }
-
-                // return the list of people
-                return people;
-
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
-
-        public static List<PCOFieldDefinition> GetFields( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/people/v2/field_definitions?include=field_options";
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var fields = new List<PCOFieldDefinition>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    // Create the person record
-                    var field = new PCOFieldDefinition( item );
-                    if ( field != null && field.data_type != "header" )
-                    {
-                        // Update the contact information
-                        //field.UpdateFieldOptions( item, includedItems );
-
-                        // Add to list of results
-                        fields.Add( field );
-
-                    }
-                }
-
-                // return the list of people
-                return fields;
-
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
-
-        public static List<PCONote> GetNotes( bool importing, DateTime? updatedAfter, string apiEndPoint )
-        {
-            // Create variables to store the results 
-            var dataItems = new List<PCOData>();
-            var includedItems = new List<PCOData>();
-
-            // Set the endpoint if not passed from parameter
-            apiEndPoint = apiEndPoint ?? "https://api.planningcenteronline.com/people/v2/notes?include=category";
-
-            // Query Planning Center for people
-            if ( PCOGetItems( apiEndPoint, dataItems, includedItems, updatedAfter,
-                !importing, "", "" ) )
-            {
-                // Create variable to store the people
-                var notes = new List<PCONote>();
-
-                // Loop through each item in the result of api call
-                foreach ( var item in dataItems )
-                {
-                    // Create the person record
-                    var note = new PCONote( item );
-                    if ( note != null )
-                    {
-                        // Update the contact information
-                        note.UpdateCategory( item, includedItems );
-                        
-
-                        // Add to list of results
-                        notes.Add( note );
-
-                    }
-                }
-
-                // return the list of people
-                return notes;
-
-            }
-
-            // An error occurred trying to query people so return null
-            return null;
-        }
     }
 }
 
