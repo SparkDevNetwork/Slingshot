@@ -5,10 +5,10 @@ using Slingshot.PCO.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
-using System.Diagnostics;
 
 namespace Slingshot.PCO
 {
@@ -138,8 +138,8 @@ namespace Slingshot.PCO
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                // TODO - This method is not yet implemented
-                //PCOApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
+                // ToDo: This method is not yet implemented
+                ////PCOApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {

@@ -228,7 +228,7 @@ namespace Slingshot.PCO.Utilities
         /// <param name="apiRequestOptions">An optional collection of request options.</param>
         /// <param name="modifiedSince">The modified since.</param>
         /// <returns></returns>
-        private static QueryResult GetAPIQuery( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null, DateTime? modifiedSince = null, QueryResult existingResults = null )
+        private static PCOApiQueryResult GetAPIQuery( string apiEndPoint, Dictionary<string, string> apiRequestOptions = null, DateTime? modifiedSince = null, PCOApiQueryResult existingResults = null )
         {
             if ( modifiedSince.HasValue && apiRequestOptions != null )
             {
@@ -250,14 +250,14 @@ namespace Slingshot.PCO.Utilities
             }
 
 
-            QueryResult queryResult;
+            PCOApiQueryResult queryResult;
             if ( existingResults != null )
             {
-                queryResult = new QueryResult( existingResults, itemsResult.IncludedItems );
+                queryResult = new PCOApiQueryResult( existingResults, itemsResult.IncludedItems );
             }
             else
             {
-                queryResult = new QueryResult( itemsResult.IncludedItems );
+                queryResult = new PCOApiQueryResult( itemsResult.IncludedItems );
             }
 
             // Loop through each item in the results

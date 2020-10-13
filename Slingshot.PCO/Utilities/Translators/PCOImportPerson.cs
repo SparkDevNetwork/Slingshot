@@ -9,7 +9,7 @@ namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportPerson
     {
-        public static Person Translate(Models.DTO.PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, Models.DTO.PersonDTO headOfHouse, Models.DTO.PersonDTO backgroundCheckPerson )
+        public static Person Translate( PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, PersonDTO headOfHouse, PersonDTO backgroundCheckPerson )
         {
             if ( inputPerson.Id <= 0 )
             {
@@ -50,7 +50,7 @@ namespace Slingshot.PCO.Utilities.Translators
 
         #region Translation Logic
 
-        private static Gender GetGender( this Models.DTO.PersonDTO inputPerson )
+        private static Gender GetGender( this PersonDTO inputPerson )
         {
             if ( inputPerson.Gender == "M" || inputPerson.Gender == "Male" )
             {
@@ -64,7 +64,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return Gender.Unknown;
         }
 
-        private static string GetSalutation( this Models.DTO.PersonDTO inputPerson )
+        private static string GetSalutation( this PersonDTO inputPerson )
         {
             if ( !string.IsNullOrWhiteSpace( inputPerson.NamePrefix ) )
             {
@@ -74,7 +74,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return string.Empty;
         }
 
-        private static string GetSuffix( this Models.DTO.PersonDTO inputPerson )
+        private static string GetSuffix( this PersonDTO inputPerson )
         {
             if ( !string.IsNullOrWhiteSpace( inputPerson.NameSuffix ) )
             {
@@ -99,7 +99,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return string.Empty;
         }
 
-        private static List<PersonPhone> GetPhoneNumbers( this Models.DTO.PersonDTO inputPerson )
+        private static List<PersonPhone> GetPhoneNumbers( this PersonDTO inputPerson )
         {
             var phones = new List<PersonPhone>();
             foreach ( var number in inputPerson.ContactData.PhoneNumbers )
@@ -115,7 +115,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return phones;
         }
 
-        private static string GetEmail( this Models.DTO.PersonDTO inputPerson )
+        private static string GetEmail( this PersonDTO inputPerson )
         {
             string emailAddress = string.Empty;
             foreach ( var email in inputPerson.ContactData.EmailAddresses )
@@ -129,7 +129,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return emailAddress;
         }
 
-        private static List<PersonAddress> GetAddresses( this Models.DTO.PersonDTO inputPerson )
+        private static List<PersonAddress> GetAddresses( this PersonDTO inputPerson )
         {
             var addresses = new List<PersonAddress>();
 
@@ -192,7 +192,7 @@ namespace Slingshot.PCO.Utilities.Translators
 
        }
 
-        private static MaritalStatus GetMaritalStatus( this Models.DTO.PersonDTO inputPerson )
+        private static MaritalStatus GetMaritalStatus( this PersonDTO inputPerson )
         {
             switch ( inputPerson.MaritalStatus )
             {
@@ -209,7 +209,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return MaritalStatus.Unknown;
         }
 
-        private static List<string> GetNotes( this Models.DTO.PersonDTO inputPerson )
+        private static List<string> GetNotes( this PersonDTO inputPerson )
         {
             var notes = new List<string>();
 
@@ -221,7 +221,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return notes;
         }
 
-        private static List<PersonAttributeValue> GetAttributes( this Models.DTO.PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, Models.DTO.PersonDTO servicePerson )
+        private static List<PersonAttributeValue> GetAttributes( this PersonDTO inputPerson, List<FieldDefinitionDTO> personAttributes, PersonDTO servicePerson )
         {
             var attributeList = new List<PersonAttributeValue>();
             
@@ -298,7 +298,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return attributeList;
         }
 
-        private static Campus GetCampus( this Models.DTO.PersonDTO HeadOfHouse )
+        private static Campus GetCampus( this PersonDTO HeadOfHouse )
         {
             if ( HeadOfHouse.Campus != null )
             {
@@ -312,7 +312,7 @@ namespace Slingshot.PCO.Utilities.Translators
             return null;
         }
 
-        private static PersonAttributeValue GetBackgroundCheckResult( this Models.DTO.PersonDTO inputPerson, Models.DTO.PersonDTO backgroundCheckPerson )
+        private static PersonAttributeValue GetBackgroundCheckResult( this PersonDTO inputPerson, PersonDTO backgroundCheckPerson )
         {
             if ( backgroundCheckPerson == null || !backgroundCheckPerson.PassedBackgroundCheck.HasValue )
             {
