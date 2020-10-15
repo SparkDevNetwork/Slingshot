@@ -156,41 +156,27 @@ namespace Slingshot.PCO.Utilities.Translators
                 var importAddress = new PersonAddress
                 {
                     PersonId = inputPerson.Id,
-                    Street1 = address.Street,
-                    City = address.City,
-                    State = address.State,
-                    PostalCode = address.Zip,
+                    Street1 = address.Street ?? string.Empty, // Null is not an acceptable value in this field.
+                    City = address.City ?? string.Empty,
+                    State = address.State ?? string.Empty,
+                    PostalCode = address.Zip ?? string.Empty, // Null is not an acceptable value in this field.
                     AddressType = addressType
                 };
 
                 /*
-                 * Shaun Cummings - 10/09/20
+                 * Shaun Cummings - 10/14/20
                  * 
                  * Addresses cannot be added to this collection unless they have a value in Street1 and PostalCode or else they will
                  * create a NullReference exception in Slingshot.Core\Utilities\ImportPackage.cs at line 367 (this is due to using the
                  * .Equals() method directly on the property, which assumes the property is not null).
                  * 
-                 * This should probably be fixed in Slingshot.Core, but that will require including the update in Rock.  The AddIfValid()
-                 * extension method is a workaround for this and should be removed if the problem is resolved in Slingshot.Core.
-                 * 
                  * */
-                ////addresses.Add( importAddress );
 
-                addresses.AddIfValid( importAddress );
+                addresses.Add( importAddress );
             }
 
             return addresses;
         }
-
-        private static void AddIfValid( this List<PersonAddress> addresses, PersonAddress importAddress )
-        {
-            bool isValid = importAddress.Street1.IsNotNullOrWhitespace() && importAddress.PostalCode.IsNotNullOrWhitespace();
-            if ( isValid )
-            {
-                addresses.Add( importAddress );
-            }
-
-       }
 
         private static MaritalStatus GetMaritalStatus( this PersonDTO inputPerson )
         {
