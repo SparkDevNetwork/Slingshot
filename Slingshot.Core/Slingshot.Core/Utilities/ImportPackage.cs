@@ -344,8 +344,8 @@ namespace Slingshot.Core.Utilities
 
                     var index = _familyAddresses.FindIndex( a => 
                         a.FamilyId == importPerson.FamilyId.Value && 
-                        a.Street1.Equals( address.Street1, StringComparison.OrdinalIgnoreCase ) && 
-                        a.PostalCode.Equals( address.PostalCode.Left( 5 ) ) );
+                        a.Street1.EqualsNullSafe( address.Street1, StringComparison.OrdinalIgnoreCase ) && 
+                        a.PostalCode.EqualsNullSafe( address.PostalCode.Left( 5 ) ) );
 
                     if ( index == -1 )
                     {

@@ -700,6 +700,23 @@ namespace Slingshot.Core
             return input.Replace( " ", "" );
         }
 
+        /// <summary>
+        /// A null-safe version of String.Equals().
+        /// </summary>
+        /// <param name="baseValue">The first string.</param>
+        /// <param name="compareValue">The string to be compared to the first string.</param>
+        /// <param name="comparisonType">The <see cref="StringComparison"/> type.</param>
+        /// <returns></returns>
+        public static bool EqualsNullSafe( this string baseValue, string compareValue, StringComparison comparisonType = StringComparison.Ordinal )
+        {
+            if ( baseValue == null )
+            {
+                return ( compareValue == null );
+            }
+
+            return baseValue.Equals( compareValue );
+        }
+
         #endregion String Extensions
     }
 }
