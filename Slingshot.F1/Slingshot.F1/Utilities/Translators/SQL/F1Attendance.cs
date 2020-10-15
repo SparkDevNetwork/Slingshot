@@ -1,38 +1,35 @@
-﻿using System;
+﻿using Slingshot.Core.Model;
+using Slingshot.F1.Utilities.SQL.DTO;
+using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using System.Linq;
 
-using Slingshot.Core;
-using Slingshot.Core.Model;
-
-namespace Slingshot.F1.Utilities.Translators.MDB
+namespace Slingshot.F1.Utilities.Translators.SQL
 {
     public static class F1Attendance
     {
-        public static Attendance Translate( DataRow row, List<int> uniqueAttendanceIds )
+        public static Attendance Translate( AttendanceDTO attendance, List<int> uniqueAttendanceIds )
         {
-            var attendance = new Attendance();
+            var slingshotAttendance = new Attendance();
 
-            attendance.PersonId = row.Field<int>( "Individual_ID" );
-            attendance.GroupId = row.Field<int>( "GroupId" );
-            attendance.StartDateTime = row.Field<DateTime>( "StartDateTime" );
-            attendance.EndDateTime = row.Field<DateTime?>( "EndDateTime" );
-            attendance.Note = row.Field<string>( "Note" );
+            slingshotAttendance.PersonId = attendance.IndividualId;
+            slingshotAttendance.GroupId = attendance.GroupId;
+            slingshotAttendance.StartDateTime = attendance.StartDateTime;
+            slingshotAttendance.EndDateTime = attendance.EndDateTime;
+            slingshotAttendance.Note = attendance.Note;
 
-            if ( row.Field<int?>( "Attendance_ID" ) != null )
+            if ( attendance.AttendanceId != null )
             {
                 //If F1 specifies the AttendanceId, try that, first.
-                attendance.AttendanceId = row.Field<int>( "Attendance_ID" );
+                slingshotAttendance.AttendanceId = attendance.AttendanceId.Value;
             }
 
-            if ( attendance.AttendanceId == default( int ) || uniqueAttendanceIds.Contains( attendance.AttendanceId ) )
+            if ( slingshotAttendance.AttendanceId == default( int ) || uniqueAttendanceIds.Contains( slingshotAttendance.AttendanceId ) )
             {
                 //Use Hash to create Attendance ID
                 MD5 md5Hasher = MD5.Create();
-                string valueToHash = $"{ attendance.PersonId }{ attendance.GroupId }{ attendance.StartDateTime }";
+                string valueToHash = $"{ slingshotAttendance.PersonId }{ slingshotAttendance.GroupId }{ slingshotAttendance.StartDateTime }";
                 var hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
 
                 // This conversion turns the 128-bit hash into a 32-bit integer and then converts the value to
@@ -40,20 +37,20 @@ namespace Slingshot.F1.Utilities.Translators.MDB
                 var attendanceId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number
                 if ( attendanceId > 0 )
                 {
-                    attendance.AttendanceId = attendanceId;
+                    slingshotAttendance.AttendanceId = attendanceId;
                 }
             }
 
-            if ( uniqueAttendanceIds.Contains( attendance.AttendanceId ) )
+            if ( uniqueAttendanceIds.Contains( slingshotAttendance.AttendanceId ) )
             {
                 //Hash collision, use a random number.
                 var random = new Random();
                 attendance.AttendanceId = GetNewRandomAttendanceId( uniqueAttendanceIds, random );
             }
 
-            uniqueAttendanceIds.Add( attendance.AttendanceId );
+            uniqueAttendanceIds.Add( slingshotAttendance.AttendanceId );
 
-            return attendance;
+            return slingshotAttendance;
         }
 
         private static int GetNewRandomAttendanceId( List<int> uniqueAttendanceIds, Random random, int iterationCount = 0 )

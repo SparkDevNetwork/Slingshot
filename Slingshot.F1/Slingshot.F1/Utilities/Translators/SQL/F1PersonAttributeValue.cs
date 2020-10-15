@@ -1,14 +1,10 @@
-﻿using System;
+﻿using Slingshot.Core;
+using Slingshot.Core.Model;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Security.Cryptography;
-using System.Text;
-using System.Linq;
 
-using Slingshot.Core;
-using Slingshot.Core.Model;
-
-namespace Slingshot.F1.Utilities.Translators.MDB
+namespace Slingshot.F1.Utilities.Translators.SQL
 {
     public static class F1PersonAttributeValue
     {

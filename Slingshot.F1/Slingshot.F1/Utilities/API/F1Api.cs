@@ -23,6 +23,9 @@ namespace Slingshot.F1.Utilities
     /// </summary>
     public class F1Api : F1Translator
     {
+        private static int loopThreshold = 100000000;
+        private static List<int> AccountIds;
+        private static List<FamilyMember> familyMembers = new List<FamilyMember>();
         private static RestClient _client;
         private static RestRequest _request;
 
@@ -1017,7 +1020,7 @@ namespace Slingshot.F1.Utilities
         /// Gets the family members.
         /// </summary>
         /// <returns></returns>
-        public override List<FamilyMember> GetFamilyMembers()
+        public List<FamilyMember> GetFamilyMembers()
         {
             var headOfHouseholds = new List<FamilyMember>();
             HashSet<int> personIds = new HashSet<int>();
