@@ -84,15 +84,40 @@
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Models\PCOClasses.cs" />
+    <Compile Include="Models\ApiModels\DataItem.cs" />
+    <Compile Include="Models\ApiModels\Links.cs" />
+    <Compile Include="Models\ApiModels\Meta.cs" />
+    <Compile Include="Models\ApiModels\QueryItems.cs" />
+    <Compile Include="Models\ApiModels\Json\SingleOrArrayConverter.cs" />
+    <Compile Include="Models\DTO\AddressDTO.cs" />
+    <Compile Include="Models\DTO\BatchDTO.cs" />
+    <Compile Include="Models\DTO\CampusDTO.cs" />
+    <Compile Include="Models\DTO\ContactDataDTO.cs" />
+    <Compile Include="Models\DTO\DesignationDTO.cs" />
+    <Compile Include="Models\DTO\DonationDTO.cs" />
+    <Compile Include="Models\DTO\EmailAddressDTO.cs" />
+    <Compile Include="Models\DTO\EmailTemplateDTO.cs" />
+    <Compile Include="Models\DTO\FieldDataDTO.cs" />
+    <Compile Include="Models\DTO\FieldDefinitionDTO.cs" />
+    <Compile Include="Models\DTO\FieldOptionDTO.cs" />
+    <Compile Include="Models\DTO\FundDTO.cs" />
+    <Compile Include="Models\DTO\HouseholdDTO.cs" />
+    <Compile Include="Models\DTO\NoteDTO.cs" />
+    <Compile Include="Models\DTO\NoteCategoryDTO.cs" />
+    <Compile Include="Models\ApiModels\Relationships.cs" />
+    <Compile Include="Models\DTO\PersonDTO.cs" />
+    <Compile Include="Models\DTO\PhoneNumberDTO.cs" />
+    <Compile Include="Models\DTO\SocialProfileDTO.cs" />
+    <Compile Include="Models\DTO\TabDTO.cs" />
+    <Compile Include="Models\DTO\TagDTO.cs" />
+    <Compile Include="Models\DTO\TagGroupDTO.cs" />
     <Compile Include="Utilities\PCOApi.cs" />
+    <Compile Include="Utilities\QueryResult.cs" />
     <Compile Include="Utilities\Translators\PCOImportPersonNotes.cs" />
     <Compile Include="Utilities\Translators\PCOImportBatch.cs" />
     <Compile Include="Utilities\Translators\PCOImportFund.cs" />
-    <Compile Include="Utilities\Translators\PCOFinancialPledge.cs" />
     <Compile Include="Utilities\Translators\PCOImportDonation.cs" />
     <Compile Include="Utilities\Translators\PCOImportDesignation.cs" />
-    <Compile Include="Utilities\Translators\PCOGroup.cs" />
     <Compile Include="Utilities\Translators\PCOImportPerson.cs" />
     <Page Include="Login.xaml">
       <SubType>Designer</SubType>
