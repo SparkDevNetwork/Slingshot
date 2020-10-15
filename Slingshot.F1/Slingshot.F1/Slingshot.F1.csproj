@@ -58,7 +58,8 @@
     <Reference Include="OrcaMDF.Core">
       <HintPath>..\libs\OrcaMDF.Core.dll</HintPath>
     </Reference>
-    <Reference Include="OrcaMDF.Framework">
+    <Reference Include="OrcaMDF.Framework, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\OrcaMDF.Framework.dll</HintPath>
     </Reference>
     <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
@@ -87,12 +88,17 @@
     <Compile Include="Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Utilities\F1Mdb.cs" />
-    <Compile Include="Utilities\F1Api.cs" />
-    <Compile Include="Utilities\F1Mdb.HeadOfHousehold.cs" />
-    <Compile Include="Utilities\F1Mdb.ExportMethods.cs" />
-    <Compile Include="Utilities\F1Mdb.SqlQueries.cs" />
+    <Compile Include="Utilities\DataTableExtensionMethods.cs" />
+    <Compile Include="Utilities\MDB\F1Mdb.cs" />
+    <Compile Include="Utilities\API\F1Api.cs" />
+    <Compile Include="Utilities\MDB\F1Mdb.HeadOfHousehold.cs" />
+    <Compile Include="Utilities\MDB\F1Mdb.ExportMethods.cs" />
+    <Compile Include="Utilities\MDB\F1Mdb.SqlQueries.cs" />
     <Compile Include="Utilities\F1Translator.cs" />
+    <Compile Include="Utilities\SQL\F1Sql.HeadOfHousehold.cs" />
+    <Compile Include="Utilities\SQL\F1Sql.cs" />
+    <Compile Include="Utilities\SQL\F1Sql.ExportMethods.cs" />
+    <Compile Include="Utilities\SQL\F1SqlDatabase.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialBatch.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialAccount.cs" />
     <Compile Include="Utilities\Translators\API\F1FinancialPledge.cs" />
@@ -114,6 +120,20 @@
     <Compile Include="Utilities\Translators\MDB\F1PersonAttributeValue.cs" />
     <Compile Include="Utilities\Translators\MDB\F1PersonAddress.cs" />
     <Compile Include="Utilities\Translators\MDB\F1Person.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1Attendance.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1Business.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1BusinessAddress.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1BusinessPhone.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1FinancialAccount.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1FinancialBatch.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1FinancialPledge.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1FinancialTransaction.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1Group.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1Note.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1Person.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1PersonAddress.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1PersonAttributeValue.cs" />
+    <Compile Include="Utilities\Translators\SQL\F1PersonPhone.cs" />
     <Page Include="Login.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -156,6 +176,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <Compile Include="Utilities\SQL\DTO\F1Sql.DTO.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
@@ -185,7 +206,7 @@
     <Resource Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Utilities\GetTableData_CallOrder.txt" />
+    <Resource Include="Utilities\MDB\GetTableData_CallOrder.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

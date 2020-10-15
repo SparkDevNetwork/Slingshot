@@ -36,10 +36,4 @@ namespace Slingshot.F1.Utilities
         }
     }
 
-    public class HeadOfHousehold
-    {
-        public int IndividualId { get; set; }
-        public string SubStatusName { get; set; }
-    }
-
 }

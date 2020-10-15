@@ -1,71 +1,59 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+﻿using Slingshot.Core.Model;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportDonation
     {
-        
-        public static FinancialTransaction Translate( PCODonation inputTransaction )
+        public static FinancialTransaction Translate( DonationDTO inputTransaction )
         {
-            var transaction = new FinancialTransaction();
-
-            transaction.Id = inputTransaction.id;
-
-            if ( inputTransaction.batchId.HasValue )
-            {
-                transaction.BatchId = inputTransaction.batchId.Value;
-            }
-            if( inputTransaction.payment_method == "check" )
-            {
-
-                transaction.TransactionCode = inputTransaction.payment_check_number;
-
-            } else if ( inputTransaction.payment_method != "cash" )
-            {
-
-                transaction.TransactionCode = inputTransaction.payment_last4;
-
-            }
-
-            transaction.TransactionDate = inputTransaction.received_at;
-
-            transaction.AuthorizedPersonId = inputTransaction.personId;
-            
-            switch ( inputTransaction.payment_method )
+            var currencyType = CurrencyType.Unknown;
+            switch ( inputTransaction.PaymentMethod )
             {
                 case "cash":
-                    transaction.CurrencyType = CurrencyType.Cash;
+                    currencyType = CurrencyType.Cash;
                     break;
                 case "check":
-                    transaction.CurrencyType = CurrencyType.Check;
+                    currencyType = CurrencyType.Check;
                     break;
                 case "credit card":
+                    currencyType = CurrencyType.CreditCard;
+                    break;
                 case "debit card":
+                    currencyType = CurrencyType.CreditCard;
+                    break;
                 case "card":
-                    transaction.CurrencyType = CurrencyType.CreditCard;
+                    currencyType = CurrencyType.CreditCard;
                     break;
                 case "ach":
-                    transaction.CurrencyType = CurrencyType.ACH;
+                    currencyType = CurrencyType.ACH;
                     break;
                 case "non-cash":
-                    transaction.CurrencyType = CurrencyType.NonCash;
-                    break;
-                default:
-                    transaction.CurrencyType = CurrencyType.Unknown;
+                    currencyType = CurrencyType.NonCash;
                     break;
             }
 
-            transaction.CreatedDateTime = inputTransaction.created_at;
+            var transactionCode = string.Empty;
+            if ( inputTransaction.PaymentMethod == "check" )
+            {
+                transactionCode = inputTransaction.PaymentCheckNumber;
+            }
+            else if ( inputTransaction.PaymentMethod != "cash" )
+            {
+                transactionCode = inputTransaction.PaymentLastFour;
+            }
 
-            transaction.ModifiedDateTime = inputTransaction.updated_at;
+            var transaction = new FinancialTransaction
+            {
+                Id = inputTransaction.Id,
+                TransactionDate = inputTransaction.ReceivedAt,
+                AuthorizedPersonId = inputTransaction.PersonId,
+                CreatedDateTime = inputTransaction.CreatedAt,
+                ModifiedDateTime = inputTransaction.UpdatedAt,
+                CurrencyType = currencyType,
+                TransactionCode = transactionCode,
+                BatchId = ( inputTransaction.BatchId.HasValue ) ? inputTransaction.BatchId.Value : default( int )
+            };
 
             return transaction;
         }

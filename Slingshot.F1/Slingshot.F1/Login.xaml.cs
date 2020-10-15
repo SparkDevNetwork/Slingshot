@@ -1,5 +1,6 @@
 ﻿using Slingshot.F1.Utilities;
 using System;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Slingshot.F1
@@ -17,7 +18,7 @@ namespace Slingshot.F1
         {
             InitializeComponent();
 
-            gbMDBUpload.Visibility = rbMDB.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            //gbMDBUpload.Visibility = rbMDB.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>
@@ -101,21 +102,90 @@ namespace Slingshot.F1
         }
 
         /// <summary>
+        /// Handles the Click event of the btnFileUpload control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="RoutedEventArgs"/> instance containing the event data.</param>
+        private void btnSqlFileUpload_Click( object sender, RoutedEventArgs e )
+        {
+            var fileDialog = new System.Windows.Forms.OpenFileDialog();
+            var result = fileDialog.ShowDialog();
+
+            string fileName = null;
+
+            if( result == System.Windows.Forms.DialogResult.OK )
+            {
+                lblMessage_SQL.Text = string.Empty;
+
+                fileName = fileDialog.FileName;
+
+                bool isValidFileName = fileName.ToLower().Contains( ".mdf" );
+
+                if ( isValidFileName )
+                {
+                    F1Sql.OpenConnection( fileName );
+
+                    if ( F1Sql.IsConnected )
+                    {
+                        var exporter = new F1Sql();
+
+                        BackgroundWorker exportWorker = new BackgroundWorker();
+
+                        // Fetch group types now to avoid awkward delay when loading the next window.
+                        exportWorker.DoWork += delegate ( object s2, DoWorkEventArgs e2 )
+                        {
+                            exporter.GetGroupTypes();
+                        };
+
+                        // Load the next window.
+                        exportWorker.RunWorkerCompleted += delegate ( object s2, RunWorkerCompletedEventArgs e2 )
+                        {
+                            MainWindow mainWindow = new MainWindow();
+                            mainWindow.exporter = exporter;
+                            mainWindow.Show();
+                            this.Close();
+                        };
+
+                        exportWorker.RunWorkerAsync();
+                        lblMessage_SQL.Text = "Reading Group Types from MDF file, please wait.";
+                        btnSqlFileUpload.IsEnabled = false;
+                    }
+                    else
+                    {
+                        lblMessage_SQL.Text = $"Could not open the SQL (MDF) database file. {F1Sql.ErrorMessage}";
+                    }
+                }
+                else
+                {
+                    lblMessage_SQL.Text = "Please choose an SQL database (MDF) file.";
+                }
+            }
+        }
+
+        /// <summary>
         /// Handles the CheckedChanged event of the rbImportType control.
         /// </summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         private void rbImportType_CheckedChanged ( object sender, EventArgs e )
         {
-            if ( gbAPILogin != null && gbMDBUpload != null )
+            if ( gbAPILogin != null && gbMDBUpload != null && gbSQLUpload != null )
             {
-                if ( rbAPI.IsChecked.Value )
+                if ( rbSQL.IsChecked.Value )
                 {
+                    gbSQLUpload.Visibility = Visibility.Visible;
+                    gbAPILogin.Visibility = Visibility.Collapsed;
+                    gbMDBUpload.Visibility = Visibility.Collapsed;
+                }
+                else if ( rbAPI.IsChecked.Value )
+                {
+                    gbSQLUpload.Visibility = Visibility.Collapsed;
                     gbAPILogin.Visibility = Visibility.Visible;
                     gbMDBUpload.Visibility = Visibility.Collapsed;
                 }
                 else if ( rbMDB.IsChecked.Value )
                 {
+                    gbSQLUpload.Visibility = Visibility.Collapsed;
                     gbAPILogin.Visibility = Visibility.Collapsed;
                     gbMDBUpload.Visibility = Visibility.Visible;
                 }

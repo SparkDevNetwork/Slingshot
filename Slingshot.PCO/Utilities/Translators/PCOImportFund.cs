@@ -1,26 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Slingshot.Core;
-using Slingshot.Core.Model;
-using Slingshot.PCO.Models;
+﻿using Slingshot.Core.Model;
+using Slingshot.PCO.Models.DTO;
 
 namespace Slingshot.PCO.Utilities.Translators
 {
     public static class PCOImportFund
     {
-        public static FinancialAccount Translate( PCOFund inputAccount )
+        public static FinancialAccount Translate( FundDTO inputAccount )
         {
-            var financialAccount = new FinancialAccount();
-
-            financialAccount.Id = inputAccount.id;
-
-            financialAccount.Name = inputAccount.name;
-
-            financialAccount.IsTaxDeductible = true;
+            var financialAccount = new FinancialAccount
+            {
+                Id = inputAccount.Id,
+                Name = inputAccount.Name,
+                IsTaxDeductible = true
+            };
 
             return financialAccount;
         }

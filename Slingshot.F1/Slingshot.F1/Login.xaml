@@ -9,7 +9,7 @@
 
     <Grid Margin="20,40,20,20">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="120" />
+            <ColumnDefinition Width="150" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -18,15 +18,37 @@
         </Grid.RowDefinitions>
         <Label Name="lblImportType" Grid.Row="0" Margin="8,0" Content="Import Type" />
         <StackPanel Name="spImportType" Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-            <RadioButton Name="rbAPI" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged" IsChecked="True">API</RadioButton>
+            <RadioButton Name="rbSQL" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged" IsChecked="True">MDF (SQL)</RadioButton>
+            <RadioButton Name="rbAPI" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged">API</RadioButton>
             <RadioButton Name="rbMDB" GroupName="ImportType" Margin="5" Checked="rbImportType_CheckedChanged">MDB</RadioButton>
         </StackPanel>
 
-        <!-- API Interface -->
-        <GroupBox Name="gbAPILogin" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
+        <!--SQL/MDF Interface-->
+        <GroupBox Name="gbSQLUpload" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
             <Grid Margin="0,5,0,5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Name="lblSqlUploader" Grid.Row="0" Content="Select an MDF (SQL) File" />
+                <Button Name="btnSqlFileUpload" Grid.Row="0" Grid.Column="1" IsDefault="True" Click="btnSqlFileUpload_Click">
+                    <Label>Upload</Label>
+                </Button>
+
+                <TextBlock Name="lblMessage_SQL" Grid.Row="7" Grid.Column="1" TextWrapping="WrapWithOverflow"></TextBlock>
+            </Grid>
+        </GroupBox>
+
+        <!-- API Interface -->
+        <GroupBox Name="gbAPILogin" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Collapsed">
+            <Grid Margin="0,5,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
@@ -64,10 +86,10 @@
         </GroupBox>
 
         <!--MDB Interface-->
-        <GroupBox Name="gbMDBUpload" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Visible">
+        <GroupBox Name="gbMDBUpload" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Visibility="Collapsed">
             <Grid Margin="0,5,0,5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="150" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>

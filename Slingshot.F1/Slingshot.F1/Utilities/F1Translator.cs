@@ -7,10 +7,9 @@ namespace Slingshot.F1.Utilities
 {
     public abstract class F1Translator
     {
-        protected static int loopThreshold = 100000000;
-        protected static List<int> AccountIds;
-        protected static List<FamilyMember> familyMembers = new List<FamilyMember>();
-
+        /// <summary>
+        /// Cleanup functionality.
+        /// </summary>
         public virtual void Cleanup() { }
 
         /// <summary>
@@ -77,8 +76,6 @@ namespace Slingshot.F1.Utilities
         public abstract List<GroupType> GetGroupTypes();
 
         public abstract void WriteGroupTypes( List<int> selectedGroupTypes );
-
-        public abstract List<FamilyMember> GetFamilyMembers();
     }
 
     /// <summary>
@@ -95,5 +92,14 @@ namespace Slingshot.F1.Utilities
         public string HouseholdCampusName { get; set; }
 
         public int? HouseholdCampusId { get; set; }
+    }
+
+    /// <summary>
+    /// The Head of Household.
+    /// </summary>
+    public class HeadOfHousehold
+    {
+        public int IndividualId { get; set; }
+        public string SubStatusName { get; set; }
     }
 }
