@@ -1,5 +1,5 @@
-﻿using Slingshot.PCO.Models.ApiModels;
-using System.Collections.Generic;
+﻿using Slingshot.Core;
+using Slingshot.PCO.Models.ApiModels;
 
 namespace Slingshot.PCO.Models.DTO
 {
@@ -7,24 +7,33 @@ namespace Slingshot.PCO.Models.DTO
     {
         public int Id { get; set; }
 
+        public bool? DisplayPublicly { get; set; }
+
+        public bool? MultipleOptionsEnabled { get; set; }
+
         public string Name { get; set; }
 
-        public string FolderName { get; set; }
+        public int? Position { get; set; }
 
-        public List<TagDTO> Tags { get; set; }
-
-        public string Key
+        public string GroupAttributeKey
         {
-            get { return string.Format( "PCOTagGroup:{0}", Id ); }
+            get
+            {
+                string attributeKeyName = this.Name
+                    .Replace( " ", "_" )
+                    .RemoveSpecialCharacters();
+
+                return $"PCO_{attributeKeyName}_{this.Id}";
+            }
         }
 
         public TagGroupDTO( DataItem data )
         {
             Id = data.Id;
+            DisplayPublicly = data.Item.display_publicly;
+            MultipleOptionsEnabled = data.Item.multiple_options_enabled;
             Name = data.Item.name;
-            FolderName = data.Item.service_type_folder_name;
-            Tags = new List<TagDTO>();
-            // ToDo:  Tags collection is not implemented.
+            Position = data.Item.position;
         }
     }
 }

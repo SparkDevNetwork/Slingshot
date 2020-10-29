@@ -1,4 +1,5 @@
 ﻿using Slingshot.PCO.Models.ApiModels;
+using Slingshot.PCO.Utilities;
 using System;
 
 namespace Slingshot.PCO.Models.DTO
@@ -47,7 +48,7 @@ namespace Slingshot.PCO.Models.DTO
             ContactEmailAddress = data.Item.contact_email_address;
             Country = data.Item.country;
             CreatedAt = data.Item.created_at;
-            Description = data.Item.description;
+            Description = ( ( string ) data.Item.description ).StripHtml();
             Latitude = data.Item.latitude;
             Longitude = data.Item.longitude;
             Name = data.Item.name;

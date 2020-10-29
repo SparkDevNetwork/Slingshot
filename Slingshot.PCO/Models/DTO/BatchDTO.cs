@@ -1,4 +1,5 @@
 ﻿using Slingshot.PCO.Models.ApiModels;
+using Slingshot.PCO.Utilities;
 using System;
 
 namespace Slingshot.PCO.Models.DTO
@@ -26,7 +27,7 @@ namespace Slingshot.PCO.Models.DTO
             Id = data.Id;
             CommittedAt = data.Item.committed_at;
             CreatedAt = data.Item.created_at;
-            Description = data.Item.description;
+            Description = ( ( string ) data.Item.description ).StripHtml();
             TotalCents = data.Item.total_cents;
             TotalCurrency = data.Item.total_currency;
             UpdatedAt = data.Item.updated_at;

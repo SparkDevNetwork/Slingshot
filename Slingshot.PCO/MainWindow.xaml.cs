@@ -1,6 +1,7 @@
 ﻿using Slingshot.Core;
 using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
+using Slingshot.PCO.Models.DTO;
 using Slingshot.PCO.Utilities;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace Slingshot.PCO
 
         private bool _errorHasOccurred = false;
 
-        public List<GroupType> ExportGroupTypes { get; set; }
+        public List<GroupTypeDTO> ExportGroupTypes { get; set; }
         public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
 
         public MainWindow()
@@ -138,8 +139,8 @@ namespace Slingshot.PCO
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                // ToDo: This method is not yet implemented
-                ////PCOApi.ExportGroups( ExportGroupTypes.Select( t => t.Id ).ToList() );
+                var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
+                PCOApi.ExportGroups( exportGroupTypes );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -191,7 +192,7 @@ namespace Slingshot.PCO
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
 
-            txtImportCutOff.Text = DateTime.Now.ToShortDateString();
+            txtImportCutOff.Text = DateTime.Now.AddYears( -2 ).ToShortDateString();
         }
 
         /// <summary>

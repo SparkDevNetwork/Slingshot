@@ -1,4 +1,5 @@
 ﻿using Slingshot.PCO.Models.ApiModels;
+using Slingshot.PCO.Utilities;
 using System;
 
 namespace Slingshot.PCO.Models.DTO
@@ -29,7 +30,7 @@ namespace Slingshot.PCO.Models.DTO
             Color = data.Item.color;
             CreatedAt = data.Item.created_at;
             Deletable = data.Item.deltable;
-            Description = data.Item.description;
+            Description = ( ( string ) data.Item.description ).StripHtml();
             LedgerCode = data.Item.ledger_code;
             Name = data.Item.name;
             UpdatedAt = data.Item.updated_at;

@@ -7,6 +7,9 @@ namespace Slingshot.PCO.Models.ApiModels
         [JsonProperty( "tags" )]
         public QueryItems Tags { get; set; }
 
+        [JsonProperty( "tag_group" )]
+        public QueryItems TagGroup { get; set; }
+
         [JsonProperty( "emails" )]
         public QueryItems Emails { get; set; }
 
@@ -66,5 +69,14 @@ namespace Slingshot.PCO.Models.ApiModels
 
         [JsonProperty( "note_category" )]
         public QueryItems NoteCategory { get; set; }
-    }
+
+        [JsonProperty( "group" )]
+        public QueryItems Group { get; set; }
+
+        [JsonProperty( "group_type" )]
+        public QueryItems GroupType { get; set; }
+
+        [JsonProperty( "location" )]
+        public QueryItems Location { get; set; }
+   }
 }
