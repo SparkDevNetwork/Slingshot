@@ -4,7 +4,7 @@ using System;
 
 namespace Slingshot.PCO.Models.DTO
 {
-    public class EventDTO
+    public class GroupEventDTO
     {
         public int Id { get; set; }
 
@@ -36,7 +36,7 @@ namespace Slingshot.PCO.Models.DTO
 
         public string VirtualLocationUrl { get; set; }
 
-        public EventDTO( DataItem data )
+        public GroupEventDTO( DataItem data )
         {
             Id = data.Id;
             AttendanceRequestsEnabled = data.Item.attendance_requests_enabled;

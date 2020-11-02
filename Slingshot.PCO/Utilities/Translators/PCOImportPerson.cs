@@ -221,12 +221,12 @@ namespace Slingshot.PCO.Utilities.Translators
 
             foreach ( var attribute in attributes )
             {
-                var field_definition = personAttributes.Where( f => f.Id == attribute.FieldDefinitionId ).FirstOrDefault();
-                if ( field_definition != null )
+                var fieldDefinition = personAttributes.Where( f => f.Id == attribute.FieldDefinitionId ).FirstOrDefault();
+                if ( fieldDefinition != null )
                 {
                     attributeList.Add( new PersonAttributeValue
                     {
-                        AttributeKey = field_definition.Id + "_" + field_definition.Slug,
+                        AttributeKey = fieldDefinition.Id + "_" + fieldDefinition.Slug,
                         AttributeValue = attribute.Value,
                         PersonId = inputPerson.Id
                     } );

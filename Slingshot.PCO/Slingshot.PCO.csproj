@@ -98,15 +98,18 @@
     <Compile Include="Models\DTO\DonationDTO.cs" />
     <Compile Include="Models\DTO\EmailAddressDTO.cs" />
     <Compile Include="Models\DTO\EmailTemplateDTO.cs" />
-    <Compile Include="Models\DTO\EventDTO.cs" />
+    <Compile Include="Models\DTO\CheckInEventDTO.cs" />
+    <Compile Include="Models\DTO\GroupEventDTO.cs" />
     <Compile Include="Models\DTO\FieldDataDTO.cs" />
     <Compile Include="Models\DTO\FieldDefinitionDTO.cs" />
     <Compile Include="Models\DTO\FieldOptionDTO.cs" />
     <Compile Include="Models\DTO\FundDTO.cs" />
     <Compile Include="Models\DTO\GroupDTO.cs" />
     <Compile Include="Models\DTO\GroupMemberDTO.cs" />
+    <Compile Include="Models\DTO\CheckInDTO.cs" />
     <Compile Include="Models\DTO\GroupTypeDTO.cs" />
     <Compile Include="Models\DTO\HouseholdDTO.cs" />
+    <Compile Include="Models\DTO\CheckInLocationDTO.cs" />
     <Compile Include="Models\DTO\NoteDTO.cs" />
     <Compile Include="Models\DTO\NoteCategoryDTO.cs" />
     <Compile Include="Models\ApiModels\Relationships.cs" />
@@ -119,9 +122,15 @@
     <Compile Include="Models\DTO\TagGroupDTO.cs" />
     <Compile Include="Utilities\AddressParser\AddressParser.cs" />
     <Compile Include="Utilities\AddressParser\AddressParseResult.cs" />
-    <Compile Include="Utilities\PCOApi.cs" />
+    <Compile Include="Utilities\PCOApi\PCOApi.Attendance.cs" />
+    <Compile Include="Utilities\PCOApi\PCOApi.cs" />
+    <Compile Include="Utilities\PCOApi\PCOApi.Financial.cs" />
+    <Compile Include="Utilities\PCOApi\PCOApi.Individuals.cs" />
     <Compile Include="Utilities\PCOExtensionMethods.cs" />
     <Compile Include="Utilities\QueryResult.cs" />
+    <Compile Include="Utilities\Translators\PCOImportAttendance.cs" />
+    <Compile Include="Utilities\Translators\PCOImportLocation.cs" />
+    <Compile Include="Utilities\Translators\PCOImportSchedule.cs" />
     <Compile Include="Utilities\Translators\PCOImportGroupAttendance.cs" />
     <Compile Include="Utilities\Translators\PCOImportGroupAttributeValue.cs" />
     <Compile Include="Utilities\Translators\PCOImportGroupMember.cs" />
@@ -177,6 +186,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <Compile Include="Utilities\PCOApi\PCOApi.Groups.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

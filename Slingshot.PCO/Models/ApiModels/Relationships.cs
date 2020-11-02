@@ -78,5 +78,8 @@ namespace Slingshot.PCO.Models.ApiModels
 
         [JsonProperty( "location" )]
         public QueryItems Location { get; set; }
+
+        [JsonProperty( "event" )]
+        public QueryItems Event { get; set; }
    }
 }

@@ -29,7 +29,7 @@ namespace Slingshot.PCO.Models.DTO
 
         public string Description { get; set; }
 
-        public AttendanceDTO( DataItem data, EventDTO eventData, int groupId )
+        public AttendanceDTO( DataItem data, GroupEventDTO eventData, int groupId )
         {
             IsValid = ( data.Item.attended == true );
             Id = data.Id;
@@ -53,7 +53,7 @@ namespace Slingshot.PCO.Models.DTO
             PersonId = personRelationship.Id;
         }
 
-        private void SetEventData( DataItem data, EventDTO eventData )
+        private void SetEventData( DataItem data, GroupEventDTO eventData )
         {
             StartsAt = eventData.StartsAt;
             EndsAt = eventData.EndsAt;

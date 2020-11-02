@@ -140,12 +140,25 @@ namespace Slingshot.PCO
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
                 var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
-                PCOApi.ExportGroups( exportGroupTypes );
+                PCOApi.ExportGroups( exportSettings.ModifiedSince, exportGroupTypes );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     _errorHasOccurred = true;
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {PCOApi.ErrorMessage}" );
+                }
+            }
+
+            // export attendance
+            if ( !_errorHasOccurred && exportSettings.ExportAttendance )
+            {
+                exportWorker.ReportProgress( 80, "Exporting Attendance..." );
+
+                PCOApi.ExportAttendance( exportSettings.ModifiedSince );
+                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                {
+                    _errorHasOccurred = true;
+                    exportWorker.ReportProgress( 81, $"Error exporting attendance: {PCOApi.ErrorMessage}" );
                 }
             }
 
@@ -216,7 +229,8 @@ namespace Slingshot.PCO
             {
                 ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
-                ExportIndividuals = cbIndividuals.IsChecked.Value
+                ExportIndividuals = cbIndividuals.IsChecked.Value,
+                ExportAttendance = cbAttendance.IsChecked.Value
             };
 
             // configure group types to export
@@ -257,6 +271,8 @@ namespace Slingshot.PCO
         public bool ExportIndividuals { get; set; } = true;
 
         public bool ExportContributions { get; set; } = true;
+
+        public bool ExportAttendance { get; set; } = true;
 
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
     }
