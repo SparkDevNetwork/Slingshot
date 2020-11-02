@@ -21,10 +21,26 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         internal static partial class ApiEndpoint
         {
+            internal const string API_PEOPLEORGANIZATION = "/people/v2";
             internal const string API_PEOPLE = "/people/v2/people";
             internal const string API_SERVICE_PEOPLE = "/services/v2/people";
             internal const string API_NOTES = "/people/v2/notes";
             internal const string API_FIELD_DEFINITIONS = "/people/v2/field_definitions";
+        }
+
+        /// <summary>
+        /// Test access to the people API.
+        /// </summary>
+        /// <returns></returns>
+        public static bool TestIndividualAccess()
+        {
+            var initalErrorValue = PCOApi.ErrorMessage;
+
+            var response = ApiGet( ApiEndpoint.API_PEOPLEORGANIZATION );
+
+            PCOApi.ErrorMessage = initalErrorValue;
+
+            return ( response != string.Empty );
         }
 
         #region ExportIndividuals() and Related Methods

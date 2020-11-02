@@ -54,16 +54,19 @@
                     </Grid.RowDefinitions>
 
                     <Label Content="Import Records Modified Since" Grid.Row="1" FontWeight="Bold" />
-                    <TextBox Name="txtImportCutOff" Grid.Row="2"  Margin="0,0,0,10" Padding="3" />
+                    <TextBox Name="txtImportCutOff" Grid.Row="2"  Margin="6,0,0,10" Padding="3" />
 
                     <Label Content="Export Data Types" Grid.Row="3" FontWeight="Bold" />
-                    <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="People" Margin="0,10,0,10" />
-                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Giving" Margin="90,10,0,10" />
-                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="180,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
-                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="270,10,0,10" />
+                    <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="People" Margin="6,10,0,10" />
+                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Giving" Margin="96,10,0,10" />
+                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="186,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
+                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="276,10,0,10" />
 
-                    <Label Content="Group Types To Export" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
-                    <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="5" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3">
+                    <Label Content="Group Attendance" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
+                    <CheckBox Name="cbExportGroupAttendance" Grid.Row="5" IsChecked="True" Content="Export Group Attendance" Margin="6,30,0,10" />
+
+                    <Label Content="Group Types To Export" Grid.Row="6" FontWeight="Bold" Margin="0,0,0,0"/>
+                    <ListBox ItemsSource="{Binding ExportGroupTypes}" Grid.Row="6" HorizontalAlignment="Left" Margin="0,30,0,10" Name="cblGroupTypes" BorderThickness="0" Grid.Column="3">
                         <ListBox.ItemTemplate>
                             <DataTemplate >
                                 <StackPanel Orientation="Horizontal" Width="Auto" Margin="0,0,0,0" >
@@ -73,11 +76,11 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                     
-                    <Button Name="btnDownloadPackage" Grid.Row="6" Click="btnDownloadPackage_Click">
+                    <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">
                         <Label Content="Create Download Package" />
                     </Button>
-                    <TextBlock Name="txtError" TextWrapping="WrapWithOverflow" Grid.Row="7" Margin="0,10,0,0" Text="Error:" Foreground="Red" FontWeight="Bold" Visibility="Collapsed" />
-                    <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,0,0,0" Padding="0,0,0,0" Visibility="Collapsed" />
+                    <TextBlock Name="txtError" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,10,0,0" Text="Error:" Foreground="Red" FontWeight="Bold" Visibility="Collapsed" />
+                    <TextBlock Name="txtMessages" TextWrapping="WrapWithOverflow" Grid.Row="9" Margin="0,0,0,0" Padding="0,0,0,0" Visibility="Collapsed" />
                 </Grid>
             </ScrollViewer>
         </DockPanel>

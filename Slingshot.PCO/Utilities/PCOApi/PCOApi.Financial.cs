@@ -17,9 +17,25 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         internal static partial class ApiEndpoint
         {
+            internal const string API_GIVINGORGANIZATION = "/giving/v2";
             internal const string API_FUNDS = "/giving/v2/funds";
             internal const string API_BATCHES = "/giving/v2/batches";
             internal const string API_DONATIONS = "/giving/v2/donations";
+        }
+
+        /// <summary>
+        /// Test access to the giving API.
+        /// </summary>
+        /// <returns></returns>
+        public static bool TestGivingAccess()
+        {
+            var initalErrorValue = PCOApi.ErrorMessage;
+
+            var response = ApiGet( ApiEndpoint.API_GIVINGORGANIZATION );
+
+            PCOApi.ErrorMessage = initalErrorValue;
+
+            return ( response != string.Empty );
         }
 
         #region ExportFinancialAccounts() and Related Methods

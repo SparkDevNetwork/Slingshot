@@ -65,9 +65,9 @@ namespace Slingshot.PCO.Utilities
         /// <summary>
         /// Exports the groups.
         /// </summary>
-        /// <param name="modifiedSince">The modified since.</param>
         /// <param name="exportGroupTypes">The list of <see cref="GroupTypeDTO"/>s to export.</param>
-        public static void ExportGroups( DateTime modifiedSince, List<GroupTypeDTO> exportGroupTypes )
+        /// <param name="exportAttendance">[true] if attendance records should be exported.</param>
+        public static void ExportGroups( List<GroupTypeDTO> exportGroupTypes, bool exportAttendance )
         {
             try
             {
@@ -91,16 +91,15 @@ namespace Slingshot.PCO.Utilities
                 // Export each group type.
                 foreach ( var groupType in exportGroupTypes )
                 {
+                    bool isUnique = false;
                     if ( groupType.Id == -1 )
                     {
                         // "Unique" group type.
                         groupType.Id = maxGroupType += 1;
-                        ExportGroupType( groupType, tagGroups, modifiedSince, true );
+                        isUnique = true;
                     }
-                    else
-                    {
-                        ExportGroupType( groupType, tagGroups, modifiedSince );
-                    }
+
+                    ExportGroupType( groupType, tagGroups, exportAttendance, isUnique );
                 }
             }
             catch ( Exception ex )
@@ -109,14 +108,14 @@ namespace Slingshot.PCO.Utilities
             }
         }
 
-        private static void ExportGroupType( GroupTypeDTO groupType, List<TagGroupDTO> tagGroups, DateTime modifiedSince, bool isUnique = false )
+        private static void ExportGroupType( GroupTypeDTO groupType, List<TagGroupDTO> tagGroups, bool exportAttendance, bool isUnique )
         {
             // Write the GroupType.
             var exportGroupType = PCOImportGroupType.Translate( groupType );
             ImportPackage.WriteToPackage( exportGroupType );
 
             // Iterate over each Group in the GroupType.
-            var groups = GetGroups( groupType, isUnique, modifiedSince );
+            var groups = GetGroups( groupType, isUnique );
             foreach ( var group in groups )
             {
                 var importGroup = PCOImportGroup.Translate( group );
@@ -137,7 +136,10 @@ namespace Slingshot.PCO.Utilities
                     }
 
                     // Export Attendance.
-                    ExportGroupAttendance( importGroup );
+                    if ( exportAttendance )
+                    {
+                        ExportGroupAttendance( importGroup );
+                    }
                 }
             }
         }
@@ -242,7 +244,7 @@ namespace Slingshot.PCO.Utilities
             }
         }
 
-        private static List<GroupDTO> GetGroups( GroupTypeDTO groupType, bool isUnique, DateTime modifiedSince )
+        private static List<GroupDTO> GetGroups( GroupTypeDTO groupType, bool isUnique )
         {
             var groups = new List<GroupDTO>();
 
@@ -258,7 +260,7 @@ namespace Slingshot.PCO.Utilities
             }
 
             string groupEndPoint = ApiEndpoint.API_GROUPS.Replace( "{groupTypeId}", groupTypeId );
-            var groupQuery = GetAPIQuery( groupEndPoint, apiOptions, modifiedSince );
+            var groupQuery = GetAPIQuery( groupEndPoint, apiOptions );
 
             if ( groupQuery == null )
             {

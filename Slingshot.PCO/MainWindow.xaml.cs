@@ -18,15 +18,22 @@ namespace Slingshot.PCO
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region Private Fields
+
         private DispatcherTimer _apiUpdateTimer = new DispatcherTimer();
         private Stopwatch _stopwatch = new Stopwatch();
-
         private readonly BackgroundWorker exportWorker = new BackgroundWorker();
-
         private bool _errorHasOccurred = false;
 
-        public List<GroupTypeDTO> ExportGroupTypes { get; set; }
-        public List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
+        #endregion Private Fields
+
+        #region Private Properties
+
+        private List<GroupTypeDTO> ExportGroupTypes { get; set; }
+
+        private List<CheckListItem> GroupTypesCheckboxItems { get; set; } = new List<CheckListItem>();
+
+        #endregion Private Properties
 
         public MainWindow()
         {
@@ -41,7 +48,10 @@ namespace Slingshot.PCO
             exportWorker.WorkerReportsProgress = true;
         }
 
+        #region Event Handlers
+
         #region Background Worker Events
+
         private void ExportWorker_ProgressChanged( object sender, ProgressChangedEventArgs e )
         {
             string userState = e.UserState.ToString();
@@ -140,7 +150,7 @@ namespace Slingshot.PCO
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
                 var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
-                PCOApi.ExportGroups( exportSettings.ModifiedSince, exportGroupTypes );
+                PCOApi.ExportGroups( exportGroupTypes, exportSettings.ExportGroupAttendance );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -169,7 +179,7 @@ namespace Slingshot.PCO
             _stopwatch.Stop();
         }
 
-        #endregion
+        #endregion Background Worker Events
 
         /// <summary>
         /// Handles the Tick event of the _apiUpdateTimer control.
@@ -194,17 +204,47 @@ namespace Slingshot.PCO
         private void Window_Loaded( object sender, RoutedEventArgs e )
         {
 			lblApiUsage.Text = $"API Usage: {PCOApi.ApiCounter}";
-            // add group types
+
+            // disable people export option if it is not available in the API.
+            if ( !PCOApi.TestIndividualAccess() )
+            {
+                cbIndividuals.IsEnabled = false;
+                cbIndividuals.IsChecked = false;
+            }
+
+            // disable giving export option if it is not available in the API.
+            if ( !PCOApi.TestGivingAccess() )
+            {
+                cbContributions.IsEnabled = false;
+                cbContributions.IsChecked = false;
+            }
+
+            // disable check-ins export option if it is not available in the API.
+            if ( !PCOApi.TestCheckInAccess() )
+            {
+                cbAttendance.IsEnabled = false;
+                cbAttendance.IsChecked = false;
+            }
+
             ExportGroupTypes = PCOApi.GetGroupTypes();
 
+            // disable group export option if no group types are available.
+            if ( !ExportGroupTypes.Any() )
+            {
+                cbGroups.IsEnabled = false;
+                cbGroups.IsChecked = false;
+                ToggleGroupDisplay( false );
+            }
+
+            // add group types.
             foreach ( var groupType in ExportGroupTypes )
             {
-                //cblGroupTypes.Items.Add( groupType );
                 GroupTypesCheckboxItems.Add( new CheckListItem { Id = groupType.Id, Text = groupType.Name, Checked = true } );
             }
 
             cblGroupTypes.ItemsSource = GroupTypesCheckboxItems;
 
+            // set default "Modified Since" date.
             txtImportCutOff.Text = DateTime.Now.AddYears( -2 ).ToShortDateString();
         }
 
@@ -230,7 +270,8 @@ namespace Slingshot.PCO
                 ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
-                ExportAttendance = cbAttendance.IsChecked.Value
+                ExportAttendance = cbAttendance.IsChecked.Value,
+                ExportGroupAttendance = cbExportGroupAttendance.IsChecked.Value
             };
 
             // configure group types to export
@@ -245,23 +286,30 @@ namespace Slingshot.PCO
             exportWorker.RunWorkerAsync( exportSettings );
         }
 
-        #region Window Events
-
-
         private void cbGroups_Checked( object sender, RoutedEventArgs e )
         {
-            if ( cbGroups.IsChecked.Value )
+            ToggleGroupDisplay( cbGroups.IsChecked.Value );
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void ToggleGroupDisplay( bool showGroupOptions )
+        {
+            if ( showGroupOptions )
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 1, GridUnitType.Auto );
-
+                gridMain.RowDefinitions[6].Height = new GridLength( 1, GridUnitType.Auto );
             }
             else
             {
                 gridMain.RowDefinitions[5].Height = new GridLength( 0 );
+                gridMain.RowDefinitions[6].Height = new GridLength( 0 );
             }
         }
 
-        #endregion
+        #endregion Private Methods
     }
 
     public class ExportSettings
@@ -273,6 +321,8 @@ namespace Slingshot.PCO
         public bool ExportContributions { get; set; } = true;
 
         public bool ExportAttendance { get; set; } = true;
+
+        public bool ExportGroupAttendance { get; set; } = true;
 
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
     }

@@ -27,8 +27,26 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         internal static partial class ApiEndpoint
         {
+            internal const string API_CHECKINORGANIZATION = "/check-ins/v2";
             internal const string API_CHECKINS = "/check-ins/v2/check_ins";
         }
+
+        /// <summary>
+        /// Test access to the check-in API.
+        /// </summary>
+        /// <returns></returns>
+        public static bool TestCheckInAccess()
+        {
+            var initalErrorValue = PCOApi.ErrorMessage;
+
+            var response = ApiGet( ApiEndpoint.API_CHECKINORGANIZATION );
+
+            PCOApi.ErrorMessage = initalErrorValue;
+
+            return ( response != string.Empty );
+        }
+
+        #region ExportAttendance() and Related Methods
 
         public static void ExportAttendance( DateTime modifiedSince )
         {
@@ -189,5 +207,6 @@ namespace Slingshot.PCO.Utilities
             } );
         }
 
+        #endregion ExportAttendance() and Related Methods
     }
 }
