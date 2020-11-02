@@ -266,7 +266,7 @@ namespace Slingshot.Core.Utilities
         /// </summary>
         /// <typeparam name="T">Any type which implements <see cref="IImportModel"/>.</typeparam>
         /// <param name="model">The model.</param>
-        private static void EnsureWriters<T>( this T model) where T : IImportModel
+        private static void EnsureWriters<T>( this T model ) where T : IImportModel
         {
             var typeName = model.GetType().Name;
             if ( !textWriters.ContainsKey( typeName ) )

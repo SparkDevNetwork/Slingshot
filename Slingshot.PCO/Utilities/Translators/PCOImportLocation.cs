@@ -7,7 +7,7 @@ namespace Slingshot.PCO.Utilities.Translators
     {
         public static Location Translate( CheckInLocationDTO checkInLocation )
         {
-            if (checkInLocation.Id <= 0 )
+            if ( checkInLocation.Id <= 0 )
             {
                 return null;
             }

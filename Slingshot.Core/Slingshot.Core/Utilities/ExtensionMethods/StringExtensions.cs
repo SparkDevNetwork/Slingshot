@@ -47,7 +47,7 @@ namespace Slingshot.Core
         /// <returns></returns>
         public static string RemoveSpecialCharacters( this string str )
         {
-            return Regex.Replace(str,"[^0-9a-zA-Z._]","");
+            return Regex.Replace( str,"[^0-9a-zA-Z._]","" );
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Slingshot.Core
         /// <returns></returns>
         public static bool IsDigitsOnly( this string str )
         {
-            return Regex.IsMatch(str, "^[0-9]*$");
+            return Regex.IsMatch( str, "^[0-9]*$" );
         }
 
         /// <summary>
@@ -354,7 +354,7 @@ namespace Slingshot.Core
             var dictionary = new System.Collections.Generic.Dictionary<string, string>();
             string[] nameValues = str.Split( new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries );
             // If we haven't found any pipes, check for commas
-            if ( nameValues.Count() == 1 && nameValues[0] == str)
+            if ( nameValues.Count() == 1 && nameValues[0] == str )
             {
                 nameValues = str.Split( new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries );
             }

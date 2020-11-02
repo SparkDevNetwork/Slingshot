@@ -53,7 +53,7 @@ namespace Slingshot.PCO.Utilities.Translators
 
         #region CleanNumber() Method
 
-        private static Regex digitsOnly = new Regex(@"[^\d]");
+        private static Regex digitsOnly = new Regex( @"[^\d]" );
 
         /// <summary>
         /// Removes non-numeric characters from a provided number

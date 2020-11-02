@@ -22,11 +22,11 @@ namespace Slingshot.PCO.Utilities
         /// Constructor for new query.
         /// </summary>
         /// <param name="newItems"></param>
-        public PCOApiQueryResult(List<DataItem> newItems)
+        public PCOApiQueryResult( List<DataItem> newItems )
         {
             Items = new List<DataItem>();
             IncludedItems = new Dictionary<string, DataItem>();
-            AddIncludedItems(newItems);
+            AddIncludedItems( newItems );
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Slingshot.PCO.Utilities
             foreach ( var includedItem in newItems )
             {
                 string key = $"{includedItem.Type}:{includedItem.Id}";
-                IncludedItems.Add(key, includedItem);
+                IncludedItems.Add( key, includedItem );
             }
         }
 
