@@ -76,8 +76,8 @@ namespace Slingshot.PCO.Models.ApiModels
         [JsonProperty( "group_type" )]
         public QueryItems GroupType { get; set; }
 
-        [JsonProperty( "location" )]
-        public QueryItems Location { get; set; }
+        [JsonProperty( "locations" )]
+        public QueryItems Locations { get; set; }
 
         [JsonProperty( "event" )]
         public QueryItems Event { get; set; }

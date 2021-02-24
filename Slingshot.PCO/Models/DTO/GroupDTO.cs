@@ -50,7 +50,7 @@ namespace Slingshot.PCO.Models.DTO
             Schedule = data.Item.schedule;
             VirtualLocationUrl = data.Item.virtual_location_url;
             GroupType = groupType;
-            HasLocation = ( data.Relationships?.Location?.Data?.FirstOrDefault() != null );
+            HasLocation = ( data.Relationships?.Locations?.Data?.FirstOrDefault() != null );
         }
     }
 }

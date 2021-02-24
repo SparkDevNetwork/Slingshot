@@ -78,12 +78,12 @@ namespace Slingshot.PCO.Models.DTO
 
         private void SetLocation( DataItem data, Dictionary<string, DataItem> includedItems )
         {
-            if ( data.Relationships == null || data.Relationships.Location == null )
+            if ( data.Relationships == null || data.Relationships.Locations == null )
             {
                 return;
             }
 
-            foreach ( var relationship in data.Relationships.Location.Data )
+            foreach ( var relationship in data.Relationships.Locations.Data )
             {
                 var item = includedItems.LocateItem( relationship );
 

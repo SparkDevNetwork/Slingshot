@@ -160,7 +160,7 @@ namespace Slingshot.PCO.Utilities
 
             var apiOptions = new Dictionary<string, string>
             {
-                { "include", "event,location,person" },
+                { "include", "event,locations,person" },
                 { "per_page", "100" }
             };
 
