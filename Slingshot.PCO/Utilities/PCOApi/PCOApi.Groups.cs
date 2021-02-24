@@ -67,8 +67,12 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         /// <param name="exportGroupTypes">The list of <see cref="GroupTypeDTO"/>s to export.</param>
         /// <param name="exportAttendance">[true] if attendance records should be exported.</param>
-        public static void ExportGroups( List<GroupTypeDTO> exportGroupTypes, bool exportAttendance )
+        /// <returns>The highest group id of the exported groups.</returns>
+        public static int ExportGroups( List<GroupTypeDTO> exportGroupTypes, bool exportAttendance )
         {
+            // This tracks the highest group id exported, which is used to ensure that we don't export any teams that might have the same group id later.
+            int maxGroupId = 0;
+
             try
             {
                 // Create Group Attributes from Tag Groups.
@@ -99,17 +103,22 @@ namespace Slingshot.PCO.Utilities
                         isUnique = true;
                     }
 
-                    ExportGroupType( groupType, tagGroups, exportAttendance, isUnique );
+                    maxGroupId = Math.Max( maxGroupId, ExportGroupType( groupType, tagGroups, exportAttendance, isUnique ) );
                 }
             }
             catch ( Exception ex )
             {
                 ErrorMessage = ex.Message;
             }
+
+            return maxGroupId;
         }
 
-        private static void ExportGroupType( GroupTypeDTO groupType, List<TagGroupDTO> tagGroups, bool exportAttendance, bool isUnique )
+        private static int ExportGroupType( GroupTypeDTO groupType, List<TagGroupDTO> tagGroups, bool exportAttendance, bool isUnique )
         {
+            // This tracks the highest group id exported, which is used to ensure that we don't export any teams that might have the same group id later.
+            int maxGroupId = 0;
+
             // Write the GroupType.
             var exportGroupType = PCOImportGroupType.Translate( groupType );
             ImportPackage.WriteToPackage( exportGroupType );
@@ -122,6 +131,8 @@ namespace Slingshot.PCO.Utilities
                 if ( importGroup != null )
                 {
                     ImportPackage.WriteToPackage( importGroup );
+
+                    maxGroupId = Math.Max( maxGroupId, importGroup.Id );
 
                     // Export GroupMembers.
                     ExportGroupMembers( importGroup );
@@ -142,6 +153,8 @@ namespace Slingshot.PCO.Utilities
                     }
                 }
             }
+
+            return maxGroupId;
         }
 
         private static void ExportGroupMembers( Group importGroup )

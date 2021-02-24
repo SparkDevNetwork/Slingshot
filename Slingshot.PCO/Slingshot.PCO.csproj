@@ -105,8 +105,12 @@
     <Compile Include="Models\DTO\FieldOptionDTO.cs" />
     <Compile Include="Models\DTO\FundDTO.cs" />
     <Compile Include="Models\DTO\GroupDTO.cs" />
+    <Compile Include="Models\DTO\TeamPositionDTO.cs" />
+    <Compile Include="Models\DTO\TeamMemberDTO.cs" />
     <Compile Include="Models\DTO\GroupMemberDTO.cs" />
     <Compile Include="Models\DTO\CheckInDTO.cs" />
+    <Compile Include="Models\DTO\TeamDTO.cs" />
+    <Compile Include="Models\DTO\ServiceTypeDTO.cs" />
     <Compile Include="Models\DTO\GroupTypeDTO.cs" />
     <Compile Include="Models\DTO\HouseholdDTO.cs" />
     <Compile Include="Models\DTO\CheckInLocationDTO.cs" />
@@ -125,10 +129,14 @@
     <Compile Include="Utilities\PCOApi\PCOApi.Attendance.cs" />
     <Compile Include="Utilities\PCOApi\PCOApi.cs" />
     <Compile Include="Utilities\PCOApi\PCOApi.Financial.cs" />
+    <Compile Include="Utilities\PCOApi\PCOApi.Services.cs" />
     <Compile Include="Utilities\PCOApi\PCOApi.Individuals.cs" />
     <Compile Include="Utilities\PCOExtensionMethods.cs" />
     <Compile Include="Utilities\QueryResult.cs" />
     <Compile Include="Utilities\Translators\PCOImportAttendance.cs" />
+    <Compile Include="Utilities\Translators\PCOImportTeamMember.cs" />
+    <Compile Include="Utilities\Translators\PCOImportTeam.cs" />
+    <Compile Include="Utilities\Translators\PCOImportServiceType.cs" />
     <Compile Include="Utilities\Translators\PCOImportLocation.cs" />
     <Compile Include="Utilities\Translators\PCOImportSchedule.cs" />
     <Compile Include="Utilities\Translators\PCOImportGroupAttendance.cs" />

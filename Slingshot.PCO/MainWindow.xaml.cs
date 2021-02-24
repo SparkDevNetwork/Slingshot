@@ -145,6 +145,7 @@ namespace Slingshot.PCO
             }
 
             // export group types
+            int maxExportedGroupId = 0;
             if ( !_errorHasOccurred && exportSettings.ExportGroupTypes.Count > 0 )
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
@@ -156,6 +157,21 @@ namespace Slingshot.PCO
                 {
                     _errorHasOccurred = true;
                     exportWorker.ReportProgress( 54, $"Error exporting groups: {PCOApi.ErrorMessage}" );
+                }
+            }
+
+            if ( !_errorHasOccurred && exportSettings.ExportServices )
+            {
+                exportWorker.ReportProgress( 74, $"Exporting Services/Teams..." );
+
+                if ( maxExportedGroupId <= Utilities.Translators.PCOImportTeam.TEAM_ID_BASE )
+                {
+                    PCOApi.ExportServices();
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 74, $"Error exporting services/teams: {PCOApi.ErrorMessage}" );
+                    }
                 }
             }
 
@@ -219,6 +235,13 @@ namespace Slingshot.PCO
                 cbContributions.IsChecked = false;
             }
 
+            // disable service export option if it is not available in the API.
+            if ( !PCOApi.TestServiceAccess() )
+            {
+                cbServices.IsEnabled = false;
+                cbServices.IsChecked = false;
+            }
+
             // disable check-ins export option if it is not available in the API.
             if ( !PCOApi.TestCheckInAccess() )
             {
@@ -270,6 +293,7 @@ namespace Slingshot.PCO
                 ModifiedSince = ( DateTime ) txtImportCutOff.Text.AsDateTime(),
                 ExportContributions = cbContributions.IsChecked.Value,
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
+                ExportServices = cbServices.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value,
                 ExportGroupAttendance = cbExportGroupAttendance.IsChecked.Value
             };
@@ -319,6 +343,8 @@ namespace Slingshot.PCO
         public bool ExportIndividuals { get; set; } = true;
 
         public bool ExportContributions { get; set; } = true;
+
+        public bool ExportServices { get; set; } = true;
 
         public bool ExportAttendance { get; set; } = true;
 

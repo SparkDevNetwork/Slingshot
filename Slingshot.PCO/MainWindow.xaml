@@ -58,9 +58,10 @@
 
                     <Label Content="Export Data Types" Grid.Row="3" FontWeight="Bold" />
                     <CheckBox Name="cbIndividuals" Grid.Row="4" IsChecked="True" Content="People" Margin="6,10,0,10" />
-                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Giving" Margin="96,10,0,10" />
-                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="186,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
-                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="276,10,0,10" />
+                    <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Giving" Margin="76,10,0,10" />
+                    <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="146,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
+                    <CheckBox Name="cbServices" Grid.Row="4" IsChecked="True" Content="Services/Teams" Margin="216,10,0,10" />
+                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="326,10,0,10" />
 
                     <Label Content="Group Attendance" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
                     <CheckBox Name="cbExportGroupAttendance" Grid.Row="5" IsChecked="True" Content="Export Group Attendance" Margin="6,30,0,10" />
