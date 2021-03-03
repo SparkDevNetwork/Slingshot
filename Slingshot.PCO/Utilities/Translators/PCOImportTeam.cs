@@ -22,7 +22,7 @@ namespace Slingshot.PCO.Utilities.Translators
                 IsActive = !inputTeam.ArchivedAt.HasValue,
                 Description = $"Service: {inputTeam.ServiceType.Name} - Team: {inputTeam.Name}",
                 Name = inputTeam.Name,
-                GroupTypeId = inputTeam.ServiceType.Id,
+                GroupTypeId = inputTeam.ServiceType.Id + PCOImportServiceType.SERVICE_TYPE_ID_BASE,
                 IsPublic = !( inputTeam.SecureTeam == true )
             };
         }

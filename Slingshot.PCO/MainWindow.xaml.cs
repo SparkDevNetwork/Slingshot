@@ -145,13 +145,19 @@ namespace Slingshot.PCO
             }
 
             // export group types
-            int maxExportedGroupId = 0;
+            var groupExportResult = new PCOApi.GroupExportResult
+            {
+                // default values.
+                MaxGroupId = 0,
+                MaxGroupTypeId = 0
+            };
+
             if ( !_errorHasOccurred && exportSettings.ExportGroupTypes.Count > 0 )
             {
                 exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
                 var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
-                PCOApi.ExportGroups( exportGroupTypes, exportSettings.ExportGroupAttendance );
+                groupExportResult = PCOApi.ExportGroups( exportGroupTypes, exportSettings.ExportGroupAttendance );
 
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
@@ -164,7 +170,8 @@ namespace Slingshot.PCO
             {
                 exportWorker.ReportProgress( 74, $"Exporting Services/Teams..." );
 
-                if ( maxExportedGroupId <= Utilities.Translators.PCOImportTeam.TEAM_ID_BASE )
+                if ( groupExportResult.MaxGroupId <= Utilities.Translators.PCOImportTeam.TEAM_ID_BASE
+                    && groupExportResult.MaxGroupTypeId <= Utilities.Translators.PCOImportServiceType.SERVICE_TYPE_ID_BASE )
                 {
                     PCOApi.ExportServices();
                     if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )

@@ -1,5 +1,4 @@
-﻿using Slingshot.Core.Model;
-using Slingshot.Core.Utilities;
+﻿using Slingshot.Core.Utilities;
 using Slingshot.PCO.Models.DTO;
 using Slingshot.PCO.Utilities.Translators;
 using System;

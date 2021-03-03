@@ -27,6 +27,32 @@ namespace Slingshot.PCO.Utilities
             internal const string API_GROUPATTENDANCE = "/groups/v2/events/{eventId}/attendances";
         }
 
+        #region Group Export Result Class
+
+        /// <summary>
+        /// Group Export Result Class
+        /// </summary>
+        public class GroupExportResult
+        {
+            /// <summary>
+            /// Gets or sets the maximum group identifier of the exported groups.
+            /// </summary>
+            /// <value>
+            /// The maximum group identifier.
+            /// </value>
+            public int MaxGroupId { get; set; }
+
+            /// <summary>
+            /// Gets or sets the maximum group type identifier of the exported groups.
+            /// </summary>
+            /// <value>
+            /// The maximum group type identifier.
+            /// </value>
+            public int MaxGroupTypeId { get; set; }
+        }
+
+        #endregion Group Export Result Class
+
         #region ExportGroups() and Related Methods
 
         /// <summary>
@@ -67,11 +93,15 @@ namespace Slingshot.PCO.Utilities
         /// </summary>
         /// <param name="exportGroupTypes">The list of <see cref="GroupTypeDTO"/>s to export.</param>
         /// <param name="exportAttendance">[true] if attendance records should be exported.</param>
-        /// <returns>The highest group id of the exported groups.</returns>
-        public static int ExportGroups( List<GroupTypeDTO> exportGroupTypes, bool exportAttendance )
+        /// <returns>A <see cref="GroupExportResult"/> with the maximum group and group type ids of the exported groups.</returns>
+        public static GroupExportResult ExportGroups( List<GroupTypeDTO> exportGroupTypes, bool exportAttendance )
         {
-            // This tracks the highest group id exported, which is used to ensure that we don't export any teams that might have the same group id later.
-            int maxGroupId = 0;
+            // This tracks the highest group and group type ids exported, which is used to ensure that we don't export any teams that might have the same group or group type id later.
+            var exportResult = new GroupExportResult
+            {
+                MaxGroupId = 0,
+                MaxGroupTypeId = 0
+            };
 
             try
             {
@@ -86,10 +116,9 @@ namespace Slingshot.PCO.Utilities
                 var groupTypes = GetGroupTypes();
 
                 // The special "unique" group type in PCO needs to have an integer value assigned, so we will find the highest number currently used and add 1.
-                int maxGroupType = 0;
                 foreach ( var groupType in exportGroupTypes )
                 {
-                    maxGroupType = ( groupType.Id > maxGroupType ) ? groupType.Id : maxGroupType;
+                    exportResult.MaxGroupTypeId = Math.Max( exportResult.MaxGroupTypeId, groupType.Id );
                 }
 
                 // Export each group type.
@@ -99,11 +128,14 @@ namespace Slingshot.PCO.Utilities
                     if ( groupType.Id == -1 )
                     {
                         // "Unique" group type.
-                        groupType.Id = maxGroupType += 1;
+                        groupType.Id = exportResult.MaxGroupTypeId += 1;
                         isUnique = true;
+
+                        // Update max group type id value to reflect inclusion of one more.
+                        exportResult.MaxGroupTypeId = groupType.Id;
                     }
 
-                    maxGroupId = Math.Max( maxGroupId, ExportGroupType( groupType, tagGroups, exportAttendance, isUnique ) );
+                    exportResult.MaxGroupId = Math.Max( exportResult.MaxGroupId, ExportGroupType( groupType, tagGroups, exportAttendance, isUnique ) );
                 }
             }
             catch ( Exception ex )
@@ -111,7 +143,7 @@ namespace Slingshot.PCO.Utilities
                 ErrorMessage = ex.Message;
             }
 
-            return maxGroupId;
+            return exportResult;
         }
 
         private static int ExportGroupType( GroupTypeDTO groupType, List<TagGroupDTO> tagGroups, bool exportAttendance, bool isUnique )

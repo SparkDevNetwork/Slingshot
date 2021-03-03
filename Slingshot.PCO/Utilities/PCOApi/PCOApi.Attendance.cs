@@ -1,13 +1,10 @@
-﻿using Slingshot.Core;
-using Slingshot.Core.Model;
+﻿using Slingshot.Core.Model;
 using Slingshot.Core.Utilities;
 using Slingshot.PCO.Models.DTO;
 using Slingshot.PCO.Utilities.Translators;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 
 namespace Slingshot.PCO.Utilities
 {
