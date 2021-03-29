@@ -122,7 +122,7 @@ namespace Slingshot.PCO.Utilities
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "person_team_position_assignments,team_positions" },
-                { "per_page", "100" }
+                { "per_page", "20" }
             };
 
             var teamQuery = GetAPIQuery( ApiEndpoint.API_TEAMS, apiOptions );
