@@ -23,7 +23,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             }
             else
             {
-                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == row.Field<int?>( "household_id" ) ).FirstOrDefault().Value;
+                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == householdId ).FirstOrDefault().Value;
 
                 if ( headOfHousehold != null )
                 {
