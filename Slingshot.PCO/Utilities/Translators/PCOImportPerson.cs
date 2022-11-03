@@ -34,6 +34,7 @@ namespace Slingshot.PCO.Utilities.Translators
                 MaritalStatus = inputPerson.GetMaritalStatus(),
                 Birthdate = inputPerson.Birthdate,
                 AnniversaryDate = inputPerson.Anniversary,
+                Grade = inputPerson.Grade?.ToString(),
                 CreatedDateTime = inputPerson.CreatedAt,
                 ModifiedDateTime = inputPerson.UpdatedAt,
                 FamilyId = inputPerson.Household?.Id,
