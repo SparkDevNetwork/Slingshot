@@ -92,6 +92,8 @@
                     Clicked="btnImport_Clicked"/>
                 </VerticalStackLayout>
 
+
+
                 <!-- OUTPUT -->
                 <VerticalStackLayout
                 x:Name="vslOutput"
@@ -99,15 +101,24 @@
                 WidthRequest="500"
                 HorizontalOptions="Center">
                     <Frame 
-                    MinimumHeightRequest="300" 
+                    HeightRequest="300" 
                     >
-                        <Label
+                        <ScrollView>
+                            <VerticalStackLayout
+                                WidthRequest="400"
+                                Padding="50,0,0,0"
+                                >
+                            
+                                <Label
                         x:Name="lOutput"
                         Text="some data"
                         MinimumHeightRequest="300"
                         WidthRequest="500"
                         HorizontalOptions="Center"
                         />
+
+                            </VerticalStackLayout>
+                        </ScrollView>
                     </Frame>
                     <Label
                         IsVisible="False"

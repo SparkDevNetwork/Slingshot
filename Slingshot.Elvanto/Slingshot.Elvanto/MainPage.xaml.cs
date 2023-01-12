@@ -24,25 +24,35 @@ public partial class MainPage : ContentPage
 
     private async void btnImport_Clicked( object sender, EventArgs e )
     {
-        try
+
+        await Task.Run( async () =>
         {
-            await DoExport();
-        }
-        catch ( Exception ex )
-        {
-            lOutput.Text = ex.Message;
-            btnRetry.IsVisible = true;
-        }
+            try
+            {
+                await DoExport();
+            }
+            catch ( Exception ex )
+            {
+                await MainThread.InvokeOnMainThreadAsync( () =>
+                {
+                    lOutput.Text = ex.Message;
+                    btnRetry.IsVisible = true;
+                } );
+            }
+        } );
     }
 
     private async Task DoExport()
     {
-        vslForm.IsVisible = false;
-        vslOutput.IsVisible = true;
-        btnSave.IsVisible = false;
-        tbSaveLocation.IsVisible = false;
-        lSaveLocation.IsVisible = false;
-        btnRetry.IsVisible = false;
+        await MainThread.InvokeOnMainThreadAsync( () =>
+        {
+            vslForm.IsVisible = false;
+            vslOutput.IsVisible = true;
+            btnSave.IsVisible = false;
+            tbSaveLocation.IsVisible = false;
+            lSaveLocation.IsVisible = false;
+            btnRetry.IsVisible = false;
+        } );
 
         string mainDir = FileSystem.Current.AppDataDirectory;
         var tempDir = mainDir + "\\Temp";
@@ -62,11 +72,16 @@ public partial class MainPage : ContentPage
         using ( var zip = ZipFile.Open( zipFile, ZipArchiveMode.Create ) )
         {
 
-
-            lOutput.Text = "Initializing Elvanto Client";
+            await MainThread.InvokeOnMainThreadAsync( () =>
+            {
+                lOutput.Text = "Initializing Elvanto Client";
+            } );
             var client = new Client( tbApiKey.Text );
 
-            lOutput.Text += "\nLoading Person Categories";
+            await MainThread.InvokeOnMainThreadAsync( () =>
+            {
+                lOutput.Text += "\nLoading Person Categories";
+            } );
 
             var categories = client.Get<Category>();
             var categoryLookup = new Dictionary<string, string>();
@@ -79,7 +94,11 @@ public partial class MainPage : ContentPage
                 categoryLookup[category.Id] = category.Name;
             }
 
-            lOutput.Text += "\nLoading Person Attributes";
+            await MainThread.InvokeOnMainThreadAsync( () =>
+            {
+                lOutput.Text += "\nLoading Person Attributes";
+            } );
+
 
             var customFields = client.Get<CustomFields>();
             var fields = new List<string>();
@@ -102,7 +121,10 @@ public partial class MainPage : ContentPage
             File.WriteAllText( $"{tempDir}\\person-attribute.csv", personAttributes.ToString() );
             zip.CreateEntryFromFile( $"{tempDir}\\person-attribute.csv", "person-attribute.csv" );
 
-            lOutput.Text += "\nLoading Person Data";
+            await MainThread.InvokeOnMainThreadAsync( () =>
+            {
+                lOutput.Text += "\nLoading Person Data";
+            } );
 
             var personIdManager = new IdLookupManager( 1000 );
             var familyIdLookupManager = new IdLookupManager( 1000 );
@@ -137,7 +159,10 @@ public partial class MainPage : ContentPage
                 if ( personId % 1000 == 0 )
                 {
                     count += 1000;
-                    lOutput.Text += $"\nLoaded {count} people";
+                    await MainThread.InvokeOnMainThreadAsync( () =>
+                    {
+                        lOutput.Text += $"\nLoaded {count} people";
+                    } );
                 }
 
                 var familyId = familyIdLookupManager.GetId( person.FamilyId );
@@ -224,7 +249,10 @@ public partial class MainPage : ContentPage
                     }
                 }
             }
-            lOutput.Text += $"\nFinished Loading people";
+            await MainThread.InvokeOnMainThreadAsync( () =>
+            {
+                lOutput.Text += $"\nFinished Loading people";
+            } );
 
             File.WriteAllText( $"{tempDir}\\person.csv", personSb.ToString() );
             zip.CreateEntryFromFile( $"{tempDir}\\person.csv", "person.csv" );
@@ -238,7 +266,10 @@ public partial class MainPage : ContentPage
             if ( cbGroups.IsChecked )
             {
                 //GROUPS!
-                lOutput.Text += "\nLoading Groups";
+                await MainThread.InvokeOnMainThreadAsync( () =>
+                {
+                    lOutput.Text += "\nLoading Groups";
+                } );
                 var groups = client.Get<Group>();
 
                 var grouptypeSb = new StringBuilder();
@@ -329,8 +360,10 @@ public partial class MainPage : ContentPage
 
             if ( cbFinancial.IsChecked )
             {
-
-                lOutput.Text += "\nLoading Accounts";
+                await MainThread.InvokeOnMainThreadAsync( () =>
+                {
+                    lOutput.Text += "\nLoading Accounts";
+                } );
 
                 var accounts = client.Get<FinancialCategory>();
                 var accountSb = new StringBuilder();
@@ -348,7 +381,10 @@ public partial class MainPage : ContentPage
                         $"" );//ParentAccountId
                 }
 
-                lOutput.Text += "\nLoading Transactions";
+                await MainThread.InvokeOnMainThreadAsync( () =>
+                {
+                    lOutput.Text += "\nLoading Transactions";
+                } );
 
                 var transactions = client.Get<Transaction>();
 
@@ -468,10 +504,15 @@ public partial class MainPage : ContentPage
                 zip.CreateEntryFromFile( $"{tempDir}\\financial-transactiondetail.csv", "financial-transactiondetail.csv" );
             }
         }
-        lOutput.Text += "\nSuccessfully Downloaded Data";
-        btnSave.IsVisible = true;
-        tbSaveLocation.IsVisible = true;
-        lSaveLocation.IsVisible = true;
+
+        await MainThread.InvokeOnMainThreadAsync( () =>
+        {
+            lOutput.Text += "\nSuccessfully Downloaded Data";
+            btnSave.IsVisible = true;
+            tbSaveLocation.IsVisible = true;
+            lSaveLocation.IsVisible = true;
+            tbSaveLocation.Text = Environment.GetFolderPath( Environment.SpecialFolder.Desktop );
+        } );
     }
 
     private void btnRetry_Clicked( object sender, EventArgs e )
@@ -482,7 +523,16 @@ public partial class MainPage : ContentPage
 
     private void btnSave_Clicked( object sender, EventArgs e )
     {
-
+        try
+        {
+            var newPath = $"{tbSaveLocation.Text}\\Elvanto_{DateTime.Now:yyyyMMddHHmm}.slingshot";
+            File.Copy( $"{FileSystem.Current.AppDataDirectory}\\Elvanto.slingshot", newPath );
+            lOutput.Text = $"Slingshot file has been saved to: {newPath}";
+        }
+        catch ( Exception ex )
+        {
+            lOutput.Text = ex.Message;
+        }
     }
 }
 
