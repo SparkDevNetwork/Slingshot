@@ -204,7 +204,7 @@ public partial class MainPage : ContentPage
                 personSb.AppendLine( personRow );
 
                 //PhoneNumbers
-                if ( string.IsNullOrWhiteSpace( person.Phone ) )
+                if ( !string.IsNullOrWhiteSpace( person.Phone ) )
                 {
                     phonenumberSb.AppendLine( $"{personId}," +
                         $"Home," +
@@ -213,7 +213,7 @@ public partial class MainPage : ContentPage
                         $"False" );
                 }
 
-                if ( string.IsNullOrWhiteSpace( person.Mobile ) )
+                if ( !string.IsNullOrWhiteSpace( person.Mobile ) )
                 {
                     phonenumberSb.AppendLine( $"{personId}," +
                         $"Mobile," +
