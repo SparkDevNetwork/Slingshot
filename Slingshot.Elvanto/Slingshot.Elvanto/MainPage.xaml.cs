@@ -311,16 +311,14 @@ public partial class MainPage : ContentPage
 
                     groupsSb.AppendLine( $"{groupId}," +
                         $"{group.Name.Truncate( 90 ).ForCSV()}," +
-                        $"{group.Description.Truncate( 255 ).ForCSV()}," +
+                        $"{group.Description.StripHTML().Truncate( 255 ).ForCSV()}," +
                         $"0," + // Order
                         $"0," + //Parent Group Id
                         $"{groupTypeId}," +
                         $"{campusId}," +
                         $"," + //Capacity
-                        $"," +
-                        //$"{group.MeetingDay}," +
-                        $"," +
-                        //$"{group.MeetingTime}," +
+                        $"{group.MeetingDay}," +
+                        $"{group.MeetingTime.FormatTime()}," +
                         $"{group.Status == "Active"}," +
                         $"FALSE" );
 
