@@ -146,6 +146,8 @@ public partial class MainPage : ContentPage
 
             var count = 0;
 
+            var familyIds = new List<int>();
+
             await foreach ( var person in data )
             {
                 var personalCategory = "Attendee";
@@ -164,11 +166,22 @@ public partial class MainPage : ContentPage
                         lOutput.Text += $"\nLoaded {count} people";
                     } );
                 }
+                var newFamily = true;
 
                 var familyId = familyIdLookupManager.GetId( person.FamilyId );
                 if ( familyId == 0 )
                 {
                     familyId = familyIdLookupManager.GetId( Guid.NewGuid().ToString() );
+
+                    if ( familyIds.Contains( familyId ) )
+                    {
+                        newFamily = false;
+
+                    }
+                    else
+                    {
+                        familyIds.Add( familyId );
+                    }
                 }
 
                 //PERSON
@@ -190,7 +203,7 @@ public partial class MainPage : ContentPage
                  $"," + //Anniversary Date
                  $"{person.GetRecordStatus()}," +
                  $"," + //Inactive Reason
-                 $"Attendee," +
+                 $"{personalCategory}," +
                  $"{( person.GetRecordStatus() == "Active" ? "EmailAllowed" : "DoNotEmail" )}," +
                  $"{person.DateAddedFormatted}," +
                  $"{person.DateModifiedFormatted}," +
@@ -223,7 +236,8 @@ public partial class MainPage : ContentPage
                 }
 
                 //ADDRESSES
-                if ( !string.IsNullOrEmpty( person.Address )
+                if ( newFamily
+                    && !string.IsNullOrEmpty( person.Address )
                     && !string.IsNullOrEmpty( person.Country ) )
                 {
                     var address = $"{personIdManager.GetId( person.Id )}," +
@@ -310,7 +324,7 @@ public partial class MainPage : ContentPage
                     int? campusId = group.Campus != null ? campusIdManager.GetId( group.Campus?.Id ) : null;
 
                     groupsSb.AppendLine( $"{groupId}," +
-                        $"{group.Name.Truncate( 90 ).ForCSV()}," +
+                        $"{group.Name.Truncate( 49 ).ForCSV()}," +
                         $"{group.Description.StripHTML().Truncate( 255 ).ForCSV()}," +
                         $"0," + // Order
                         $"0," + //Parent Group Id
