@@ -146,7 +146,7 @@ public partial class MainPage : ContentPage
 
             var count = 0;
 
-            var familyIds = new List<int>();
+            var familiesWithSaveAddressses = new List<int>();
 
             await foreach ( var person in data )
             {
@@ -166,22 +166,11 @@ public partial class MainPage : ContentPage
                         lOutput.Text += $"\nLoaded {count} people";
                     } );
                 }
-                var newFamily = true;
 
                 var familyId = familyIdLookupManager.GetId( person.FamilyId );
                 if ( familyId == 0 )
                 {
                     familyId = familyIdLookupManager.GetId( Guid.NewGuid().ToString() );
-
-                    if ( familyIds.Contains( familyId ) )
-                    {
-                        newFamily = false;
-
-                    }
-                    else
-                    {
-                        familyIds.Add( familyId );
-                    }
                 }
 
                 //PERSON
@@ -236,10 +225,13 @@ public partial class MainPage : ContentPage
                 }
 
                 //ADDRESSES
-                if ( newFamily
+
+                if ( !familiesWithSaveAddressses.Contains( familyId )
                     && !string.IsNullOrEmpty( person.Address )
                     && !string.IsNullOrEmpty( person.Country ) )
                 {
+                    familiesWithSaveAddressses.Add( familyId );
+                    
                     var address = $"{personIdManager.GetId( person.Id )}," +
                         $"{person.Address.ForCSV()}," +
                         $"{person.Address2.ForCSV()}," +
