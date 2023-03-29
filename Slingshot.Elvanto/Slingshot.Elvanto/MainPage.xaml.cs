@@ -228,6 +228,7 @@ public partial class MainPage : ContentPage
 
                 if ( !familiesWithSaveAddressses.Contains( familyId )
                     && !string.IsNullOrEmpty( person.Address )
+                    && !string.IsNullOrEmpty( person.City )
                     && !string.IsNullOrEmpty( person.Country ) )
                 {
                     familiesWithSaveAddressses.Add( familyId );
