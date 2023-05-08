@@ -149,7 +149,7 @@ namespace Slingshot.Core.Model
         EventRegistration,
 
         /// <summary>
-        /// Transaction type of Reciept
+        /// Transaction type of Receipt
         /// </summary>
         Receipt
     }

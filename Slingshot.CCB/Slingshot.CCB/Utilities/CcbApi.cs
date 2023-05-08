@@ -309,7 +309,7 @@ namespace Slingshot.CCB.Utilities
         public static void InitializeExport()
         {
             IncompleteGroups = new List<int>();
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
         /// <summary>
@@ -628,7 +628,7 @@ namespace Slingshot.CCB.Utilities
         }
 
         /// <summary>
-        /// Exports the deparments.
+        /// Exports the departments.
         /// </summary>
         private static void ExportDepartments()
         {
@@ -1161,7 +1161,7 @@ namespace Slingshot.CCB.Utilities
             // events so we have the details we need for the attendance
             var eventDetails = GetAttendanceEvents( new DateTime( 1900, 1, 1 ) );
 
-            // add location ids to the location fields (CCB doesn't have location ids) instead of randomly creating ids (that would not be consistant across exports)
+            // add location ids to the location fields (CCB doesn't have location ids) instead of randomly creating ids (that would not be consistent across exports)
             // we'll use a hash of the street name
             foreach ( var specificAddress in eventDetails.Select( e => new { e.LocationStreetAddress, e.LocationName } ).Distinct() )
             {
@@ -1180,7 +1180,7 @@ namespace Slingshot.CCB.Utilities
                 }
             }
 
-            // add schedule ids (CCB didn't have these either) instead of randomly creating ids (that would not be consistant across exports)
+            // add schedule ids (CCB didn't have these either) instead of randomly creating ids (that would not be consistent across exports)
             // we'll use a hash of the schedule name
             foreach ( var specificSchedule in eventDetails.Select( e => e.ScheduleName ).Distinct() )
             {
@@ -1256,7 +1256,7 @@ namespace Slingshot.CCB.Utilities
                         startDate = modifiedSince.Value;
                     }
 
-                    // if it's the last time through set the end dat to today's date
+                    // if it's the last time through set the end date to today's date
                     if ( i == numberOfMonths - 1 )
                     {
                         endDate = today;

@@ -137,7 +137,7 @@ namespace Slingshot.ElexioCommunity.Utilities
         /// </summary>
         public static void InitializeExport()
         {
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
             _uids = new List<int>();
             _accountLookups = new Dictionary<int, string>();
         }
@@ -968,7 +968,7 @@ namespace Slingshot.ElexioCommunity.Utilities
 
     public class LoginResponse
     {
-        [JsonProperty( "sucess" )]
+        [JsonProperty( "success" )]
         public string Success { get; set; }
 
         [JsonProperty( "statusCode" )]

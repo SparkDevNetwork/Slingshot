@@ -12,7 +12,7 @@ namespace Slingshot.Core.Model
     public class BusinessContact : IImportModel
     {
         /// <summary>
-        /// Gets or sets the person indentifier.
+        /// Gets or sets the person identifier.
         /// </summary>
         /// <value>
         /// The name.
@@ -20,7 +20,7 @@ namespace Slingshot.Core.Model
         public int PersonId { get; set; }
 
         /// <summary>
-        /// Gets or sets the business indentifier.
+        /// Gets or sets the business identifier.
         /// </summary>
         /// <value>
         /// The name.

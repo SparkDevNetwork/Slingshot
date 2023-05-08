@@ -556,7 +556,7 @@ namespace Slingshot.F1.Utilities
                         startDate = modifiedSince;
                     }
 
-                    // if it's the last time through set the end dat to today's date
+                    // if it's the last time through set the end date to today's date
                     if ( i == numberOfMonths - 1 )
                     {
                         endDate = today.AddDays( 1 );
@@ -709,7 +709,7 @@ namespace Slingshot.F1.Utilities
 
                     if ( groups.Elements().Any() )
                     {
-                        // since we don't have a group heirarchy to work with, add a parent
+                        // since we don't have a group hierarchy to work with, add a parent
                         //  group for each group type for organizational purposes
                         int parentGroupId = 99 + groups.Elements().FirstOrDefault().Element( "groupType" ).Attribute( "id" ).Value.AsInteger();
 

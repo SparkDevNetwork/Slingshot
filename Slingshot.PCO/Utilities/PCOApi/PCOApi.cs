@@ -103,7 +103,7 @@ namespace Slingshot.PCO.Utilities
         {
             PCOApi.ErrorMessage = string.Empty;
             PCOApi.ApiThrottleSeconds = 0;
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
         /// <summary>
