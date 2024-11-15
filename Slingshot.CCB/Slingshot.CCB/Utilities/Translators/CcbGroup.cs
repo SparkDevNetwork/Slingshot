@@ -40,37 +40,68 @@ namespace Slingshot.CCB.Utilities.Translators
 
             groups.Add( group );
 
+
+            var importedDepartmentId = inputGroup.Element( "department" )?.Attribute( "id" )?.Value;
+            var importedDirectorId = inputGroup.Element( "director" )?.Attribute( "id" )?.Value;
+
+            var hasDepartment = importedDepartmentId.IsNotNullOrWhitespace();
+            var hasDirector = importedDirectorId.IsNotNullOrWhitespace();
+            
             // add the department as a group with an id of 9999 + its id to create a unique group id for it
-            if ( inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
+            if ( hasDepartment )
             {
-                departmentId = ( "9999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
+                departmentId = ( "9999" + importedDepartmentId ).AsInteger();
+
                 var departmentName = inputGroup.Element( "department" ).Value;
-                if ( departmentName.IsNullOrWhiteSpace() )
+                departmentName = departmentName.IsNullOrWhiteSpace() ? string.Empty : "No Department Name";
+
+                var departmentGroup = new Group
                 {
-                    departmentName = "No Department Name";
-                }
-                groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, IsActive = true, GroupTypeId = 9999 } );
+                    Id = departmentId.Value,
+                    IsActive = true,
+                    Name = departmentName,
+                    GroupTypeId = 9999
+                };
+
+                groups.Add( departmentGroup );
             }
 
             // add the director as a group with an id of 9998 + its id to create a unique group id for it
-            if ( inputGroup.Element( "director" ) != null && inputGroup.Element( "director" ).Attribute( "id" ) != null && inputGroup.Element( "director" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
+            if ( hasDirector )
             {
-                directorId = ( "9998" + inputGroup.Element( "director" ).Attribute( "id" ).Value ).AsInteger();
+                if ( hasDepartment )
+                {
+                    directorId = ( "9998" + importedDepartmentId + importedDirectorId ).AsInteger();
+                }
+                else
+                {
+                    directorId = ( "9998" + importedDirectorId ).AsInteger();
+                }
 
-                var directorGroup = new Group();
-                directorGroup.Id = directorId.Value;
-                directorGroup.IsActive = true;
-                directorGroup.Name = inputGroup.Element( "director" ).Element( "full_name" ).Value;
-                directorGroup.GroupTypeId = 9998;
+                var directorName = inputGroup.Element( "director" ).Element( "full_name" ).Value;
+
+                var directorGroup = new Group
+                {
+                    Id = directorId.Value,
+                    IsActive = true,
+                    Name = directorName,
+                    GroupTypeId = 9998
+                };
 
                 // add parent group of the department if it exists
-                if ( departmentId.HasValue )
+                if ( hasDepartment )
                 {
                     directorGroup.ParentGroupId = departmentId.Value;
                 }
 
-                directorGroup.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "director" ).Attribute( "id" ).Value.AsInteger(), Role = "Leader", GroupId = directorGroup.Id } );
+                var directorMember = new GroupMember
+                {
+                    PersonId = importedDirectorId.AsInteger(),
+                    Role = "Leader",
+                    GroupId = directorGroup.Id
+                };
 
+                directorGroup.GroupMembers.Add( directorMember );
                 groups.Add( directorGroup );
             }
 
