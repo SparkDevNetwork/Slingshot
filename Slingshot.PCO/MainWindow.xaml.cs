@@ -100,48 +100,65 @@ namespace Slingshot.PCO
             // export individuals
             if ( !_errorHasOccurred && exportSettings.ExportIndividuals )
             {
-                exportWorker.ReportProgress( 1, "Exporting Individuals..." );
-                PCOApi.ExportIndividuals( exportSettings.ModifiedSince );
+                try
+                {
+                    exportWorker.ReportProgress( 1, "Exporting Individuals..." );
+                    PCOApi.ExportIndividuals( exportSettings.ModifiedSince );
 
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        this.Dispatcher.Invoke( () =>
+                        {
+                            exportWorker.ReportProgress( 2, $"Error exporting individuals: {PCOApi.ErrorMessage}" );
+                        } );
+                    }
+                }
+                catch ( Exception ex )
                 {
                     _errorHasOccurred = true;
-                    this.Dispatcher.Invoke( () =>
-                    {
-                        exportWorker.ReportProgress( 2, $"Error exporting individuals: {PCOApi.ErrorMessage}" );
-                    } );
+                    exportWorker.ReportProgress( 2, $"Exception exporting individuals: {ex.Message}" );
                 }
             }
 
             // export contributions
             if ( !_errorHasOccurred && exportSettings.ExportContributions )
             {
-                exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
+                try
+                {
+                    exportWorker.ReportProgress( 30, "Exporting Financial Accounts..." );
 
-                PCOApi.ExportFinancialAccounts();
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    PCOApi.ExportFinancialAccounts();
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {PCOApi.ErrorMessage}" );
+                    }
+
+                    exportWorker.ReportProgress( 34, "Exporting Financial Batches..." );
+
+                    PCOApi.ExportFinancialBatches( exportSettings.ModifiedSince );
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 35, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
+                    }
+
+                    exportWorker.ReportProgress( 36, "Exporting Contribution Information..." );
+
+                    PCOApi.ExportContributions( exportSettings.ModifiedSince );
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 37, $"Error exporting financial contributions: {PCOApi.ErrorMessage}" );
+                    }
+                }
+                catch ( Exception ex )
                 {
                     _errorHasOccurred = true;
-                    exportWorker.ReportProgress( 31, $"Error exporting financial accounts: {PCOApi.ErrorMessage}" );
+                    exportWorker.ReportProgress( 2, $"Exception exporting contributions: {ex.Message}" );
                 }
-
-                exportWorker.ReportProgress( 34, "Exporting Financial Batches..." );
-
-                PCOApi.ExportFinancialBatches( exportSettings.ModifiedSince );
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    _errorHasOccurred = true;
-                    exportWorker.ReportProgress( 35, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
-                }
-
-                exportWorker.ReportProgress( 36, "Exporting Contribution Information..." );
-
-                PCOApi.ExportContributions( exportSettings.ModifiedSince );
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
-                {
-                    _errorHasOccurred = true;
-                    exportWorker.ReportProgress( 37, $"Error exporting financial batches: {PCOApi.ErrorMessage}" );
-                }
+             
             }
 
             // export group types
@@ -154,44 +171,67 @@ namespace Slingshot.PCO
 
             if ( !_errorHasOccurred && exportSettings.ExportGroupTypes.Count > 0 )
             {
-                exportWorker.ReportProgress( 54, $"Exporting Groups..." );
+                try 
+                { 
+                    exportWorker.ReportProgress( 54, $"Exporting Groups..." );
 
-                var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
-                groupExportResult = PCOApi.ExportGroups( exportGroupTypes, exportSettings.ExportGroupAttendance );
+                    var exportGroupTypes = ExportGroupTypes.Where( t => exportSettings.ExportGroupTypes.Contains( t.Id ) ).ToList();
+                    groupExportResult = PCOApi.ExportGroups( exportGroupTypes, exportSettings.ExportGroupAttendance );
 
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 54, $"Error exporting groups: {PCOApi.ErrorMessage}" );
+                    }
+                }
+                catch ( Exception ex )
                 {
                     _errorHasOccurred = true;
-                    exportWorker.ReportProgress( 54, $"Error exporting groups: {PCOApi.ErrorMessage}" );
+                    exportWorker.ReportProgress( 2, $"Exception exporting groups: {ex.Message}" );
                 }
             }
 
             if ( !_errorHasOccurred && exportSettings.ExportServices )
             {
-                exportWorker.ReportProgress( 74, $"Exporting Services/Teams..." );
-
-                if ( groupExportResult.MaxGroupId <= Utilities.Translators.PCOImportTeam.TEAM_ID_BASE
-                    && groupExportResult.MaxGroupTypeId <= Utilities.Translators.PCOImportServiceType.SERVICE_TYPE_ID_BASE )
+                try
                 {
-                    PCOApi.ExportServices();
-                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    exportWorker.ReportProgress( 74, $"Exporting Services/Teams..." );
+
+                    if ( groupExportResult.MaxGroupId <= Utilities.Translators.PCOImportTeam.TEAM_ID_BASE
+                        && groupExportResult.MaxGroupTypeId <= Utilities.Translators.PCOImportServiceType.SERVICE_TYPE_ID_BASE )
                     {
-                        _errorHasOccurred = true;
-                        exportWorker.ReportProgress( 74, $"Error exporting services/teams: {PCOApi.ErrorMessage}" );
+                        PCOApi.ExportServices();
+                        if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                        {
+                            _errorHasOccurred = true;
+                            exportWorker.ReportProgress( 74, $"Error exporting services/teams: {PCOApi.ErrorMessage}" );
+                        }
                     }
+                }
+                catch ( Exception ex )
+                {
+                    _errorHasOccurred = true;
+                    exportWorker.ReportProgress( 2, $"Exception exporting service/teams: {ex.Message}" );
                 }
             }
 
             // export attendance
             if ( !_errorHasOccurred && exportSettings.ExportAttendance )
             {
-                exportWorker.ReportProgress( 80, "Exporting Attendance..." );
+                try { 
+                    exportWorker.ReportProgress( 80, "Exporting Attendance..." );
 
-                PCOApi.ExportAttendance( exportSettings.ModifiedSince );
-                if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    PCOApi.ExportAttendance( exportSettings.ModifiedSince );
+                    if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
+                    {
+                        _errorHasOccurred = true;
+                        exportWorker.ReportProgress( 81, $"Error exporting attendance: {PCOApi.ErrorMessage}" );
+                    }
+                }
+                catch ( Exception ex )
                 {
                     _errorHasOccurred = true;
-                    exportWorker.ReportProgress( 81, $"Error exporting attendance: {PCOApi.ErrorMessage}" );
+                    exportWorker.ReportProgress( 2, $"Exception exporting attendance: {ex.Message}" );
                 }
             }
 
