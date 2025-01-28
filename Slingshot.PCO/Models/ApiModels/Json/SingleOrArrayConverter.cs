@@ -12,7 +12,7 @@ namespace Slingshot.PCO.Models.ApiModels.Json
             return ( objecType == typeof( List<T> ) );
         }
 
-        public override object ReadJson( JsonReader reader, Type objecType, object existingValue, JsonSerializer serializer )
+        public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer )
         {
             JToken token = JToken.Load( reader );
             if ( token.Type == JTokenType.Array )
