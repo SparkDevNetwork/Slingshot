@@ -215,46 +215,57 @@ namespace Slingshot.ElexioCommunity.Utilities
 
             try
             {
-                _request = new RestRequest( API_INDIVIDUALS, Method.GET );
-                _request.AddQueryParameter( "session_id", SessionId );
-                var response = _client.Execute( _request );
-                ApiCounter++;
+                int limit = 1000;
+                int offset = 0;
+                int itemCount = int.MaxValue; // will update after first request
 
-                dynamic data = JsonConvert.DeserializeObject( response.Content );
-
-                var records = data.data;
-
-                if ( records != null )
+                do
                 {
-                    foreach ( var letterGroup in records )
+                    _request = new RestRequest( API_INDIVIDUALS, Method.GET );
+                    _request.AddQueryParameter( "session_id", SessionId );
+                    _request.AddQueryParameter( "limit", limit.ToString() );
+                    _request.AddQueryParameter( "offset", offset.ToString() );
+
+                    var response = _client.Execute( _request );
+                    ApiCounter++;
+
+                    dynamic data = JsonConvert.DeserializeObject( response.Content );
+
+                    itemCount = data.itemCount ?? 0;
+                    var records = data.data;
+
+                    if ( records != null )
                     {
-                        foreach ( var person in letterGroup.Value )
+                        foreach ( var letterGroup in records )
                         {
-                            Person importPerson = ElexioCommunityPerson.Translate( person );
-                            _uids.Add( importPerson.Id );
-
-                            if ( importPerson != null )
+                            foreach ( var person in letterGroup.Value )
                             {
-                                ImportPackage.WriteToPackage( importPerson );
-
-                                string hasPicture = person.hasPicture;
-                                if ( hasPicture.AsBoolean() )
+                                Person importPerson = ElexioCommunityPerson.Translate( person );
+                                if ( importPerson != null )
                                 {
-                                    // save person image
-                                    _request = new RestRequest( "upload/" + Hostname + "/profilePictures/" + importPerson.Id + "_orig.jpg", Method.GET );
+                                    _uids.Add( importPerson.Id );
+                                    ImportPackage.WriteToPackage( importPerson );
 
-                                    var image = _client.DownloadData( _request );
-                                    ApiCounter++;
+                                    string hasPicture = person.hasPicture;
+                                    if ( hasPicture.AsBoolean() )
+                                    {
+                                        var imageRequest = new RestRequest( "upload/" + Hostname + "/profilePictures/" + importPerson.Id + "_orig.jpg", Method.GET );
+                                        var image = _client.DownloadData( imageRequest );
+                                        ApiCounter++;
 
-                                    var test = System.Text.Encoding.UTF8.GetString( image );
+                                        var test = System.Text.Encoding.UTF8.GetString( image );
 
-                                    var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + importPerson.Id + ".jpg" );
-                                    File.WriteAllBytes( path, image );
+                                        var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + importPerson.Id + ".jpg" );
+                                        File.WriteAllBytes( path, image );
+                                    }
                                 }
                             }
                         }
                     }
-                }
+
+                    offset += limit;
+
+                } while (offset < itemCount);
             }
             catch ( Exception ex )
             {
