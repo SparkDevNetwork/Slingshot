@@ -231,7 +231,7 @@ namespace Slingshot.ElexioCommunity.Utilities
 
                     dynamic data = JsonConvert.DeserializeObject( response.Content );
 
-                    itemCount = data.itemCount ?? 0;
+                    itemCount = data.totalCount ?? 0;
                     var records = data.data;
 
                     if ( records != null )
