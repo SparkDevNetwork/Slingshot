@@ -228,13 +228,22 @@ namespace Slingshot.CCB.Utilities.Translators
                     // CCB encoded key expires too quickly, so download immediately instead of setting person.PersonPhotoUrl
                     Task.Run( () =>
                     {
-                        // save image locally
-                        var imageResponse = WebRequest.Create( imageURI ).GetResponse();
-                        var imageStream = imageResponse.GetResponseStream();
-                        var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".jpg" );
-                        using ( FileStream output = File.OpenWrite( path ) )
+                        // Intentionally skip any damaged or troublesome images here:
+                        try
                         {
-                            imageStream.CopyTo( output );
+                            // save image locally
+                            var imageResponse = WebRequest.Create( imageURI ).GetResponse();
+                            var imageStream = imageResponse.GetResponseStream();
+                            var path = Path.Combine( ImportPackage.ImageDirectory, "Person_" + person.Id + ".jpg" );
+                            using ( FileStream output = File.OpenWrite( path ) )
+                            {
+                                imageStream.CopyTo( output );
+                            }
+                        }
+                        catch ( Exception )
+                        {
+                            // Continue and ignored forbidden files
+
                         }
                     } );
                 }
