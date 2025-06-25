@@ -436,7 +436,7 @@ namespace Slingshot.F1.Utilities
             var dvPledges = new DataView( _db.Table( "Pledge" ).Data );
             var dtPledges = dvPledges.ToTable( true, "individual_id", "household_id", "Pledge_id", "fund_name", "sub_fund_name", "pledge_frequency_name", "total_pledge", "start_date", "end_date" );
             
-            //Get head of house holds because in F1 pledges can be tied to indiviuals or households
+            //Get head of house holds because in F1 pledges can be tied to individuals or households
             var headOfHouseHolds = GetHeadOfHouseholdMap( _db.Table( "Company" ).Data );
 
             foreach ( DataRow row in dtPledges.Rows )
@@ -543,7 +543,7 @@ namespace Slingshot.F1.Utilities
                 } );
             }
 
-            // Export F1 Activites
+            // Export F1 Activities
             if( selectedGroupTypes.Contains( 99999904 ) )
             {
                 var dvActivityAssignment = new DataView( _db.Table( "ActivityAssignment" ).Data );

@@ -157,9 +157,11 @@ namespace Slingshot.PCO.Utilities.Translators
                 {
                     PersonId = inputPerson.Id,
                     Street1 = address.Street ?? string.Empty, // Null is not an acceptable value in this field.
+                    Street2 = address.Street2 ?? string.Empty,// Null is not an acceptable value in this field.
                     City = address.City ?? string.Empty,
                     State = address.State ?? string.Empty,
                     PostalCode = address.Zip ?? string.Empty, // Null is not an acceptable value in this field.
+                    Country = address.Country ?? string.Empty,
                     AddressType = addressType
                 };
 

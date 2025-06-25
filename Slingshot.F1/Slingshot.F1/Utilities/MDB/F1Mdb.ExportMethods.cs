@@ -384,7 +384,7 @@ namespace Slingshot.F1.Utilities
         {
             using ( var dtPledges = GetTableData( SqlQueries.PLEDGES ) )
             {
-                //Get head of house holds because in F1 pledges can be tied to indiviuals or households
+                //Get head of house holds because in F1 pledges can be tied to individuals or households
                 var headOfHouseHolds = GetHeadOfHouseholdMap( GetTableData( SqlQueries.HEAD_OF_HOUSEHOLD, true ) );
 
                 foreach ( DataRow row in dtPledges.Rows )
@@ -480,7 +480,7 @@ namespace Slingshot.F1.Utilities
                 } );
             }
 
-            // Export F1 Activites
+            // Export F1 Activities
             if( selectedGroupTypes.Contains( 99999904 ) )
             {
                 using ( var dtActivityMembers = GetTableData( SqlQueries.ACTIVITY_MEMBERS ) )

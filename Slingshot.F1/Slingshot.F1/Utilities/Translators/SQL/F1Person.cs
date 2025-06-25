@@ -202,7 +202,7 @@ namespace Slingshot.F1.Utilities.Translators.SQL
                         break;
                     default:
                         person.FamilyRole = FamilyRole.Child;
-                        notes.Add( "Family Postion: Other" );
+                        notes.Add( "Family Position: Other" );
                         break;
                 }
 

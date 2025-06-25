@@ -71,7 +71,7 @@ namespace Slingshot.Core.Utilities
         /// </summary>
         static ImportPackage()
         {
-            InitalizePackageFolder();
+            InitializePackageFolder();
 
             // This Encoding will ignore character conversion errors (e.g., due to
             // unsupported Unicode characters from SQL) and replace them with an
@@ -87,9 +87,9 @@ namespace Slingshot.Core.Utilities
         #region Public Methods
 
         /// <summary>
-        /// Initalizes the package folder.
+        /// Initializes the package folder.
         /// </summary>
-        public static void InitalizePackageFolder()
+        public static void InitializePackageFolder()
         {
             // CSVs
             // delete existing package directory
@@ -137,7 +137,7 @@ namespace Slingshot.Core.Utilities
             // zip CSV files
             if ( exportFilename.EndsWith( ".slingshot", StringComparison.OrdinalIgnoreCase ) )
             {
-                // remove the .slingshot extenstion if it was specified, so we can get just the filename without it
+                // remove the .slingshot extension if it was specified, so we can get just the filename without it
                 exportFilename = exportFilename.Substring( 0, exportFilename.Length - ".slingshot".Length );
             }
 

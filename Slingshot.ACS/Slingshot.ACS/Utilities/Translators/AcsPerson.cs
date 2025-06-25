@@ -223,7 +223,7 @@ namespace Slingshot.ACS.Utilities.Translators
                     break;
                 default:
                     person.FamilyRole = FamilyRole.Child;
-                    notes.Add( "Family Postion: Other" );
+                    notes.Add( "Family Position: Other" );
                     break;
             }
 

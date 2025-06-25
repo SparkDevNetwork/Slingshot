@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slingshot.PCO"
         mc:Ignorable="d"
-        Title="Slingshot - Planning Center Online" Height="600" Width="630" Loaded="Window_Loaded" Icon="icon.ico">
+        Title="Slingshot - Planning Center Online" Height="700" Width="630" Loaded="Window_Loaded" Icon="icon.ico">
     <Grid>
         <DockPanel>
             <!-- more on status bars: http://www.wpf-tutorial.com/common-interface-controls/statusbar-control/ -->
@@ -61,7 +61,7 @@
                     <CheckBox Name="cbContributions" Grid.Row="4" IsChecked="True" Content="Giving" Margin="76,10,0,10" />
                     <CheckBox Name="cbGroups" Grid.Row="4" IsChecked="True" Content="Groups" Margin="146,10,0,10" Checked="cbGroups_Checked" Unchecked="cbGroups_Checked" />
                     <CheckBox Name="cbServices" Grid.Row="4" IsChecked="True" Content="Services/Teams" Margin="216,10,0,10" />
-                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="326,10,0,10" />
+                    <CheckBox Name="cbAttendance" Grid.Row="4" IsChecked="True" Content="Check-Ins" Margin="326,10,0,10" Checked="cbAttendance_Checked" Unchecked="cbAttendance_Checked" />
 
                     <Label Content="Group Attendance" Grid.Row="5" FontWeight="Bold" Margin="0,0,0,0"/>
                     <CheckBox Name="cbExportGroupAttendance" Grid.Row="5" IsChecked="True" Content="Export Group Attendance" Margin="6,30,0,10" />
@@ -76,8 +76,12 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    
-                    <Button Name="btnDownloadPackage" Grid.Row="7" Click="btnDownloadPackage_Click">
+
+                    <Label Content="Import Checkins Between" Grid.Row="7" HorizontalAlignment="Left" FontWeight="Bold" Width="160" Margin="0,0,0,10" />
+                    <TextBox Name="txtImportCheckinsStart" Grid.Row="7" HorizontalAlignment="Left" Margin="160,0,0,10" Padding="3" Width="90" />
+                    <Label Content="and" Grid.Row="7" HorizontalAlignment="Left" FontWeight="Bold" Width="35" Margin="265,0,0,10"></Label>
+                    <TextBox Name="txtImportCheckinsEnd" Grid.Row="7" HorizontalAlignment="Left" Margin="310,0,0,10" Padding="3" Width="90" />
+                    <Button Name="btnDownloadPackage" Grid.Row="8" Click="btnDownloadPackage_Click">
                         <Label Content="Create Download Package" />
                     </Button>
                     <TextBlock Name="txtError" TextWrapping="WrapWithOverflow" Grid.Row="8" Margin="0,10,0,0" Text="Error:" Foreground="Red" FontWeight="Bold" Visibility="Collapsed" />

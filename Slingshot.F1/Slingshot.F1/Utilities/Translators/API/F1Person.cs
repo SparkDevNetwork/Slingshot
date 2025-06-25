@@ -53,7 +53,7 @@ namespace Slingshot.F1.Utilities.Translators.API
                     person.Suffix = suffix;
                 }
 
-                // communcations (phone & email)
+                // communications (phone & email)
                 var communicationsList = inputPerson.Element( "communications" ).Elements( "communication" );
                 foreach ( var comm in communicationsList )
                 {

@@ -23,7 +23,7 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             }
             else
             {
-                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == row.Field<int?>( "household_id" ) ).FirstOrDefault().Value;
+                var headOfHousehold = headOfHouseHolds.Where( x => x.Key == householdId ).FirstOrDefault().Value;
 
                 if ( headOfHousehold != null )
                 {
@@ -91,13 +91,12 @@ namespace Slingshot.F1.Utilities.Translators.MDB
             if ( string.IsNullOrWhiteSpace( row.Field<string>( "sub_fund_name" ) ) )
             {
                 //Use Hash to create Account ID
-                string valueToHash = row.Field<string>( "fund_name" );
-                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
+                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) + row.Field<int>( "taxDeductible" ).ToString() ) );
+
             }
             else
             {
-                string valueToHash = row.Field<string>("fund_name") + row.Field<string>("sub_fund_name");
-                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( valueToHash ) );
+                hashed = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( row.Field<string>( "fund_name" ) + row.Field<string>( "sub_fund_name" ) + row.Field<int>( "taxDeductible" ).ToString() ) );
             }
 
             accountId = Math.Abs( BitConverter.ToInt32( hashed, 0 ) ); // used abs to ensure positive number

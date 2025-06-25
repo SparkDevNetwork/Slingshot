@@ -11,11 +11,11 @@ Slingshot is a rapid migration tool for moving data from a legacy system (your o
 The Slingshot project is in the initial phase of development and is not ready for prime-time use. The source here is available for those adventurous souls who like to live on the edge, or who would like to help with the development of this project.
 
 ## Book
-[![Slingshot Book](https://github.com/SparkDevNetwork/Slingshot/raw/master/Images/SlingshotBook.png)](https://www.dropbox.com/s/ghf3ac89ocqeags/Slingshot.pdf?dl=0)
+[![Slingshot Book](https://github.com/SparkDevNetwork/Slingshot/raw/master/Images/SlingshotBook.png)](https://www.rockrms.com/documentation/slingshot)
 
 
 ## Contributing
-If you would like to contribute to this project please contact Jon Edmiston (slack) to coordinate efforts. Several updates are currently in development and want to eliminate a duplication of efforts.
+If you would like to contribute to this project please contact Jon Edmiston ([RocketChat](https://chat.rockrms.com/)) to coordinate efforts. Several updates are currently in development and want to eliminate a duplication of efforts.
 
 ## License
 The *.slingshot* file format and the source code for the utilities are all copyrighted by Spark Development Network which makes them available under the Creative Commons ShareAlike license. This means that any organization is welcome to use these tools free of charge and even commercially. It does require though that any modifications or additions (including any new works that use the *.slingshot* file format) must be made available for all.
