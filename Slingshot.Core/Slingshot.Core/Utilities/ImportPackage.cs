@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using CsvHelper;
 using Slingshot.Core.Model;
-using System.IO.Compression;
-using Ionic.Zip;
 
 namespace Slingshot.Core.Utilities
 {
@@ -148,16 +145,14 @@ namespace Slingshot.Core.Utilities
                 File.Delete( csvZipFile );
             }
 
-            using ( ZipFile csvZip = new ZipFile() )
+            using ( var csvZip = System.IO.Compression.ZipFile.Open( csvZipFile, ZipArchiveMode.Create ) )
             {
                 var csvFiles = Directory.GetFiles( _packageDirectory );
 
-                foreach ( var file in csvFiles )
+                foreach (var file in csvFiles)
                 {
-                    csvZip.AddFile( file, "" );
+                    csvZip.CreateEntryFromFile( file, Path.GetFileName( file ) );
                 }
-
-                csvZip.Save( csvZipFile );
             }
 
             // zip image files
@@ -167,29 +162,27 @@ namespace Slingshot.Core.Utilities
                 long length = 0;
                 int fileCounter = 0;
 
-                ZipFile zip = new ZipFile();
+                var zip = System.IO.Compression.ZipFile.Open( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot", ZipArchiveMode.Create );
 
                 foreach ( var file in files )
                 {
                     // over 100MB
                     if ( length < 104857600 )
                     {
-                        zip.AddFile( file, "" );
+                        zip.CreateEntryFromFile( file, Path.GetFileName( file ) );
                     }
                     else
                     {
                         length = 0;
-                        zip.Save( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot" );
-                        fileCounter++;
                         zip.Dispose();
-                        zip = new ZipFile();
-                        zip.AddFile( file, "" );
+                        fileCounter++;
+                        zip = System.IO.Compression.ZipFile.Open( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot", ZipArchiveMode.Create );
+                        zip.CreateEntryFromFile( file, Path.GetFileName( file ) );
                     }
 
                     length += new System.IO.FileInfo( file ).Length;
                 }
 
-                zip.Save( _appDirectory + exportFilename + "_" + fileCounter + ".Images.slingshot" );
                 zip.Dispose();
             }
 
