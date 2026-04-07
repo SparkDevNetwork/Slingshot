@@ -41,35 +41,40 @@ namespace Slingshot.CCB.Utilities.Translators
 
             groups.Add( group );
 
-            var hasDepartment = inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace();
-            var hasDirector = inputGroup.Element( "director" ) != null && inputGroup.Element( "director" ).Attribute( "id" ) != null && inputGroup.Element( "director" ).Attribute( "id" ).Value.IsNotNullOrWhitespace();
+            var importedDepartmentId = inputGroup.Element( "department" )?.Attribute( "id" )?.Value;
+            var importedDirectorId = inputGroup.Element( "director" )?.Attribute( "id" )?.Value;
+
+            var hasDepartment = importedDepartmentId.IsNotNullOrWhitespace();
+            var hasDirector = importedDirectorId.IsNotNullOrWhitespace();
             
             MD5 md5Hasher = MD5.Create();
             
             // add the department as a group with id set to hash of 9999 + department id to create a unique group id for it
             if ( hasDepartment )
             {
+                // Use hashed value to keep number from growing to long.
                 var hashedDepartmentId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
                      {9999}
-                     {inputGroup.Element( "department" ).Attribute( "id" ).Value}
+                     {importedDepartmentId}
                     " ) );
                 departmentId = Math.Abs( BitConverter.ToInt32( hashedDepartmentId, 0 ) ); // used abs to ensure positive number
 
                 var departmentName = inputGroup.Element( "department" ).Value;
-                if ( departmentName.IsNullOrWhiteSpace() )
+                departmentName = departmentName.IsNullOrWhiteSpace() ? "No Department Name" : departmentName;
+
+                var departmentGroup = new Group
                 {
-                    departmentName = "No Department Name";
-                }
-                var departmentGroup = new Group();
-                departmentGroup.Id = departmentId.Value;
-                departmentGroup.IsActive = true;
-                departmentGroup.Name = departmentName;
-                departmentGroup.GroupTypeId = 9999;
+                    Id = departmentId.Value,
+                    IsActive = true,
+                    Name = departmentName,
+                    GroupTypeId = 9999
+                };
 
                 if ( !exportDirectorsAsGroups && hasDirector )
                 {
                     departmentGroup.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "director" ).Attribute( "id" ).Value.AsInteger(), Role = "Director", GroupId = departmentGroup.Id } );
                 }
+
                 groups.Add( departmentGroup );
             }
 
@@ -79,16 +84,19 @@ namespace Slingshot.CCB.Utilities.Translators
                 var departmentIdString = departmentId.HasValue ? departmentId.Value.ToString() : string.Empty;
                 var hashedDirectorId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
                      {9998}
-                     {inputGroup.Element( "director" ).Attribute( "id" ).Value}
+                     {importedDirectorId}
                      {departmentIdString}
                     " ) );
                 directorId = Math.Abs( BitConverter.ToInt32( hashedDirectorId, 0 ) ); // used abs to ensure positive number
+                var directorName = inputGroup.Element( "director" ).Element( "full_name" ).Value;
 
-                var directorGroup = new Group();
-                directorGroup.Id = directorId.Value;
-                directorGroup.IsActive = true;
-                directorGroup.Name = inputGroup.Element( "director" ).Element( "full_name" ).Value;
-                directorGroup.GroupTypeId = 9998;
+                var directorGroup = new Group
+                {
+                    Id = directorId.Value,
+                    IsActive = true,
+                    Name = directorName,
+                    GroupTypeId = 9998
+                };
 
                 // add parent group of the department if it exists
                 if ( departmentId.HasValue )
@@ -96,8 +104,14 @@ namespace Slingshot.CCB.Utilities.Translators
                     directorGroup.ParentGroupId = departmentId.Value;
                 }
 
-                directorGroup.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "director" ).Attribute( "id" ).Value.AsInteger(), Role = "Leader", GroupId = directorGroup.Id } );
+                var directorMember = new GroupMember
+                {
+                    PersonId = importedDirectorId.AsInteger(),
+                    Role = "Leader",
+                    GroupId = directorGroup.Id
+                };
 
+                directorGroup.GroupMembers.Add( directorMember );
                 groups.Add( directorGroup );
             }
 
