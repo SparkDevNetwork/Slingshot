@@ -214,7 +214,7 @@ ORDER BY CD.REC_ID";
             _modifiedSince = modifiedSince;
             _ContributionsNotBefore = NotBefore;
 
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
 
@@ -256,7 +256,7 @@ ORDER BY CD.REC_ID";
         {
             try
             {
-                // Get the Uder Defined Column information for a Person
+                // Get the User Defined Column information for a Person
                 string fieldType;
 
                 _PersonUDFColumns = new Dictionary<Tuple<string, string>, string>();
@@ -363,7 +363,7 @@ ORDER BY CD.REC_ID";
 
         /// <summary>
         /// Exports any groups found.  Currently, this export doesn't support
-        ///  group heirarchies and all groups will be imported to the
+        ///  group hierarchies and all groups will be imported to the
         ///  root of the group viewer.
         /// </summary>
         public static void ExportGroups(string Selections)
@@ -408,7 +408,7 @@ ORDER BY CD.REC_ID";
                         else
                             _SQLClause = "(I.ACTIVE_IND <> '1' OR I.ACTIVE_IND is null) AND ";
 
-                        // Decode the Servant Keeper group definiton. Construct a SQL clause to get the Members.
+                        // Decode the Servant Keeper group definition. Construct a SQL clause to get the Members.
                         string definition = row.Field<string>("CONDITION");
                         foreach (Match match in regex.Matches(definition))
                         {

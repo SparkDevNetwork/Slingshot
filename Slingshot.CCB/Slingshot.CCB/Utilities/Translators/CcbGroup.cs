@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -99,7 +99,7 @@ namespace Slingshot.CCB.Utilities.Translators
                 };
 
                 // add parent group of the department if it exists
-                if ( departmentId.HasValue )
+                if ( hasDepartment )
                 {
                     directorGroup.ParentGroupId = departmentId.Value;
                 }

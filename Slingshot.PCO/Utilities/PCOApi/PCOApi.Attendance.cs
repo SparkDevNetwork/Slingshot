@@ -45,9 +45,9 @@ namespace Slingshot.PCO.Utilities
 
         #region ExportAttendance() and Related Methods
 
-        public static void ExportAttendance( DateTime modifiedSince )
+        public static void ExportAttendance( DateTime modifiedSince, DateTime rangeStart, DateTime rangeEnd )
         {
-            var checkIns = GetCheckIns( modifiedSince );
+            var checkIns = GetCheckIns( modifiedSince, rangeStart, rangeEnd );
             if ( !checkIns.Any() )
             {
                 return;
@@ -151,14 +151,16 @@ namespace Slingshot.PCO.Utilities
             }
         }
 
-        private static List<CheckInDTO> GetCheckIns( DateTime modifiedSince )
+        private static List<CheckInDTO> GetCheckIns( DateTime modifiedSince, DateTime rangeStart, DateTime rangeEnd )
         {
             var checkIns = new List<CheckInDTO>();
 
             var apiOptions = new Dictionary<string, string>
             {
                 { "include", "event,locations,person" },
-                { "per_page", "100" }
+                { "per_page", "500" },
+                { "where[created_at][gte]", rangeStart.ToString("yyyy-MM-dd") + "T00:01:00Z" },
+                { "where[created_at][lte]", rangeEnd.ToString("yyyy-MM-dd") + "T00:01:00Z" }
             };
 
             var checkInQuery = GetAPIQuery( ApiEndpoint.API_CHECKINS, apiOptions, modifiedSince );

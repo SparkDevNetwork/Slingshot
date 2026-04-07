@@ -50,7 +50,7 @@ namespace Slingshot.F1.Utilities
         /// </summary>
         public static void InitializeExport()
         {
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
         public abstract void ExportIndividuals( DateTime modifiedSince, int peoplePerPage = 500 );

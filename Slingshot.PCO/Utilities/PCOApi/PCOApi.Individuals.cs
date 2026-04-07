@@ -54,7 +54,7 @@ namespace Slingshot.PCO.Utilities
         {
             var apiOptions = new Dictionary<string, string>
             {
-                { "include", "emails,addresses,phone_numbers,field_data,households,inactive_reason,martial_status,name_prefix,name_suffix,primary_campus,school,social_profiles" },
+                { "include", "emails,addresses,phone_numbers,field_data,households,inactive_reason,marital_status,name_prefix,name_suffix,primary_campus,school,social_profiles" },
                 { "per_page", peoplePerPage.ToString() }
             };
 

@@ -140,10 +140,10 @@ namespace Slingshot.Core.Model
         public readonly int BirthdateNoYearMagicYear = 9999;
 
         /// <summary>
-        /// Gets or sets the anniversay.
+        /// Gets or sets the anniversary.
         /// </summary>
         /// <value>
-        /// The anniversay.
+        /// The anniversary.
         /// </value>
         public DateTime? AnniversaryDate { get; set; }
 
@@ -338,7 +338,7 @@ namespace Slingshot.Core.Model
         Male,
 
         /// <summary>
-        /// Femail
+        /// Female
         /// </summary>
         Female
     }

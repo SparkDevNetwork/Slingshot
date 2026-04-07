@@ -230,7 +230,7 @@ GROUP BY [Description]";
         /// </summary>
         public static void InitializeExport()
         {
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
         /// <summary>
@@ -423,7 +423,7 @@ GROUP BY [Description]";
 
         /// <summary>
         /// Exports any groups found.  Currently, this export doesn't support
-        ///  group heirarchies and all groups will be imported to the
+        ///  group hierarchies and all groups will be imported to the
         ///  root of the group viewer.
         /// </summary>
         public static void ExportGroups()

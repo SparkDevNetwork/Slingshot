@@ -29,7 +29,7 @@ namespace Slingshot.Breeze.Utilities
         /// </summary>
         public static void InitializeExport()
         {
-            ImportPackage.InitalizePackageFolder();
+            ImportPackage.InitializePackageFolder();
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace Slingshot.Breeze.Utilities
                     ImportPackage.WriteToPackage(group);
                 }
 
-                // Garagabe collection cleanup
+                // Garbage collection cleanup
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 

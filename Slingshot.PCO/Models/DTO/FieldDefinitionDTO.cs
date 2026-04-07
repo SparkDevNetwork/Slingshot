@@ -17,7 +17,13 @@ namespace Slingshot.PCO.Models.DTO
 
         public string Slug { get; set; }
 
-        public string Config { get; set; }
+        /* 
+         
+         09/18/2024 - CWR
+         Deprecated as the Slingshot tool does not use this data once exported 
+         public string Config { get; set; }
+
+        */
 
         public int TabId { get; set; }
 
@@ -32,8 +38,7 @@ namespace Slingshot.PCO.Models.DTO
             Name = data.Item.name;
             Sequence = data.Item.sequence;
             Slug = data.Item.slug;
-            Config = data.Item.config;
-            DeletedAt = data.Item.deteled_at;
+            DeletedAt = data.Item.deleted_at;
             TabId = data.Item.tab_id;
 
             SetTab( data, includedItems );

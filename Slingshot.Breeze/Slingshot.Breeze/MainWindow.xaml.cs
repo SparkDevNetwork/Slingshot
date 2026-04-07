@@ -45,7 +45,7 @@ namespace Slingshot.Breeze
 
         private void ExportWorker_RunWorkerCompleted( object sender, RunWorkerCompletedEventArgs e )
         {
-            txtExportMessage.Text = hasErrors ? "Errors Occured" : "Export Complete";
+            txtExportMessage.Text = hasErrors ? "Errors Occurred" : "Export Complete";
             pbProgress.Value = 100;
             pbProgress.Foreground = hasErrors ? Brushes.Red : Brushes.Green;
             btnExecuteConversion.IsEnabled = true;

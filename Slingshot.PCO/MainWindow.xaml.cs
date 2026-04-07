@@ -187,7 +187,7 @@ namespace Slingshot.PCO
             {
                 exportWorker.ReportProgress( 80, "Exporting Attendance..." );
 
-                PCOApi.ExportAttendance( exportSettings.ModifiedSince );
+                PCOApi.ExportAttendance( exportSettings.ModifiedSince, exportSettings.CheckinsRangeStart, exportSettings.CheckinsRangeEnd );
                 if ( PCOApi.ErrorMessage.IsNotNullOrWhitespace() )
                 {
                     _errorHasOccurred = true;
@@ -276,6 +276,10 @@ namespace Slingshot.PCO
 
             // set default "Modified Since" date.
             txtImportCutOff.Text = DateTime.Now.AddYears( -2 ).ToShortDateString();
+
+            // set default Checkin dates.
+            txtImportCheckinsStart.Text = DateTime.Now.AddYears( -2 ).ToShortDateString();
+            txtImportCheckinsEnd.Text = DateTime.Now.ToShortDateString();
         }
 
         /// <summary>
@@ -302,6 +306,8 @@ namespace Slingshot.PCO
                 ExportIndividuals = cbIndividuals.IsChecked.Value,
                 ExportServices = cbServices.IsChecked.Value,
                 ExportAttendance = cbAttendance.IsChecked.Value,
+                CheckinsRangeStart = ( DateTime ) txtImportCheckinsStart.Text.AsDateTime(),
+                CheckinsRangeEnd = ( DateTime ) txtImportCheckinsEnd.Text.AsDateTime(),
                 ExportGroupAttendance = cbExportGroupAttendance.IsChecked.Value
             };
 
@@ -340,6 +346,23 @@ namespace Slingshot.PCO
             }
         }
 
+        private void cbAttendance_Checked( object sender, RoutedEventArgs e )
+        {
+            ToggleCheckinDatesDisplay( cbAttendance.IsChecked.Value );
+        }
+
+        private void ToggleCheckinDatesDisplay( bool showCheckinOptions )
+        {
+            if ( showCheckinOptions )
+            {
+                gridMain.RowDefinitions[7].Height = new GridLength( 1, GridUnitType.Auto );
+            }
+            else
+            {
+                gridMain.RowDefinitions[7].Height = new GridLength( 0 );
+            }
+        }
+
         #endregion Private Methods
     }
 
@@ -358,6 +381,10 @@ namespace Slingshot.PCO
         public bool ExportGroupAttendance { get; set; } = true;
 
         public List<int> ExportGroupTypes { get; set; } = new List<int>();
+
+        public DateTime CheckinsRangeStart { get; set; } = DateTime.Now;
+
+        public DateTime CheckinsRangeEnd { get; set; } = DateTime.Now;
     }
 
     public class CheckListItem
