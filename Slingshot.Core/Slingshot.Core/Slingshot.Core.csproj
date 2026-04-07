@@ -1,126 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B6072804-DC94-473F-A7E9-E175DB03CAD4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Slingshot.Core</RootNamespace>
-    <AssemblyName>Slingshot.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFrameworks>net472;net10.0</TargetFrameworks>
+	<Version>1.0.0</Version>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\Slingshot.Core.xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Slingshot.Core.xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DocumentationFile>bin\Debug\Slingshot.Core.xml</DocumentationFile>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <DocumentationFile>bin\Release\Slingshot.Core.xml</DocumentationFile>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="$(SolutionDir)\packages\CsvHelper.2.16.3.0\lib\net45\CsvHelper.dll">
-      <Name>CsvHelper.dll</Name>
-    </Reference>
-    <Reference Include="$(SolutionDir)\packages\DotNetZip.Reduced.1.9.1.8\lib\net20\Ionic.Zip.Reduced.dll">
-      <Name>Ionic.Zip.Reduced.dll</Name>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="CsvHelper" Version="2.16.3" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Data\EntityAttribute.cs" />
-    <Compile Include="Data\EntityNote.cs" />
-    <Compile Include="Models\Attendance.cs" />
-    <Compile Include="Models\GroupAttributeValue.cs" />
-    <Compile Include="Models\GroupAttribute.cs" />
-    <Compile Include="Models\GroupAddress.cs" />
-    <Compile Include="Models\Business.cs" />
-    <Compile Include="Models\BusinessAttribute.cs" />
-    <Compile Include="Models\BusinessAttributeValue.cs" />
-    <Compile Include="Models\BusinessAddress.cs" />
-    <Compile Include="Models\BusinessContact.cs" />
-    <Compile Include="Models\PersonSearchKey.cs" />
-    <Compile Include="Models\PersonNote.cs" />
-    <Compile Include="Models\FamilyNote.cs" />
-    <Compile Include="Models\FamilyAttribute.cs" />
-    <Compile Include="Models\FinancialPledge.cs" />
-    <Compile Include="Models\BusinessPhone.cs" />
-    <Compile Include="Models\Schedule.cs" />
-    <Compile Include="Models\Location.cs" />
-    <Compile Include="Models\GroupMember.cs" />
-    <Compile Include="Models\Group.cs" />
-    <Compile Include="Models\GroupType.cs" />
-    <Compile Include="Models\FinancialTransactionDetail.cs" />
-    <Compile Include="Models\FinancialTransaction.cs" />
-    <Compile Include="Models\FinancialBatch.cs" />
-    <Compile Include="Models\FinancialAccount.cs" />
-    <Compile Include="Models\PersonAddress.cs" />
-    <Compile Include="Models\PersonAttribute.cs" />
-    <Compile Include="Models\PersonPhone.cs" />
-    <Compile Include="Models\PersonAttributeValue.cs" />
-    <Compile Include="Models\Campus.cs" />
-    <Compile Include="Models\IImportModel.cs" />
-    <Compile Include="Models\Person.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utilities\ExtensionMethods\BooleanExtensions.cs" />
-    <Compile Include="Utilities\ExtensionMethods\DateTimeExtensions.cs" />
-    <Compile Include="Utilities\ExtensionMethods\DecimalExtensions.cs" />
-    <Compile Include="Utilities\ExtensionMethods\EnumExtensions.cs" />
-    <Compile Include="Utilities\ExtensionMethods\StringExtensions.cs" />
-    <Compile Include="Utilities\ImportPackage.cs" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Reference Include="System.IO.Compression" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>
