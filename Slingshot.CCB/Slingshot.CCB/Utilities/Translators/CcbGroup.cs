@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -11,7 +12,7 @@ namespace Slingshot.CCB.Utilities.Translators
 {
     public static class CcbGroup
     {
-        public static List<Group> Translate( XElement inputGroup )
+        public static List<Group> Translate( XElement inputGroup, bool exportDirectorsAsGroups = true )
         {
             List<Group> groups = new List<Group>();
 
@@ -40,20 +41,26 @@ namespace Slingshot.CCB.Utilities.Translators
 
             groups.Add( group );
 
-
             var importedDepartmentId = inputGroup.Element( "department" )?.Attribute( "id" )?.Value;
             var importedDirectorId = inputGroup.Element( "director" )?.Attribute( "id" )?.Value;
 
             var hasDepartment = importedDepartmentId.IsNotNullOrWhitespace();
             var hasDirector = importedDirectorId.IsNotNullOrWhitespace();
             
-            // add the department as a group with an id of 9999 + its id to create a unique group id for it
+            MD5 md5Hasher = MD5.Create();
+            
+            // add the department as a group with id set to hash of 9999 + department id to create a unique group id for it
             if ( hasDepartment )
             {
-                departmentId = ( "9999" + importedDepartmentId ).AsInteger();
+                // Use hashed value to keep number from growing to long.
+                var hashedDepartmentId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+                     {9999}
+                     {importedDepartmentId}
+                    " ) );
+                departmentId = Math.Abs( BitConverter.ToInt32( hashedDepartmentId, 0 ) ); // used abs to ensure positive number
 
                 var departmentName = inputGroup.Element( "department" ).Value;
-                departmentName = departmentName.IsNullOrWhiteSpace() ? string.Empty : "No Department Name";
+                departmentName = departmentName.IsNullOrWhiteSpace() ? "No Department Name" : departmentName;
 
                 var departmentGroup = new Group
                 {
@@ -63,21 +70,24 @@ namespace Slingshot.CCB.Utilities.Translators
                     GroupTypeId = 9999
                 };
 
+                if ( !exportDirectorsAsGroups && hasDirector )
+                {
+                    departmentGroup.GroupMembers.Add( new GroupMember { PersonId = inputGroup.Element( "director" ).Attribute( "id" ).Value.AsInteger(), Role = "Director", GroupId = departmentGroup.Id } );
+                }
+
                 groups.Add( departmentGroup );
             }
 
-            // add the director as a group with an id of 9998 + its id to create a unique group id for it
-            if ( hasDirector )
+            if ( exportDirectorsAsGroups && hasDirector )
             {
-                if ( hasDepartment )
-                {
-                    directorId = ( "9998" + importedDepartmentId + importedDirectorId ).AsInteger();
-                }
-                else
-                {
-                    directorId = ( "9998" + importedDirectorId ).AsInteger();
-                }
-
+                // add the director as a group with id set to hash of 9998 + its id + its department id (if any) to create a unique group id for it
+                var departmentIdString = departmentId.HasValue ? departmentId.Value.ToString() : string.Empty;
+                var hashedDirectorId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+                     {9998}
+                     {importedDirectorId}
+                     {departmentIdString}
+                    " ) );
+                directorId = Math.Abs( BitConverter.ToInt32( hashedDirectorId, 0 ) ); // used abs to ensure positive number
                 var directorName = inputGroup.Element( "director" ).Element( "full_name" ).Value;
 
                 var directorGroup = new Group
@@ -176,7 +186,7 @@ namespace Slingshot.CCB.Utilities.Translators
             }
 
             // determine the parent group
-            if ( directorId.HasValue )
+            if ( exportDirectorsAsGroups && directorId.HasValue )
             {
                 group.ParentGroupId = directorId.Value;
             }

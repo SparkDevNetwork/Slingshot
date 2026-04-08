@@ -89,6 +89,7 @@
                         <Label Content="Advanced Options:" FontWeight="Bold" Margin="0,0,0,0"/>
                         <CheckBox Name="cbDumpResponseToXmlFile" Content="Dump response to XML files" Margin="5,10,0,10"  Padding="3,0,0,0"  />
                         <CheckBox Name="cbConsolidateSchedules" IsChecked="True" Content="Consolidate schedules to Day of Week and Time" Margin="5,0,0,10"  Padding="3,0,0,0"  />
+                        <CheckBox Name="cbDirectorsAsGroups" IsChecked="True" Content="Export Directors as Groups" Margin="5,0,0,10"  Padding="3,0,0,0"  />
                         <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
                             <Label Name="lblItemsPerPage" Content="Items Per Page:" HorizontalAlignment="Left" Padding="0,5,5,5" Width="100" />
                             <TextBox x:Name="txtItemsPerPage"

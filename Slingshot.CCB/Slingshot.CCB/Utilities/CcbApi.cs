@@ -201,6 +201,15 @@ namespace Slingshot.CCB.Utilities
         public static bool ConsolidateScheduleNames { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets a value indicating whether [export directors as groups].
+        /// Set ExportDirectorsAsGroups to true to export Directors as Groups in the hierarchy.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [export directors as groups]; otherwise, <c>false</c>.
+        /// </value>
+        public static bool ExportDirectorsAsGroups { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the daily limit.
         /// </summary>
         /// <value>
@@ -474,7 +483,7 @@ namespace Slingshot.CCB.Utilities
 
                         if ( selectedGroupTypes.Contains( groupTypeId ) )
                         {
-                            var importGroups = CcbGroup.Translate( groupNode );
+                            var importGroups = CcbGroup.Translate( groupNode, CcbApi.ExportDirectorsAsGroups );
 
                             if ( importGroups != null )
                             {
@@ -562,7 +571,7 @@ namespace Slingshot.CCB.Utilities
                                 // any participants.
                                 IncompleteGroups.Add( groupId );
 
-                                var importGroups = CcbGroup.Translate( groupNode );
+                                var importGroups = CcbGroup.Translate( groupNode, CcbApi.ExportDirectorsAsGroups );
 
                                 if ( importGroups != null )
                                 {
@@ -615,7 +624,7 @@ namespace Slingshot.CCB.Utilities
                 return;
             }
 
-            var importGroups = CcbGroup.Translate( groupNode );
+            var importGroups = CcbGroup.Translate( groupNode, CcbApi.ExportDirectorsAsGroups );
             if ( importGroups == null )
             {
                 return;
@@ -645,11 +654,19 @@ namespace Slingshot.CCB.Utilities
                 }
 
                 var sourceDepartments = xdocCustomFields.Element( "ccb_api" )?.Element( "response" )?.Elements( "items" );
+                MD5 md5Hasher = MD5.Create();
 
                 foreach ( var sourceDepartment in sourceDepartments.Elements( "item" ) )
                 {
+                    // Use hash of 9999 + department id to create a unique group id
+                    var hashedDepartmentId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+                     {9999}
+                     {sourceDepartment.Element( "id" ).Value}
+                    " ) );
+                    var groupId = Math.Abs( BitConverter.ToInt32( hashedDepartmentId, 0 ) ); // used abs to ensure positive number
+
                     var group = new Group();
-                    group.Id = ( "9999" + sourceDepartment.Element( "id" ).Value ).AsInteger();
+                    group.Id = groupId;
                     group.Name = sourceDepartment.Element( "name" )?.Value;
                     group.Order = sourceDepartment.Element( "order" ).Value.AsInteger();
                     group.IsActive = true;

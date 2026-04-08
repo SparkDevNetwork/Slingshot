@@ -257,6 +257,9 @@ namespace Slingshot.CCB
             // Set ConsolidateScheduleNames to true to consolidate schedules names as 'Sunday at 11:00 AM'
             CcbApi.ConsolidateScheduleNames = cbConsolidateSchedules.IsChecked ?? false;
 
+            // Set ExportDepartmentDirectorsAsGroups to true to export Directors as groups
+            CcbApi.ExportDirectorsAsGroups = cbDirectorsAsGroups.IsChecked ?? false;
+
             // Reset API Request Counter.
             CcbApi.ApiRequestCount = 0;
 
