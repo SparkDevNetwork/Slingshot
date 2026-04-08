@@ -150,9 +150,9 @@ namespace Slingshot.PCO.Utilities
                 {
                     return response.Content;
                 }
-                else if ( response.StatusCode == HttpStatusCode.Forbidden && !ignoreApiErrors)
+                else if ( response.StatusCode == HttpStatusCode.Forbidden && !ignoreApiErrors )
                 {
-                    throw new Exception( $"Forbidden request: {apiEndpoint}" );
+                    throw new Exception( $"Forbidden request: { apiEndpoint } | Message: { response.ErrorMessage } | Exception: { response.ErrorException }" );
                 }
                 else if ( ( int ) response.StatusCode == 429 )
                 {

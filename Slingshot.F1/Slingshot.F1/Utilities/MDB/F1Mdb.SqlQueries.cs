@@ -604,6 +604,7 @@ SELECT [Individual_ID]
       , Sub_Fund_Name
       , Amount
       , Fund_Type
+      ,taxDeductible
 FROM [Contribution]";
                 }
             }
