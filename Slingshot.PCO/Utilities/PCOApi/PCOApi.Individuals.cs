@@ -64,8 +64,16 @@ namespace Slingshot.PCO.Utilities
             var headOfHouseholdMap = GetHeadOfHouseholdMap( PCOPeople );
             var personAttributes = WritePersonAttributes();
 
+            var personIds = new List<int>();
+
             foreach ( var person in PCOPeople )
             {
+                if ( personIds.Contains(person.Id))
+                {
+                    continue;
+                }
+                personIds.Add(person.Id);
+
                 PersonDTO headOfHouse = person; // Default headOfHouse to person, in case they are not assigned to a household in PCO.
                 if( person.Household != null && headOfHouseholdMap.ContainsKey( person.Household.Id ) )
                 {
@@ -102,6 +110,7 @@ namespace Slingshot.PCO.Utilities
                     }
                 }
             }
+
             // save notes.
             if ( PCONotes != null )
             {

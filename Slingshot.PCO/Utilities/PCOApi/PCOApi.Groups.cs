@@ -295,6 +295,7 @@ namespace Slingshot.PCO.Utilities
 
             var apiOptions = new Dictionary<string, string>
             {
+                { "where[archive_status]", "include" },
                 { "per_page", "100" }
             };
 

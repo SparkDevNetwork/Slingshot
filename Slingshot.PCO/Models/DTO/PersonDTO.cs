@@ -27,6 +27,8 @@ namespace Slingshot.PCO.Models.DTO
 
         public DateTime? Anniversary { get; set; }
 
+        public int? Grade { get; set; }
+
         public bool Services { get; set; }
 
         public string Permissions { get; set; }
@@ -86,6 +88,7 @@ namespace Slingshot.PCO.Models.DTO
             Gender = data.Item.gender;
             Birthdate = data.Item.birthdate;
             Anniversary = data.Item.anniversary;
+            Grade = data.Item.grade;
             CreatedAt = data.Item.created_at;
             UpdatedAt = data.Item.updated_at;
             Member = data.Item.membership;
@@ -119,6 +122,7 @@ namespace Slingshot.PCO.Models.DTO
             Avatar = avatar;
         }
 
+        private void SetGrade( DataItem data )
         private void SetContactInfo( DataItem data, Dictionary<string, DataItem> included )
         {
             ContactData = new ContactDataDTO();
