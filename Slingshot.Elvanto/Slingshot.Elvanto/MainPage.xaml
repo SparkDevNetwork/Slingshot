@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Slingshot.Elvanto.MainPage">
+    <VerticalStackLayout>
+        <Grid
+            BackgroundColor="#A9D3FF">
+            <Grid.Shadow>
+                <Shadow Brush="#A9D3FF"
+                Offset="-1,1"
+                Opacity="0.8" />
+            </Grid.Shadow>
+            <Label
+                Text="Elvanto Slingshot"
+                FontAttributes="Bold"
+                FontSize="46"
+                Margin="0,5,0,0"
+                TextColor="#4c4c4d"
+                HorizontalOptions="Center" 
+                Grid.Row="0"
+                Grid.Column="1"/>
+            <Image
+                Source="logo.png"
+                HeightRequest="50"
+                Margin="5"
+                HorizontalOptions="End" 
+                Grid.Row="0"
+                Grid.Column="2"/>
+
+        </Grid>
+        <ScrollView
+            Margin="0,25,0,0">
+            <VerticalStackLayout
+            Spacing="15"
+            Padding="25,0">
+                <!--FORM -->
+
+                <VerticalStackLayout
+                x:Name="vslForm"
+                WidthRequest="500"
+                HorizontalOptions="Center">
+
+                    <Label
+                Text="Elvanto API Key"/>
+                    <Entry
+                    TextChanged="tbApiKey_TextChanged"
+                    x:Name="tbApiKey"
+                />
+
+                    <Label
+                Text="Data To Import"
+                    Margin="0,25,0,0"/>
+
+                    <HorizontalStackLayout>
+                        <CheckBox IsChecked="True" IsEnabled="False"/>
+                        <Label Text="People" Margin="0,5,0,0" />
+                    </HorizontalStackLayout>
+
+
+                    <HorizontalStackLayout>
+                        <CheckBox x:Name="cbGroups" />
+                        <Label Text="Groups" Margin="0,5,0,0">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                     Binding="{Binding Source={x:Reference cbGroups}, Path=IsChecked}"
+                     Value="true">
+                                    <Setter Property="FontAttributes"
+                    Value="Italic" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout>
+                        <CheckBox x:Name="cbFinancial" />
+                        <Label Text="Financial Data" Margin="0,5,0,0">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                Binding="{Binding Source={x:Reference cbFinancial}, Path=IsChecked}"
+                                Value="true">
+                                    <Setter Property="FontAttributes"
+                                    Value="Italic" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                    <Button
+                    x:Name="btnImport"
+                    Text="Begin Import"
+                    IsEnabled="False"
+                    HorizontalOptions="Center"
+                    Clicked="btnImport_Clicked"/>
+                </VerticalStackLayout>
+
+
+
+                <!-- OUTPUT -->
+                <VerticalStackLayout
+                x:Name="vslOutput"
+                IsVisible="False"
+                WidthRequest="500"
+                HorizontalOptions="Center">
+                    <Frame 
+                    HeightRequest="300" 
+                    >
+                        <ScrollView>
+                            <VerticalStackLayout
+                                WidthRequest="400"
+                                Padding="50,0,0,0"
+                                >
+                            
+                                <Label
+                        x:Name="lOutput"
+                        Text="some data"
+                        MinimumHeightRequest="300"
+                        WidthRequest="500"
+                        HorizontalOptions="Center"
+                        />
+
+                            </VerticalStackLayout>
+                        </ScrollView>
+                    </Frame>
+                    <Label
+                        IsVisible="False"
+                        x:Name="lSaveLocation"
+                        Text="Save Location"/>
+                    <Entry
+                        x:Name="tbSaveLocation"
+                        IsVisible="False"
+                    />
+                    <Button
+                        x:Name="btnSave"
+                        Text="Save Slingshot File"
+                        IsVisible="False"
+                        Clicked="btnSave_Clicked"
+                    />
+                    <Button
+                    x:Name="btnRetry"
+                    Text="Retry"
+                    IsVisible="False"
+                        Clicked="btnRetry_Clicked"
+                    />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </VerticalStackLayout>
+</ContentPage>
