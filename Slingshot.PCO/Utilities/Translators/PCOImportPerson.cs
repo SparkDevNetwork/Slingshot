@@ -34,6 +34,7 @@ namespace Slingshot.PCO.Utilities.Translators
                 MaritalStatus = inputPerson.GetMaritalStatus(),
                 Birthdate = inputPerson.Birthdate,
                 AnniversaryDate = inputPerson.Anniversary,
+                Grade = inputPerson.Grade?.ToString(),
                 CreatedDateTime = inputPerson.CreatedAt,
                 ModifiedDateTime = inputPerson.UpdatedAt,
                 FamilyId = inputPerson.Household?.Id,
@@ -41,6 +42,7 @@ namespace Slingshot.PCO.Utilities.Translators
                 FamilyRole = ( inputPerson.Child == true ) ? FamilyRole.Child : FamilyRole.Adult,
                 InactiveReason = inputPerson.InactiveReason,
                 Campus = headOfHouse.GetCampus(),
+                PersonSearchKeys = inputPerson.GetSearchKeys(),
                 Attributes = inputPerson.GetAttributes( personAttributes, backgroundCheckPerson ),
                 Note = string.Join( ",", inputPerson.GetNotes() )
             };
@@ -127,6 +129,26 @@ namespace Slingshot.PCO.Utilities.Translators
             }
 
             return emailAddress;
+        }
+
+        private static List<PersonSearchKey> GetSearchKeys(this PersonDTO inputPerson)
+        {
+            var primaryEmail = GetEmail( inputPerson );
+
+            var searchKeys = new List<PersonSearchKey>();
+            foreach (var email in inputPerson.ContactData.EmailAddresses)
+            {
+                if (email.Address != primaryEmail)
+                {
+                    searchKeys.Add(new PersonSearchKey
+                    {
+                        PersonId = inputPerson.Id,
+                        SearchValue = email.Address
+                    });
+                }
+            }
+
+            return searchKeys;
         }
 
         private static List<PersonAddress> GetAddresses( this PersonDTO inputPerson )
